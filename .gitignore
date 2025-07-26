@@ -1,6 +1,6 @@
 node_modules
 es
 lib
-types
+./types
 docs/.vitepress/cache/**
 docs/.vitepress/dist/**

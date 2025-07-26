@@ -102,11 +102,14 @@
     "vue": "^3.3.0"
   },
   "dependencies": {
+    "alova": "^3.3.4",
+    "axios": "^1.11.0",
     "lodash-es": "^4.17.21"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^2.6.4",
     "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-typescript": "^11.1.6",
     "@types/lodash-es": "^4.17.12",

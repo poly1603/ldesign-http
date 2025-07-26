@@ -1,9 +1,10 @@
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
 import commonjs from '@rollup/plugin-commonjs'
+import json from '@rollup/plugin-json'
 import { nodeResolve } from '@rollup/plugin-node-resolve'
 import typescript from '@rollup/plugin-typescript'
 import { glob } from 'glob'
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import dts from 'rollup-plugin-dts'
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'))
@@ -12,7 +13,16 @@ const external = [
   ...Object.keys(pkg.peerDependencies || {}),
   ...Object.keys(pkg.dependencies || {}),
   'vue',
-  'pinia',
+  'axios',
+  'alova',
+  // Node.js built-ins
+  'http',
+  'https',
+  'stream',
+  'zlib',
+  'util',
+  'crypto',
+  'events'
 ]
 
 const banner = `/*!
@@ -54,6 +64,7 @@ export default [
         preferBuiltins: false,
       }),
       commonjs(),
+      json(),
       typescript({
         tsconfig: './tsconfig.json',
         declaration: false,
@@ -81,6 +92,7 @@ export default [
         preferBuiltins: false,
       }),
       commonjs(),
+      json(),
       typescript({
         tsconfig: './tsconfig.json',
         declaration: false,
@@ -112,6 +124,7 @@ export default [
         preferBuiltins: false,
       }),
       commonjs(),
+      json(),
       typescript({
         tsconfig: './tsconfig.json',
         declaration: false,
