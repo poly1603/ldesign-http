@@ -99,7 +99,6 @@
   },
   "homepage": "https://github.com/poly1603/ldesign-store#readme",
   "peerDependencies": {
-    "pinia": "^2.1.0",
     "vue": "^3.3.0"
   },
   "dependencies": {
