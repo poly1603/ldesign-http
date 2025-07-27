@@ -28,7 +28,7 @@ export type {
   Middleware,
   EventType,
   EventListener,
-  EventEmitter
+  EventEmitter,
 } from './types'
 
 // 核心类和函数
@@ -38,26 +38,26 @@ export {
   createHttpClient,
   createFetchHttpClient,
   createAxiosHttpClient,
-  createAlovaHttpClient
+  createAlovaHttpClient,
 } from './core/HttpClientImpl'
 
 // 适配器
 export {
   FetchAdapter,
   createFetchAdapter,
-  isFetchSupported
+  isFetchSupported,
 } from './adapters/FetchAdapter'
 
 export {
   AxiosAdapter,
   createAxiosAdapter,
-  isAxiosSupported
+  isAxiosSupported,
 } from './adapters/AxiosAdapter'
 
 export {
   AlovaAdapter,
   createAlovaAdapter,
-  isAlovaSupported
+  isAlovaSupported,
 } from './adapters/AlovaAdapter'
 
 // 缓存插件
@@ -69,7 +69,7 @@ export {
   createCachePlugin,
   createMemoryCache,
   createLocalStorageCache,
-  createSessionStorageCache
+  createSessionStorageCache,
 } from './plugins/cache'
 
 // 重试插件
@@ -80,7 +80,7 @@ export {
   createFixedRetryConfig,
   createExponentialRetryConfig,
   createLinearRetryConfig,
-  createCustomRetryConfig
+  createCustomRetryConfig,
 } from './plugins/retry'
 export type { ExtendedRetryConfig } from './plugins/retry'
 
@@ -95,11 +95,11 @@ export {
   createErrorHandlerInterceptor,
   createResponseTransformInterceptor,
   createRequestIdInterceptor,
-  createInterceptorsPlugin
+  createInterceptorsPlugin,
 } from './plugins/interceptors'
 export type {
   AuthInterceptorConfig,
-  LogInterceptorConfig
+  LogInterceptorConfig,
 } from './plugins/interceptors'
 
 // Vue3集成
@@ -111,13 +111,13 @@ export {
   useGet,
   usePost,
   usePut,
-  useDelete
+  useDelete,
 } from './vue'
 export type {
   RequestState,
   UseRequestOptions,
   UseRequestResult,
-  HttpPlugin as VueHttpPlugin
+  HttpPlugin as VueHttpPlugin,
 } from './vue'
 
 // 默认实例
@@ -156,7 +156,7 @@ export const http = {
   once: defaultClient.once.bind(defaultClient),
 
   // 获取客户端实例
-  getInstance: () => defaultClient
+  getInstance: () => defaultClient,
 }
 
 /**
@@ -185,13 +185,13 @@ export function createQuickClient(options: {
     enableCache = false,
     enableRetry = false,
     enableLog = false,
-    authToken
+    authToken,
   } = options
 
   const config: HttpClientConfig = {
     baseURL,
     timeout,
-    adapter
+    adapter,
   }
 
   const client = createHttpClient(config)
@@ -200,7 +200,7 @@ export function createQuickClient(options: {
   if (enableCache) {
     const cachePlugin = createCachePlugin({
       enabled: true,
-      ttl: 5 * 60 * 1000 // 5分钟
+      ttl: 5 * 60 * 1000, // 5分钟
     })
     cachePlugin.install(client)
   }
@@ -210,7 +210,7 @@ export function createQuickClient(options: {
     const retryPlugin = createRetryPlugin({
       retries: 3,
       retryDelay: 1000,
-      strategy: RetryStrategy.EXPONENTIAL
+      strategy: RetryStrategy.EXPONENTIAL,
     })
     retryPlugin.install(client)
   }
@@ -220,7 +220,7 @@ export function createQuickClient(options: {
     const logInterceptors = createLogInterceptor({
       logRequests: true,
       logResponses: true,
-      logErrors: true
+      logErrors: true,
     })
     client.addRequestInterceptor(logInterceptors.request)
     client.addResponseInterceptor(logInterceptors.response)
@@ -229,7 +229,7 @@ export function createQuickClient(options: {
   // 添加认证
   if (authToken) {
     const authInterceptor = createAuthInterceptor({
-      getToken: typeof authToken === 'string' ? () => authToken : authToken
+      getToken: typeof authToken === 'string' ? () => authToken : authToken,
     })
     client.addRequestInterceptor(authInterceptor)
   }

@@ -115,7 +115,7 @@ console.log(headResponse.status) // 200 表示存在
 
 // 获取允许的方法
 const optionsResponse = await client.options('/users')
-console.log(optionsResponse.headers['allow'])
+console.log(optionsResponse.headers.allow)
 ```
 
 ## 🔧 请求配置
@@ -179,11 +179,11 @@ const response = await client.get('/slow-endpoint', {
 ```typescript
 const response = await client.get('/users/1')
 
-console.log(response.data)       // 响应数据
-console.log(response.status)     // 状态码 (200, 404, etc.)
+console.log(response.data) // 响应数据
+console.log(response.status) // 状态码 (200, 404, etc.)
 console.log(response.statusText) // 状态文本 ('OK', 'Not Found', etc.)
-console.log(response.headers)    // 响应头
-console.log(response.config)     // 请求配置
+console.log(response.headers) // 响应头
+console.log(response.config) // 请求配置
 ```
 
 ### 类型安全
@@ -211,7 +211,8 @@ const users = await client.get<User[]>('/users')
 try {
   const response = await client.get('/users/999')
   console.log(response.data)
-} catch (error) {
+}
+ catch (error) {
   console.error('请求失败:', error.message)
 }
 ```
@@ -221,19 +222,23 @@ try {
 ```typescript
 try {
   const response = await client.get('/users/999')
-} catch (error: any) {
+}
+ catch (error: any) {
   if (error.response) {
     // 服务器响应了错误状态码
     console.log('状态码:', error.response.status)
     console.log('错误数据:', error.response.data)
     console.log('响应头:', error.response.headers)
-  } else if (error.isNetworkError) {
+  }
+ else if (error.isNetworkError) {
     // 网络错误
     console.log('网络连接失败')
-  } else if (error.isTimeoutError) {
+  }
+ else if (error.isTimeoutError) {
     // 超时错误
     console.log('请求超时')
-  } else {
+  }
+ else {
     // 其他错误
     console.log('未知错误:', error.message)
   }
@@ -247,17 +252,22 @@ import type { HttpError } from '@ldesign/http'
 
 try {
   await client.get('/api/data')
-} catch (error: HttpError) {
+}
+ catch (error: HttpError) {
   // 检查错误类型
   if (error.isNetworkError) {
     // 处理网络错误
-  } else if (error.isTimeoutError) {
+  }
+ else if (error.isTimeoutError) {
     // 处理超时错误
-  } else if (error.isCancelError) {
+  }
+ else if (error.isCancelError) {
     // 处理取消错误
-  } else if (error.response?.status === 401) {
+  }
+ else if (error.response?.status === 401) {
     // 处理认证错误
-  } else if (error.response?.status >= 500) {
+  }
+ else if (error.response?.status >= 500) {
     // 处理服务器错误
   }
 }
@@ -293,7 +303,8 @@ const results = await Promise.allSettled([
 results.forEach((result, index) => {
   if (result.status === 'fulfilled') {
     console.log(`请求 ${index} 成功:`, result.value.data)
-  } else {
+  }
+ else {
     console.log(`请求 ${index} 失败:`, result.reason.message)
   }
 })
@@ -355,9 +366,9 @@ const client = createHttpClient({
 })
 
 // 这些请求会自动拼接 baseURL
-await client.get('/users')        // https://api.example.com/v1/users
-await client.get('users')         // https://api.example.com/v1/users
-await client.get('./users')       // https://api.example.com/v1/users
+await client.get('/users') // https://api.example.com/v1/users
+await client.get('users') // https://api.example.com/v1/users
+await client.get('./users') // https://api.example.com/v1/users
 ```
 
 ### 绝对URL

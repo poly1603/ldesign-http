@@ -1,5 +1,5 @@
-import { BaseHttpClient } from './HttpClient.js';
 import { HttpClientConfig, HttpAdapter } from '../types/index.js';
+import { BaseHttpClient } from './HttpClient.js';
 
 /**
  * HTTP客户端具体实现

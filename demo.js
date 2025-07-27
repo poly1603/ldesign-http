@@ -17,7 +17,7 @@ async function demo() {
   console.log('=== 1. 基础使用 ===')
   const client = createHttpClient({
     baseURL: 'https://jsonplaceholder.typicode.com',
-    timeout: 10000
+    timeout: 10000,
   })
 
   try {
@@ -27,10 +27,11 @@ async function demo() {
     console.log('📄 响应数据:', {
       id: response.data.id,
       name: response.data.name,
-      email: response.data.email
+      email: response.data.email,
     })
     console.log('📊 响应状态:', response.status)
-  } catch (error) {
+  }
+ catch (error) {
     console.error('❌ 请求失败:', error.message)
   }
 
@@ -40,15 +41,16 @@ async function demo() {
     const response = await client.post('/posts', {
       title: 'Test Post',
       body: 'This is a test post created by @ldesign/http',
-      userId: 1
+      userId: 1,
     })
     console.log('✅ POST请求成功!')
     console.log('📄 创建的文章:', {
       id: response.data.id,
       title: response.data.title,
-      userId: response.data.userId
+      userId: response.data.userId,
     })
-  } catch (error) {
+  }
+ catch (error) {
     console.error('❌ POST请求失败:', error.message)
   }
 
@@ -57,7 +59,7 @@ async function demo() {
     baseURL: 'https://jsonplaceholder.typicode.com',
     timeout: 5000,
     adapter: 'fetch',
-    enableLog: true
+    enableLog: true,
   })
 
   try {
@@ -65,13 +67,14 @@ async function demo() {
     const response = await quickClient.get('/posts?_limit=3')
     console.log('✅ 快速客户端请求成功!')
     console.log('📄 获取到', response.data.length, '篇文章')
-  } catch (error) {
+  }
+ catch (error) {
     console.error('❌ 快速客户端请求失败:', error.message)
   }
 
   console.log('\n=== 4. 拦截器演示 ===')
   const interceptorClient = createHttpClient({
-    baseURL: 'https://jsonplaceholder.typicode.com'
+    baseURL: 'https://jsonplaceholder.typicode.com',
   })
 
   // 添加请求拦截器
@@ -80,10 +83,10 @@ async function demo() {
       console.log('🔧 请求拦截器: 添加自定义头部')
       config.headers = {
         ...config.headers,
-        'X-Custom-Header': 'ldesign-http-demo'
+        'X-Custom-Header': 'ldesign-http-demo',
       }
       return config
-    }
+    },
   })
 
   // 添加响应拦截器
@@ -91,7 +94,7 @@ async function demo() {
     onFulfilled: (response) => {
       console.log('🔧 响应拦截器: 处理响应数据')
       return response
-    }
+    },
   })
 
   try {
@@ -100,15 +103,16 @@ async function demo() {
     console.log('✅ 拦截器客户端请求成功!')
     console.log('📄 用户信息:', {
       name: response.data.name,
-      email: response.data.email
+      email: response.data.email,
     })
-  } catch (error) {
+  }
+ catch (error) {
     console.error('❌ 拦截器客户端请求失败:', error.message)
   }
 
   console.log('\n=== 5. 事件监听演示 ===')
   const eventClient = createHttpClient({
-    baseURL: 'https://jsonplaceholder.typicode.com'
+    baseURL: 'https://jsonplaceholder.typicode.com',
   })
 
   // 监听请求事件
@@ -133,9 +137,10 @@ async function demo() {
     console.log('📄 专辑信息:', {
       id: response.data.id,
       title: response.data.title,
-      userId: response.data.userId
+      userId: response.data.userId,
     })
-  } catch (error) {
+  }
+ catch (error) {
     console.error('❌ 事件客户端请求失败:', error.message)
   }
 
@@ -143,12 +148,13 @@ async function demo() {
   try {
     console.log('📤 发送到不存在的端点...')
     await client.get('/nonexistent-endpoint')
-  } catch (error) {
+  }
+ catch (error) {
     console.log('✅ 成功捕获错误!')
     console.log('📄 错误信息:', {
       message: error.message,
       status: error.response?.status,
-      isNetworkError: error.isNetworkError
+      isNetworkError: error.isNetworkError,
     })
   }
 

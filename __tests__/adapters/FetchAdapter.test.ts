@@ -2,12 +2,12 @@
  * Fetch适配器测试
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FetchAdapter, createFetchAdapter, isFetchSupported } from '../../src/adapters/FetchAdapter'
-import { createMockResponse, createMockError, resetAllMocks } from '../setup'
+import { createMockResponse, resetAllMocks } from '../setup'
 import { HttpMethod } from '../../src/types'
 
-describe('FetchAdapter', () => {
+describe('fetchAdapter', () => {
   let adapter: FetchAdapter
   let mockFetch: any
 
@@ -36,14 +36,14 @@ describe('FetchAdapter', () => {
 
       const response = await adapter.request({
         url: '/users/1',
-        method: HttpMethod.GET
+        method: HttpMethod.GET,
       })
 
       expect(mockFetch).toHaveBeenCalledWith(
         '/users/1',
         expect.objectContaining({
-          method: 'GET'
-        })
+          method: 'GET',
+        }),
       )
       expect(response.data).toEqual(mockData)
       expect(response.status).toBe(200)
@@ -58,15 +58,15 @@ describe('FetchAdapter', () => {
         url: '/users',
         method: HttpMethod.POST,
         data: postData,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       })
 
       expect(mockFetch).toHaveBeenCalledWith(
         '/users',
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify(postData)
-        })
+          body: JSON.stringify(postData),
+        }),
       )
       expect(response.data).toEqual(mockData)
       expect(response.status).toBe(201)
@@ -79,12 +79,12 @@ describe('FetchAdapter', () => {
       await adapter.request({
         url: '/users',
         method: HttpMethod.GET,
-        params: { page: 1, size: 10, active: true }
+        params: { page: 1, size: 10, active: true },
       })
 
       expect(mockFetch).toHaveBeenCalledWith(
         '/users?page=1&size=10&active=true',
-        expect.any(Object)
+        expect.any(Object),
       )
     })
 
@@ -95,12 +95,12 @@ describe('FetchAdapter', () => {
       await adapter.request({
         url: '/users',
         method: HttpMethod.GET,
-        baseURL: 'https://api.example.com'
+        baseURL: 'https://api.example.com',
       })
 
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.example.com/users',
-        expect.any(Object)
+        expect.any(Object),
       )
     })
   })
@@ -115,15 +115,15 @@ describe('FetchAdapter', () => {
         method: HttpMethod.GET,
         headers: {
           'Authorization': 'Bearer token',
-          'Custom-Header': 'value'
-        }
+          'Custom-Header': 'value',
+        },
       })
 
       expect(mockFetch).toHaveBeenCalledWith(
         '/test',
         expect.objectContaining({
-          headers: expect.any(Object)
-        })
+          headers: expect.any(Object),
+        }),
       )
     })
 
@@ -134,7 +134,7 @@ describe('FetchAdapter', () => {
       await adapter.request({
         url: '/test',
         method: HttpMethod.POST,
-        data: { test: 'data' }
+        data: { test: 'data' },
       })
 
       const call = mockFetch.mock.calls[0]
@@ -150,7 +150,7 @@ describe('FetchAdapter', () => {
       const response = await adapter.request({
         url: '/test',
         method: HttpMethod.GET,
-        responseType: 'json'
+        responseType: 'json',
       })
 
       expect(response.data).toEqual(mockData)
@@ -165,7 +165,7 @@ describe('FetchAdapter', () => {
       const response = await adapter.request({
         url: '/test',
         method: HttpMethod.GET,
-        responseType: 'text'
+        responseType: 'text',
       })
 
       expect(response.data).toBe(mockText)
@@ -178,14 +178,14 @@ describe('FetchAdapter', () => {
 
       const response = await adapter.request({
         url: '/test',
-        method: HttpMethod.GET
+        method: HttpMethod.GET,
       })
 
       expect(response.headers).toEqual(
         expect.objectContaining({
           'content-type': 'application/json',
-          'x-custom': 'value'
-        })
+          'x-custom': 'value',
+        }),
       )
     })
   })
@@ -196,7 +196,7 @@ describe('FetchAdapter', () => {
 
       await expect(adapter.request({
         url: '/test',
-        method: HttpMethod.GET
+        method: HttpMethod.GET,
       })).rejects.toThrow()
     })
 
@@ -204,12 +204,12 @@ describe('FetchAdapter', () => {
       mockFetch.mockResolvedValue(createMockResponse(
         { error: 'Not found' },
         404,
-        'Not Found'
+        'Not Found',
       ))
 
       await expect(adapter.request({
         url: '/test',
-        method: HttpMethod.GET
+        method: HttpMethod.GET,
       })).rejects.toThrow()
     })
 
@@ -220,7 +220,7 @@ describe('FetchAdapter', () => {
 
       await expect(adapter.request({
         url: '/test',
-        method: HttpMethod.GET
+        method: HttpMethod.GET,
       })).rejects.toThrow()
     })
   })
@@ -243,7 +243,7 @@ describe('FetchAdapter', () => {
       await adapter.request({
         url: '/upload',
         method: HttpMethod.POST,
-        data: formData
+        data: formData,
       })
 
       const call = mockFetch.mock.calls[0]
@@ -259,7 +259,7 @@ describe('FetchAdapter', () => {
       await adapter.request({
         url: '/text',
         method: HttpMethod.POST,
-        data: textData
+        data: textData,
       })
 
       const call = mockFetch.mock.calls[0]
@@ -267,7 +267,7 @@ describe('FetchAdapter', () => {
     })
   })
 
-  describe('URL处理', () => {
+  describe('uRL处理', () => {
     it('应该能够处理绝对URL', async () => {
       const mockData = { success: true }
       mockFetch.mockResolvedValue(createMockResponse(mockData))
@@ -275,12 +275,12 @@ describe('FetchAdapter', () => {
       await adapter.request({
         url: 'https://api.example.com/test',
         method: HttpMethod.GET,
-        baseURL: 'https://other.com'
+        baseURL: 'https://other.com',
       })
 
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.example.com/test',
-        expect.any(Object)
+        expect.any(Object),
       )
     })
 
@@ -291,12 +291,12 @@ describe('FetchAdapter', () => {
       await adapter.request({
         url: '/test',
         method: HttpMethod.GET,
-        baseURL: 'https://api.example.com'
+        baseURL: 'https://api.example.com',
       })
 
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.example.com/test',
-        expect.any(Object)
+        expect.any(Object),
       )
     })
   })

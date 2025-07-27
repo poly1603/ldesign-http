@@ -1,70 +1,5 @@
-<template>
-  <Teleport to="body">
-    <Transition name="toast" appear>
-      <div v-if="visible" class="error-toast-container">
-        <div class="error-toast" :class="toastClass">
-          <div class="toast-icon">
-            {{ getIcon() }}
-          </div>
-          
-          <div class="toast-content">
-            <div class="toast-title">{{ getTitle() }}</div>
-            <div class="toast-message">{{ getMessage() }}</div>
-            
-            <div v-if="showDetails" class="toast-details">
-              <div v-if="error.status" class="detail-item">
-                <strong>状态码:</strong> {{ error.status }}
-              </div>
-              <div v-if="error.response?.statusText" class="detail-item">
-                <strong>状态文本:</strong> {{ error.response.statusText }}
-              </div>
-              <div v-if="error.request?.url" class="detail-item">
-                <strong>请求URL:</strong> {{ error.request.url }}
-              </div>
-              <div v-if="error.response?.data" class="detail-item">
-                <strong>响应数据:</strong>
-                <pre class="error-data">{{ formatErrorData(error.response.data) }}</pre>
-              </div>
-            </div>
-            
-            <div class="toast-actions">
-              <button 
-                v-if="canShowDetails"
-                @click="toggleDetails" 
-                class="details-btn"
-              >
-                {{ showDetails ? '隐藏详情' : '显示详情' }}
-              </button>
-              
-              <button 
-                @click="copyError" 
-                class="copy-btn"
-                title="复制错误信息"
-              >
-                📋 复制
-              </button>
-              
-              <button 
-                v-if="canRetry"
-                @click="retry" 
-                class="retry-btn"
-              >
-                🔄 重试
-              </button>
-            </div>
-          </div>
-          
-          <button @click="close" class="close-btn" title="关闭">
-            ✕
-          </button>
-        </div>
-      </div>
-    </Transition>
-  </Teleport>
-</template>
-
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 interface Props {
   error: any
@@ -80,7 +15,7 @@ const props = withDefaults(defineProps<Props>(), {
   duration: 5000,
   showRetry: false,
   position: 'top-right',
-  maxWidth: '400px'
+  maxWidth: '400px',
 })
 
 const emit = defineEmits<{
@@ -95,27 +30,27 @@ let autoCloseTimer: NodeJS.Timeout | null = null
 // 计算属性
 const toastClass = computed(() => [
   `toast-${props.type}`,
-  `toast-${props.position}`
+  `toast-${props.position}`,
 ])
 
 const canShowDetails = computed(() => {
   return props.error && (
-    props.error.response?.data ||
-    props.error.status ||
-    props.error.request?.url
+    props.error.response?.data
+    || props.error.status
+    || props.error.request?.url
   )
 })
 
 const canRetry = computed(() => {
   return props.showRetry && (
-    props.error?.isNetworkError ||
-    props.error?.isTimeoutError ||
-    (props.error?.status && props.error.status >= 500)
+    props.error?.isNetworkError
+    || props.error?.isTimeoutError
+    || (props.error?.status && props.error.status >= 500)
   )
 })
 
 // 方法
-const getIcon = (): string => {
+function getIcon(): string {
   switch (props.type) {
     case 'error': return '❌'
     case 'warning': return '⚠️'
@@ -124,13 +59,17 @@ const getIcon = (): string => {
   }
 }
 
-const getTitle = (): string => {
-  if (!props.error) return '未知错误'
-  
-  if (props.error.isNetworkError) return '网络连接失败'
-  if (props.error.isTimeoutError) return '请求超时'
-  if (props.error.isCancelError) return '请求已取消'
-  
+function getTitle(): string {
+  if (!props.error)
+return '未知错误'
+
+  if (props.error.isNetworkError)
+return '网络连接失败'
+  if (props.error.isTimeoutError)
+return '请求超时'
+  if (props.error.isCancelError)
+return '请求已取消'
+
   switch (props.error.status) {
     case 400: return '请求参数错误'
     case 401: return '身份验证失败'
@@ -148,34 +87,36 @@ const getTitle = (): string => {
     default:
       if (props.error.status >= 400 && props.error.status < 500) {
         return '客户端错误'
-      } else if (props.error.status >= 500) {
+      }
+ else if (props.error.status >= 500) {
         return '服务器错误'
       }
       return '请求失败'
   }
 }
 
-const getMessage = (): string => {
-  if (!props.error) return '发生了未知错误'
-  
+function getMessage(): string {
+  if (!props.error)
+return '发生了未知错误'
+
   // 优先使用自定义错误消息
   if (props.error.message) {
     return props.error.message
   }
-  
+
   // 根据错误类型返回友好的消息
   if (props.error.isNetworkError) {
     return '请检查网络连接是否正常'
   }
-  
+
   if (props.error.isTimeoutError) {
     return '请求处理时间过长，请稍后重试'
   }
-  
+
   if (props.error.isCancelError) {
     return '请求已被用户取消'
   }
-  
+
   // 根据状态码返回消息
   switch (props.error.status) {
     case 400:
@@ -203,23 +144,24 @@ const getMessage = (): string => {
   }
 }
 
-const formatErrorData = (data: any): string => {
+function formatErrorData(data: any): string {
   if (typeof data === 'string') {
     return data
   }
-  
+
   try {
     return JSON.stringify(data, null, 2)
-  } catch (e) {
+  }
+ catch (e) {
     return String(data)
   }
 }
 
-const toggleDetails = () => {
+function toggleDetails() {
   showDetails.value = !showDetails.value
 }
 
-const copyError = async () => {
+async function copyError() {
   try {
     const errorInfo = {
       title: getTitle(),
@@ -227,19 +169,20 @@ const copyError = async () => {
       status: props.error.status,
       url: props.error.request?.url,
       timestamp: new Date().toISOString(),
-      details: props.error.response?.data
+      details: props.error.response?.data,
     }
-    
+
     await navigator.clipboard.writeText(JSON.stringify(errorInfo, null, 2))
-    
+
     // 显示复制成功的简短提示
     showCopySuccess()
-  } catch (error) {
+  }
+ catch (error) {
     console.error('复制失败:', error)
   }
 }
 
-const showCopySuccess = () => {
+function showCopySuccess() {
   // 创建临时的成功提示
   const successToast = document.createElement('div')
   successToast.className = 'copy-success-toast'
@@ -256,9 +199,9 @@ const showCopySuccess = () => {
     z-index: 10001;
     animation: slideInRight 0.3s ease;
   `
-  
+
   document.body.appendChild(successToast)
-  
+
   setTimeout(() => {
     successToast.style.animation = 'slideOutRight 0.3s ease'
     setTimeout(() => {
@@ -267,24 +210,24 @@ const showCopySuccess = () => {
   }, 2000)
 }
 
-const retry = () => {
+function retry() {
   emit('retry')
   close()
 }
 
-const close = () => {
+function close() {
   visible.value = false
   if (autoCloseTimer) {
     clearTimeout(autoCloseTimer)
   }
-  
+
   // 延迟触发关闭事件，等待动画完成
   setTimeout(() => {
     emit('close')
   }, 300)
 }
 
-const startAutoClose = () => {
+function startAutoClose() {
   if (props.duration > 0) {
     autoCloseTimer = setTimeout(() => {
       close()
@@ -292,14 +235,14 @@ const startAutoClose = () => {
   }
 }
 
-const pauseAutoClose = () => {
+function pauseAutoClose() {
   if (autoCloseTimer) {
     clearTimeout(autoCloseTimer)
     autoCloseTimer = null
   }
 }
 
-const resumeAutoClose = () => {
+function resumeAutoClose() {
   if (props.duration > 0 && !autoCloseTimer) {
     startAutoClose()
   }
@@ -308,7 +251,7 @@ const resumeAutoClose = () => {
 // 生命周期
 onMounted(() => {
   startAutoClose()
-  
+
   // 添加全局样式
   const style = document.createElement('style')
   style.textContent = `
@@ -343,6 +286,75 @@ onUnmounted(() => {
   }
 })
 </script>
+
+<template>
+  <Teleport to="body">
+    <Transition name="toast" appear>
+      <div v-if="visible" class="error-toast-container">
+        <div class="error-toast" :class="toastClass">
+          <div class="toast-icon">
+            {{ getIcon() }}
+          </div>
+
+          <div class="toast-content">
+            <div class="toast-title">
+              {{ getTitle() }}
+            </div>
+            <div class="toast-message">
+              {{ getMessage() }}
+            </div>
+
+            <div v-if="showDetails" class="toast-details">
+              <div v-if="error.status" class="detail-item">
+                <strong>状态码:</strong> {{ error.status }}
+              </div>
+              <div v-if="error.response?.statusText" class="detail-item">
+                <strong>状态文本:</strong> {{ error.response.statusText }}
+              </div>
+              <div v-if="error.request?.url" class="detail-item">
+                <strong>请求URL:</strong> {{ error.request.url }}
+              </div>
+              <div v-if="error.response?.data" class="detail-item">
+                <strong>响应数据:</strong>
+                <pre class="error-data">{{ formatErrorData(error.response.data) }}</pre>
+              </div>
+            </div>
+
+            <div class="toast-actions">
+              <button
+                v-if="canShowDetails"
+                class="details-btn"
+                @click="toggleDetails"
+              >
+                {{ showDetails ? '隐藏详情' : '显示详情' }}
+              </button>
+
+              <button
+                class="copy-btn"
+                title="复制错误信息"
+                @click="copyError"
+              >
+                📋 复制
+              </button>
+
+              <button
+                v-if="canRetry"
+                class="retry-btn"
+                @click="retry"
+              >
+                🔄 重试
+              </button>
+            </div>
+          </div>
+
+          <button class="close-btn" title="关闭" @click="close">
+            ✕
+          </button>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+</template>
 
 <style scoped>
 .error-toast-container {
@@ -556,18 +568,18 @@ onUnmounted(() => {
     min-width: auto;
     margin: 0 20px;
   }
-  
+
   .toast-top-center,
   .toast-bottom-center {
     left: 20px;
     right: 20px;
     transform: none;
   }
-  
+
   .toast-actions {
     flex-direction: column;
   }
-  
+
   .details-btn,
   .copy-btn,
   .retry-btn {
@@ -582,40 +594,40 @@ onUnmounted(() => {
     background: #1f2937;
     color: #f9fafb;
   }
-  
+
   .toast-title {
     color: #f9fafb;
   }
-  
+
   .toast-message {
     color: #d1d5db;
   }
-  
+
   .toast-details {
     background: rgba(255, 255, 255, 0.1);
   }
-  
+
   .error-data {
     background: rgba(255, 255, 255, 0.1);
   }
-  
+
   .details-btn,
   .copy-btn {
     background: #374151;
     border-color: #4b5563;
     color: #f9fafb;
   }
-  
+
   .details-btn:hover,
   .copy-btn:hover {
     background: #4b5563;
     border-color: #6b7280;
   }
-  
+
   .close-btn {
     color: #9ca3af;
   }
-  
+
   .close-btn:hover {
     background: rgba(255, 255, 255, 0.1);
     color: #f9fafb;

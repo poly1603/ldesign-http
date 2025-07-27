@@ -3,13 +3,13 @@
  * 基于Alova库实现HTTP请求
  */
 
-import { createAlova, type Alova, type AlovaOptions } from 'alova'
+import { type Alova, type AlovaOptions, createAlova } from 'alova'
 import type {
   HttpAdapter,
-  RequestConfig,
-  HttpResponse,
   HttpError,
-  HttpMethod
+  HttpMethod,
+  HttpResponse,
+  RequestConfig,
 } from '../types'
 
 export class AlovaAdapter implements HttpAdapter {
@@ -20,7 +20,7 @@ export class AlovaAdapter implements HttpAdapter {
     this.alovaInstance = createAlova({
       baseURL: '',
       timeout: 10000,
-      ...alovaConfig
+      ...alovaConfig,
     })
   }
 
@@ -32,7 +32,8 @@ export class AlovaAdapter implements HttpAdapter {
       const methodInstance = this.createMethodInstance<T>(config)
       const response = await methodInstance.send()
       return this.transformResponse<T>(response, config)
-    } catch (error: any) {
+    }
+ catch (error: any) {
       throw this.transformError(error, config)
     }
   }
@@ -47,7 +48,8 @@ export class AlovaAdapter implements HttpAdapter {
         cancelFn()
         this.cancelTokens.delete(requestId)
       }
-    } else {
+    }
+ else {
       // 取消所有请求
       this.cancelTokens.forEach(cancelFn => cancelFn())
       this.cancelTokens.clear()
@@ -74,7 +76,7 @@ export class AlovaAdapter implements HttpAdapter {
   private createMethodInstance<T>(config: RequestConfig) {
     const url = this.buildURL(config)
     const method = config.method || HttpMethod.GET
-    
+
     let methodInstance: any
 
     switch (method.toUpperCase()) {
@@ -83,7 +85,7 @@ export class AlovaAdapter implements HttpAdapter {
           params: config.params,
           headers: config.headers,
           timeout: config.timeout,
-          ...this.extractAlovaConfig(config)
+          ...this.extractAlovaConfig(config),
         })
         break
       case HttpMethod.POST:
@@ -91,7 +93,7 @@ export class AlovaAdapter implements HttpAdapter {
           params: config.params,
           headers: config.headers,
           timeout: config.timeout,
-          ...this.extractAlovaConfig(config)
+          ...this.extractAlovaConfig(config),
         })
         break
       case HttpMethod.PUT:
@@ -99,7 +101,7 @@ export class AlovaAdapter implements HttpAdapter {
           params: config.params,
           headers: config.headers,
           timeout: config.timeout,
-          ...this.extractAlovaConfig(config)
+          ...this.extractAlovaConfig(config),
         })
         break
       case HttpMethod.DELETE:
@@ -107,7 +109,7 @@ export class AlovaAdapter implements HttpAdapter {
           params: config.params,
           headers: config.headers,
           timeout: config.timeout,
-          ...this.extractAlovaConfig(config)
+          ...this.extractAlovaConfig(config),
         })
         break
       case HttpMethod.PATCH:
@@ -115,7 +117,7 @@ export class AlovaAdapter implements HttpAdapter {
           params: config.params,
           headers: config.headers,
           timeout: config.timeout,
-          ...this.extractAlovaConfig(config)
+          ...this.extractAlovaConfig(config),
         })
         break
       case HttpMethod.HEAD:
@@ -123,7 +125,7 @@ export class AlovaAdapter implements HttpAdapter {
           params: config.params,
           headers: config.headers,
           timeout: config.timeout,
-          ...this.extractAlovaConfig(config)
+          ...this.extractAlovaConfig(config),
         })
         break
       case HttpMethod.OPTIONS:
@@ -131,7 +133,7 @@ export class AlovaAdapter implements HttpAdapter {
           params: config.params,
           headers: config.headers,
           timeout: config.timeout,
-          ...this.extractAlovaConfig(config)
+          ...this.extractAlovaConfig(config),
         })
         break
       default:
@@ -154,12 +156,12 @@ export class AlovaAdapter implements HttpAdapter {
    */
   private buildURL(config: RequestConfig): string {
     let url = config.url
-    
+
     // 如果配置了baseURL且当前URL不是绝对URL，则组合URL
     if (config.baseURL && !this.isAbsoluteURL(url)) {
       url = this.combineURLs(config.baseURL, url)
     }
-    
+
     return url
   }
 
@@ -168,48 +170,47 @@ export class AlovaAdapter implements HttpAdapter {
    */
   private extractAlovaConfig(config: RequestConfig): any {
     const alovaConfig: any = {}
-    
+
     // 处理响应类型
     if (config.responseType) {
       alovaConfig.responseType = config.responseType
     }
-    
+
     // 处理凭证
     if (config.withCredentials !== undefined) {
       alovaConfig.withCredentials = config.withCredentials
     }
-    
+
     // 处理进度回调
     if (config.onUploadProgress) {
       alovaConfig.onUpload = (progress: any) => {
         const progressData = {
           loaded: progress.loaded,
           total: progress.total || 0,
-          percentage: progress.total ? Math.round((progress.loaded * 100) / progress.total) : 0
+          percentage: progress.total ? Math.round((progress.loaded * 100) / progress.total) : 0,
         }
         config.onUploadProgress!(progressData)
       }
     }
-    
+
     if (config.onDownloadProgress) {
       alovaConfig.onDownload = (progress: any) => {
         const progressData = {
           loaded: progress.loaded,
           total: progress.total || 0,
-          percentage: progress.total ? Math.round((progress.loaded * 100) / progress.total) : 0
+          percentage: progress.total ? Math.round((progress.loaded * 100) / progress.total) : 0,
         }
         config.onDownloadProgress!(progressData)
       }
     }
-    
+
     // 复制其他自定义配置
-    Object.keys(config).forEach(key => {
-      if (!['url', 'method', 'headers', 'params', 'data', 'timeout', 'baseURL', 
-            'responseType', 'withCredentials', 'onUploadProgress', 'onDownloadProgress'].includes(key)) {
+    Object.keys(config).forEach((key) => {
+      if (!['url', 'method', 'headers', 'params', 'data', 'timeout', 'baseURL', 'responseType', 'withCredentials', 'onUploadProgress', 'onDownloadProgress'].includes(key)) {
         alovaConfig[key] = (config as any)[key]
       }
     })
-    
+
     return alovaConfig
   }
 
@@ -224,9 +225,9 @@ export class AlovaAdapter implements HttpAdapter {
       statusText: response.statusText || 'OK',
       headers: this.transformResponseHeaders(response.headers || {}),
       config,
-      raw: response
+      raw: response,
     }
-    
+
     return httpResponse
   }
 
@@ -235,21 +236,22 @@ export class AlovaAdapter implements HttpAdapter {
    */
   private transformResponseHeaders(headers: any): Record<string, string> {
     const result: Record<string, string> = {}
-    
+
     if (headers) {
       if (typeof headers.forEach === 'function') {
         // Headers对象
         headers.forEach((value: string, key: string) => {
           result[key.toLowerCase()] = value
         })
-      } else if (typeof headers === 'object') {
+      }
+ else if (typeof headers === 'object') {
         // 普通对象
-        Object.keys(headers).forEach(key => {
+        Object.keys(headers).forEach((key) => {
           result[key.toLowerCase()] = String(headers[key])
         })
       }
     }
-    
+
     return result
   }
 
@@ -266,16 +268,19 @@ export class AlovaAdapter implements HttpAdapter {
       httpError.isCancelError = true
       httpError.code = 'CANCELLED'
       httpError.message = 'Request was cancelled'
-    } else if (error.response) {
+    }
+ else if (error.response) {
       // 服务器响应了错误状态码
       httpError.response = this.transformResponse(error.response, config)
       httpError.code = `HTTP_${error.response.status}`
-    } else if (error.request || error.name === 'NetworkError') {
+    }
+ else if (error.request || error.name === 'NetworkError') {
       // 网络错误
       httpError.isNetworkError = true
       httpError.code = 'NETWORK_ERROR'
       httpError.message = 'Network error occurred'
-    } else if (error.name === 'TimeoutError' || error.code === 'TIMEOUT') {
+    }
+ else if (error.name === 'TimeoutError' || error.code === 'TIMEOUT') {
       // 超时错误
       httpError.isTimeoutError = true
       httpError.code = 'TIMEOUT'
@@ -297,7 +302,7 @@ export class AlovaAdapter implements HttpAdapter {
    */
   private combineURLs(baseURL: string, relativeURL: string): string {
     return relativeURL
-      ? baseURL.replace(/\/+$/, '') + '/' + relativeURL.replace(/^\/+/, '')
+      ? `${baseURL.replace(/\/+$/, '')}/${relativeURL.replace(/^\/+/, '')}`
       : baseURL
   }
 
@@ -322,7 +327,8 @@ export function createAlovaAdapter(config?: AlovaOptions<any, any, any, any, any
 export function isAlovaSupported(): boolean {
   try {
     return typeof createAlova !== 'undefined'
-  } catch {
+  }
+ catch {
     return false
   }
 }

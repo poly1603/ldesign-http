@@ -2,16 +2,15 @@
  * 缓存插件测试
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  MemoryCacheStorage,
-  LocalStorageCacheStorage,
-  SessionStorageCacheStorage,
   CacheManager,
-  createCachePlugin
+  LocalStorageCacheStorage,
+  MemoryCacheStorage,
+  createCachePlugin,
 } from '../../src/plugins/cache'
 import { createHttpClient } from '../../src/core/HttpClientImpl'
-import { createMockResponse, resetAllMocks, delay } from '../setup'
+import { createMockResponse, delay, resetAllMocks } from '../setup'
 import { HttpMethod } from '../../src/types'
 
 describe('缓存插件', () => {
@@ -19,7 +18,7 @@ describe('缓存插件', () => {
     resetAllMocks()
   })
 
-  describe('MemoryCacheStorage', () => {
+  describe('memoryCacheStorage', () => {
     let storage: MemoryCacheStorage
 
     beforeEach(() => {
@@ -28,29 +27,29 @@ describe('缓存插件', () => {
 
     it('应该能够存储和获取数据', async () => {
       const testData = { id: 1, name: 'test' }
-      
+
       await storage.set('test-key', testData)
       const result = await storage.get('test-key')
-      
+
       expect(result).toEqual(testData)
     })
 
     it('应该能够处理过期数据', async () => {
       const testData = { id: 1, name: 'test' }
-      
+
       await storage.set('test-key', testData, 10) // 10ms TTL
       await delay(20) // 等待过期
-      
+
       const result = await storage.get('test-key')
       expect(result).toBeNull()
     })
 
     it('应该能够删除数据', async () => {
       const testData = { id: 1, name: 'test' }
-      
+
       await storage.set('test-key', testData)
       await storage.delete('test-key')
-      
+
       const result = await storage.get('test-key')
       expect(result).toBeNull()
     })
@@ -58,35 +57,35 @@ describe('缓存插件', () => {
     it('应该能够清空所有数据', async () => {
       await storage.set('key1', 'value1')
       await storage.set('key2', 'value2')
-      
+
       await storage.clear()
-      
+
       expect(await storage.get('key1')).toBeNull()
       expect(await storage.get('key2')).toBeNull()
     })
 
     it('应该能够获取缓存大小', async () => {
       expect(storage.size()).toBe(0)
-      
+
       await storage.set('key1', 'value1')
       await storage.set('key2', 'value2')
-      
+
       expect(storage.size()).toBe(2)
     })
 
     it('应该能够清理过期缓存', async () => {
       await storage.set('key1', 'value1', 10) // 10ms TTL
       await storage.set('key2', 'value2', 1000) // 1s TTL
-      
+
       await delay(20) // 等待第一个过期
       storage.cleanup()
-      
+
       expect(storage.size()).toBe(1)
       expect(await storage.get('key2')).toBe('value2')
     })
   })
 
-  describe('LocalStorageCacheStorage', () => {
+  describe('localStorageCacheStorage', () => {
     let storage: LocalStorageCacheStorage
     let mockLocalStorage: any
 
@@ -95,7 +94,7 @@ describe('缓存插件', () => {
         getItem: vi.fn(),
         setItem: vi.fn(),
         removeItem: vi.fn(),
-        clear: vi.fn()
+        clear: vi.fn(),
       }
       global.localStorage = mockLocalStorage
       storage = new LocalStorageCacheStorage('test_')
@@ -103,12 +102,12 @@ describe('缓存插件', () => {
 
     it('应该能够存储数据到localStorage', async () => {
       const testData = { id: 1, name: 'test' }
-      
+
       await storage.set('test-key', testData, 1000)
-      
+
       expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
         'test_test-key',
-        expect.stringContaining('"value":{"id":1,"name":"test"}')
+        expect.stringContaining('"value":{"id":1,"name":"test"}'),
       )
     })
 
@@ -116,11 +115,11 @@ describe('缓存插件', () => {
       const testData = { id: 1, name: 'test' }
       const expiry = Date.now() + 1000
       mockLocalStorage.getItem.mockReturnValue(
-        JSON.stringify({ value: testData, expiry })
+        JSON.stringify({ value: testData, expiry }),
       )
-      
+
       const result = await storage.get('test-key')
-      
+
       expect(mockLocalStorage.getItem).toHaveBeenCalledWith('test_test-key')
       expect(result).toEqual(testData)
     })
@@ -129,39 +128,39 @@ describe('缓存插件', () => {
       const testData = { id: 1, name: 'test' }
       const expiry = Date.now() - 1000 // 已过期
       mockLocalStorage.getItem.mockReturnValue(
-        JSON.stringify({ value: testData, expiry })
+        JSON.stringify({ value: testData, expiry }),
       )
-      
+
       const result = await storage.get('test-key')
-      
+
       expect(result).toBeNull()
       expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('test_test-key')
     })
   })
 
-  describe('CacheManager', () => {
+  describe('cacheManager', () => {
     let cacheManager: CacheManager
 
     beforeEach(() => {
       cacheManager = new CacheManager({
         enabled: true,
-        ttl: 1000
+        ttl: 1000,
       })
     })
 
     it('应该能够生成缓存键', async () => {
       const config1 = { url: '/users', method: HttpMethod.GET }
       const config2 = { url: '/users', method: HttpMethod.GET, params: { page: 1 } }
-      
+
       // 通过设置和获取来间接测试键生成
       const mockResponse = { data: 'test', status: 200, statusText: 'OK', headers: {}, config: config1 }
-      
+
       await cacheManager.set(config1, mockResponse as any)
       const result1 = await cacheManager.get(config1)
-      
+
       await cacheManager.set(config2, mockResponse as any)
       const result2 = await cacheManager.get(config2)
-      
+
       expect(result1).toBeTruthy()
       expect(result2).toBeTruthy()
       // 不同的配置应该生成不同的缓存键
@@ -170,23 +169,23 @@ describe('缓存插件', () => {
 
     it('应该能够更新配置', () => {
       const newConfig = { enabled: false, ttl: 2000 }
-      
+
       cacheManager.updateConfig(newConfig)
       const config = cacheManager.getConfig()
-      
+
       expect(config.enabled).toBe(false)
       expect(config.ttl).toBe(2000)
     })
 
     it('应该在禁用时不缓存', async () => {
       cacheManager.updateConfig({ enabled: false })
-      
+
       const config = { url: '/test', method: HttpMethod.GET }
       const mockResponse = { data: 'test', status: 200, statusText: 'OK', headers: {}, config }
-      
+
       await cacheManager.set(config, mockResponse as any)
       const result = await cacheManager.get(config)
-      
+
       expect(result).toBeNull()
     })
   })
@@ -199,10 +198,10 @@ describe('缓存插件', () => {
       mockFetch = vi.fn()
       global.fetch = mockFetch
       client = createHttpClient()
-      
+
       const cachePlugin = createCachePlugin({
         enabled: true,
-        ttl: 1000
+        ttl: 1000,
       })
       cachePlugin.install(client)
     })

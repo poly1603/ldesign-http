@@ -9,8 +9,8 @@
 ```typescript
 // main.ts
 import { createApp } from 'vue'
-import { createHttpPlugin } from '@ldesign/http'
 import App from './App.vue'
+import { createHttpPlugin } from '@ldesign/http'
 
 const app = createApp(App)
 
@@ -39,18 +39,18 @@ app.use(createHttpPlugin({
   // 基础配置
   baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 15000,
-  
+
   // 适配器配置
   adapter: 'fetch',
-  
+
   // 启用插件
   enableCache: true,
   enableRetry: true,
   enableLog: import.meta.env.DEV,
-  
+
   // 认证配置
   authToken: () => localStorage.getItem('auth_token'),
-  
+
   // 自定义配置
   interceptors: {
     request: [
@@ -91,17 +91,17 @@ interface HttpPluginOptions extends HttpClientConfig {
   enableCache?: boolean
   enableRetry?: boolean
   enableLog?: boolean
-  
+
   // 认证配置
   authToken?: string | (() => string | Promise<string>)
-  
+
   // 全局配置
-  globalKey?: string        // 全局注入的键名 (默认: '$http')
-  provideKey?: string       // provide/inject 的键名 (默认: 'http')
-  
+  globalKey?: string // 全局注入的键名 (默认: '$http')
+  provideKey?: string // provide/inject 的键名 (默认: 'http')
+
   // 路由集成
-  router?: Router           // Vue Router 实例
-  
+  router?: Router // Vue Router 实例
+
   // 错误处理
   errorHandler?: (error: HttpError) => void
 }
@@ -119,42 +119,45 @@ const router = createRouter({
 
 app.use(createHttpPlugin({
   baseURL: 'https://api.example.com',
-  
+
   // 快速启用功能
   enableCache: true,
   enableRetry: true,
   enableLog: process.env.NODE_ENV === 'development',
-  
+
   // 认证配置
   authToken: async () => {
     const token = localStorage.getItem('token')
-    if (!token) return ''
-    
+    if (!token)
+return ''
+
     // 检查token是否过期
     if (isTokenExpired(token)) {
       const newToken = await refreshToken()
       localStorage.setItem('token', newToken)
       return newToken
     }
-    
+
     return token
   },
-  
+
   // 自定义键名
   globalKey: '$api',
   provideKey: 'apiClient',
-  
+
   // 路由集成
   router,
-  
+
   // 全局错误处理
   errorHandler: (error) => {
     if (error.status === 401) {
       ElMessage.error('登录已过期，请重新登录')
       router.push('/login')
-    } else if (error.status >= 500) {
+    }
+ else if (error.status >= 500) {
       ElMessage.error('服务器错误，请稍后重试')
-    } else if (error.isNetworkError) {
+    }
+ else if (error.isNetworkError) {
       ElMessage.error('网络连接失败，请检查网络设置')
     }
   }
@@ -166,25 +169,8 @@ app.use(createHttpPlugin({
 ### 组合式API
 
 ```vue
-<template>
-  <div>
-    <div v-if="loading">加载中...</div>
-    <div v-else-if="error">错误: {{ error.message }}</div>
-    <div v-else>
-      <h2>用户列表</h2>
-      <ul>
-        <li v-for="user in users" :key="user.id">
-          {{ user.name }} - {{ user.email }}
-        </li>
-      </ul>
-    </div>
-    
-    <button @click="refresh">刷新</button>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { useHttp, useGet } from '@ldesign/http'
+import { useGet, useHttp } from '@ldesign/http'
 
 // 方式1: 使用 useHttp 获取客户端实例
 const http = useHttp()
@@ -193,32 +179,45 @@ const http = useHttp()
 const { data: users, loading, error, refresh } = useGet('/users')
 
 // 手动发送请求
-const createUser = async (userData: any) => {
+async function createUser(userData: any) {
   try {
     const response = await http.post('/users', userData)
     console.log('用户创建成功:', response.data)
     refresh() // 刷新用户列表
-  } catch (error) {
+  }
+ catch (error) {
     console.error('创建用户失败:', error)
   }
 }
 </script>
+
+<template>
+  <div>
+    <div v-if="loading">
+      加载中...
+    </div>
+    <div v-else-if="error">
+      错误: {{ error.message }}
+    </div>
+    <div v-else>
+      <h2>用户列表</h2>
+      <ul>
+        <li v-for="user in users" :key="user.id">
+          {{ user.name }} - {{ user.email }}
+        </li>
+      </ul>
+    </div>
+
+    <button @click="refresh">
+      刷新
+    </button>
+  </div>
+</template>
 ```
 
 ### 选项式API
 
 ```vue
-<template>
-  <div>
-    <button @click="fetchUsers">获取用户</button>
-    <ul>
-      <li v-for="user in users" :key="user.id">
-        {{ user.name }}
-      </li>
-    </ul>
-  </div>
-</template>
-
 <script lang="ts">
 import { defineComponent } from 'vue'
 
@@ -228,22 +227,23 @@ export default defineComponent({
       users: []
     }
   },
-  
+
   async mounted() {
     await this.fetchUsers()
   },
-  
+
   methods: {
     async fetchUsers() {
       try {
         // 使用全局注入的HTTP客户端
         const response = await this.$http.get('/users')
         this.users = response.data
-      } catch (error) {
+      }
+ catch (error) {
         console.error('获取用户失败:', error)
       }
     },
-    
+
     async createUser(userData: any) {
       const response = await this.$http.post('/users', userData)
       return response.data
@@ -251,24 +251,28 @@ export default defineComponent({
   }
 })
 </script>
+
+<template>
+  <div>
+    <button @click="fetchUsers">
+      获取用户
+    </button>
+    <ul>
+      <li v-for="user in users" :key="user.id">
+        {{ user.name }}
+      </li>
+    </ul>
+  </div>
+</template>
 ```
 
 ### Provide/Inject
 
 ```vue
 <!-- 父组件 -->
-<template>
-  <ChildComponent />
-</template>
-
 <script setup lang="ts">
 // 父组件中HTTP客户端已经通过插件自动provide
 </script>
-
-<!-- 子组件 -->
-<template>
-  <div>{{ userData }}</div>
-</template>
 
 <script setup lang="ts">
 import { inject } from 'vue'
@@ -280,6 +284,15 @@ const http = inject<HttpClientInstance>('http')
 // 使用客户端
 const userData = await http?.get('/user/profile')
 </script>
+
+<!-- 子组件 -->
+<template>
+  <ChildComponent />
+</template>
+
+<template>
+  <div>{{ userData }}</div>
+</template>
 ```
 
 ## 🎨 TypeScript 支持
@@ -325,14 +338,14 @@ const { execute: createUser } = usePost<User, CreateUserRequest>('/users', {
 })
 
 // 使用时会有完整的类型提示
-const handleCreateUser = async () => {
+async function handleCreateUser() {
   const newUser = await createUser({
     data: {
       name: 'John Doe',
       email: 'john@example.com'
     }
   })
-  
+
   // newUser.data 的类型为 User
   console.log(newUser.data.name)
 }
@@ -350,35 +363,37 @@ import { useHttp } from '@ldesign/http'
 
 export const useApiStore = defineStore('api', () => {
   const http = useHttp()
-  
+
   // 状态
   const loading = ref(false)
   const error = ref<string | null>(null)
-  
+
   // 通用API调用方法
   const apiCall = async <T>(
     request: () => Promise<T>
   ): Promise<T | null> => {
     loading.value = true
     error.value = null
-    
+
     try {
       const result = await request()
       return result
-    } catch (err: any) {
+    }
+ catch (err: any) {
       error.value = err.message
       return null
-    } finally {
+    }
+ finally {
       loading.value = false
     }
   }
-  
+
   // 具体API方法
   const getUsers = () => apiCall(() => http.get('/users'))
   const createUser = (data: any) => apiCall(() => http.post('/users', data))
   const updateUser = (id: number, data: any) => apiCall(() => http.put(`/users/${id}`, data))
   const deleteUser = (id: number) => apiCall(() => http.delete(`/users/${id}`))
-  
+
   return {
     loading: readonly(loading),
     error: readonly(error),
@@ -398,13 +413,13 @@ import type { HttpClientInstance } from '@ldesign/http'
 
 export default {
   namespaced: true,
-  
+
   state: () => ({
     loading: false,
     error: null,
     data: null
   }),
-  
+
   mutations: {
     SET_LOADING(state: any, loading: boolean) {
       state.loading = loading
@@ -416,20 +431,22 @@ export default {
       state.data = data
     }
   },
-  
+
   actions: {
     async fetchData({ commit }: any, { http, endpoint }: { http: HttpClientInstance, endpoint: string }) {
       commit('SET_LOADING', true)
       commit('SET_ERROR', null)
-      
+
       try {
         const response = await http.get(endpoint)
         commit('SET_DATA', response.data)
         return response.data
-      } catch (error: any) {
+      }
+ catch (error: any) {
         commit('SET_ERROR', error.message)
         throw error
-      } finally {
+      }
+ finally {
         commit('SET_LOADING', false)
       }
     }
@@ -465,7 +482,7 @@ const router = createRouter({
 app.use(createHttpPlugin({
   baseURL: 'https://api.example.com',
   router, // 传入router实例
-  
+
   // 401错误自动跳转登录
   errorHandler: (error) => {
     if (error.status === 401) {
@@ -477,16 +494,18 @@ app.use(createHttpPlugin({
 // 或者手动设置路由守卫
 router.beforeEach(async (to, from, next) => {
   const http = app.config.globalProperties.$http as HttpClientInstance
-  
+
   // 检查认证状态
   if (to.meta.requiresAuth) {
     try {
       await http.get('/auth/verify')
       next()
-    } catch (error) {
+    }
+ catch (error) {
       next('/login')
     }
-  } else {
+  }
+ else {
     next()
   }
 })
@@ -502,7 +521,7 @@ import { useGet } from '@ldesign/http'
 const route = useRoute()
 
 // 根据路由参数获取数据
-const { data: user } = useGet(() => 
+const { data: user } = useGet(() =>
   route.params.id ? `/users/${route.params.id}` : null
 )
 </script>
@@ -524,16 +543,16 @@ describe('UserList', () => {
     const httpPlugin = createHttpPlugin({
       baseURL: 'http://localhost:3000'
     })
-    
+
     const wrapper = mount(UserList, {
       global: {
         plugins: [httpPlugin]
       }
     })
-    
+
     // 等待数据加载
     await wrapper.vm.$nextTick()
-    
+
     expect(wrapper.find('.user-list').exists()).toBe(true)
   })
 })
@@ -617,7 +636,8 @@ export function createErrorHandler(router: Router) {
       default:
         if (error.isNetworkError) {
           ElMessage.error('网络连接失败')
-        } else {
+        }
+ else {
           ElMessage.error(error.message || '请求失败')
         }
     }

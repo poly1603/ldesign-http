@@ -97,11 +97,11 @@ pnpm add @ldesign/http
   <script src="https://unpkg.com/@ldesign/http@latest/dist/index.umd.js"></script>
   <script>
     const { createHttpClient } = LDesignHttp
-    
+
     const client = createHttpClient({
       baseURL: 'https://jsonplaceholder.typicode.com'
     })
-    
+
     client.get('/users').then(response => {
       console.log('用户列表:', response.data)
     })
@@ -122,8 +122,8 @@ pnpm add vue@^3.0.0 @ldesign/http
 ```typescript
 // main.ts
 import { createApp } from 'vue'
-import { createHttpPlugin } from '@ldesign/http'
 import App from './App.vue'
+import { createHttpPlugin } from '@ldesign/http'
 
 const app = createApp(App)
 
@@ -218,7 +218,8 @@ async function test() {
   try {
     const response = await client.get('/users/1')
     console.log('✅ 安装成功!', response.data.name)
-  } catch (error) {
+  }
+ catch (error) {
     console.error('❌ 安装失败:', error)
   }
 }

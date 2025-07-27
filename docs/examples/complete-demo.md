@@ -27,11 +27,11 @@ src/
 
 ```typescript
 import {
-  createHttpClient,
+  createAuthInterceptor,
   createCachePlugin,
-  createRetryPlugin,
+  createHttpClient,
   createLogInterceptor,
-  createAuthInterceptor
+  createRetryPlugin
 } from '@ldesign/http'
 
 // 创建HTTP客户端
@@ -147,7 +147,7 @@ export interface PaginatedResponse<T> {
 
 ```typescript
 import apiClient from './client'
-import type { User, CreateUserRequest, UpdateUserRequest } from './types'
+import type { CreateUserRequest, UpdateUserRequest, User } from './types'
 
 export const userApi = {
   // 获取所有用户
@@ -194,10 +194,10 @@ export const userApi = {
 ### useUsers.ts
 
 ```typescript
-import { ref, computed } from 'vue'
-import { useGet, usePost, usePut, useDelete } from '@ldesign/http'
+import { computed, ref } from 'vue'
+import { useDelete, useGet, usePost, usePut } from '@ldesign/http'
 import { userApi } from '@/api/users'
-import type { User, CreateUserRequest, UpdateUserRequest } from '@/api/types'
+import type { CreateUserRequest, UpdateUserRequest, User } from '@/api/types'
 
 export function useUsers() {
   // 获取用户列表
@@ -233,7 +233,8 @@ export function useUsers() {
         }
       }
       return updatedUser
-    } catch (error) {
+    }
+ catch (error) {
       console.error('更新用户失败:', error)
       throw error
     }
@@ -247,7 +248,8 @@ export function useUsers() {
       if (users.value) {
         users.value = users.value.filter(u => u.id !== id)
       }
-    } catch (error) {
+    }
+ catch (error) {
       console.error('删除用户失败:', error)
       throw error
     }
@@ -262,9 +264,9 @@ export function useUsers() {
 
     const query = searchQuery.value.toLowerCase()
     return users.value.filter(user =>
-      user.name.toLowerCase().includes(query) ||
-      user.email.toLowerCase().includes(query) ||
-      user.username.toLowerCase().includes(query)
+      user.name.toLowerCase().includes(query)
+      || user.email.toLowerCase().includes(query)
+      || user.username.toLowerCase().includes(query)
     )
   })
 
@@ -373,72 +375,6 @@ export function useNotification() {
 ### UserList.vue
 
 ```vue
-<template>
-  <div class="user-list">
-    <div class="header">
-      <h2>用户列表</h2>
-      <div class="actions">
-        <input
-          v-model="searchQuery"
-          placeholder="搜索用户..."
-          class="search-input"
-        />
-        <button @click="$emit('create')" class="btn btn-primary">
-          新增用户
-        </button>
-        <button @click="refreshUsers" :disabled="usersLoading" class="btn btn-secondary">
-          {{ usersLoading ? '刷新中...' : '刷新' }}
-        </button>
-      </div>
-    </div>
-
-    <div v-if="usersLoading" class="loading">
-      🔄 加载用户列表...
-    </div>
-
-    <div v-else-if="usersError" class="error">
-      ❌ 加载失败: {{ usersError.message }}
-      <button @click="refreshUsers" class="btn btn-sm">重试</button>
-    </div>
-
-    <div v-else class="user-grid">
-      <div
-        v-for="user in filteredUsers"
-        :key="user.id"
-        class="user-card"
-        @click="$emit('select', user)"
-      >
-        <div class="user-info">
-          <h3>{{ user.name }}</h3>
-          <p class="username">@{{ user.username }}</p>
-          <p class="email">📧 {{ user.email }}</p>
-          <p class="phone">📱 {{ user.phone }}</p>
-          <p class="company">🏢 {{ user.company.name }}</p>
-        </div>
-
-        <div class="user-actions">
-          <button
-            @click.stop="$emit('edit', user)"
-            class="btn btn-sm btn-outline"
-          >
-            编辑
-          </button>
-          <button
-            @click.stop="handleDelete(user)"
-            class="btn btn-sm btn-danger"
-          >
-            删除
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="!usersLoading && filteredUsers.length === 0" class="empty">
-      <p>{{ searchQuery ? '没有找到匹配的用户' : '暂无用户数据' }}</p>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { useUsers } from '@/composables/useUsers'
 import { useNotification } from '@/composables/useNotification'
@@ -461,7 +397,7 @@ const {
 
 const { success, error } = useNotification()
 
-const handleDelete = async (user: User) => {
+async function handleDelete(user: User) {
   if (!confirm(`确定要删除用户 "${user.name}" 吗？`)) {
     return
   }
@@ -469,11 +405,88 @@ const handleDelete = async (user: User) => {
   try {
     await deleteUser(user.id)
     success('删除成功', `用户 "${user.name}" 已被删除`)
-  } catch (err: any) {
+  }
+ catch (err: any) {
     error('删除失败', err.message)
   }
 }
 </script>
+
+<template>
+  <div class="user-list">
+    <div class="header">
+      <h2>用户列表</h2>
+      <div class="actions">
+        <input
+          v-model="searchQuery"
+          placeholder="搜索用户..."
+          class="search-input"
+        >
+        <button class="btn btn-primary" @click="$emit('create')">
+          新增用户
+        </button>
+        <button :disabled="usersLoading" class="btn btn-secondary" @click="refreshUsers">
+          {{ usersLoading ? '刷新中...' : '刷新' }}
+        </button>
+      </div>
+    </div>
+
+    <div v-if="usersLoading" class="loading">
+      🔄 加载用户列表...
+    </div>
+
+    <div v-else-if="usersError" class="error">
+      ❌ 加载失败: {{ usersError.message }}
+      <button class="btn btn-sm" @click="refreshUsers">
+        重试
+      </button>
+    </div>
+
+    <div v-else class="user-grid">
+      <div
+        v-for="user in filteredUsers"
+        :key="user.id"
+        class="user-card"
+        @click="$emit('select', user)"
+      >
+        <div class="user-info">
+          <h3>{{ user.name }}</h3>
+          <p class="username">
+            @{{ user.username }}
+          </p>
+          <p class="email">
+            📧 {{ user.email }}
+          </p>
+          <p class="phone">
+            📱 {{ user.phone }}
+          </p>
+          <p class="company">
+            🏢 {{ user.company.name }}
+          </p>
+        </div>
+
+        <div class="user-actions">
+          <button
+            class="btn btn-sm btn-outline"
+            @click.stop="$emit('edit', user)"
+          >
+            编辑
+          </button>
+          <button
+            class="btn btn-sm btn-danger"
+            @click.stop="handleDelete(user)"
+          >
+            删除
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="!usersLoading && filteredUsers.length === 0" class="empty">
+      <p>{{ searchQuery ? '没有找到匹配的用户' : '暂无用户数据' }}</p>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .user-list {
@@ -602,85 +615,11 @@ const handleDelete = async (user: User) => {
 ### UserForm.vue
 
 ```vue
-<template>
-  <div class="user-form">
-    <h3>{{ isEdit ? '编辑用户' : '新增用户' }}</h3>
-
-    <form @submit.prevent="handleSubmit">
-      <div class="form-group">
-        <label for="name">姓名 *</label>
-        <input
-          id="name"
-          v-model="form.name"
-          type="text"
-          required
-          :disabled="loading"
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="username">用户名 *</label>
-        <input
-          id="username"
-          v-model="form.username"
-          type="text"
-          required
-          :disabled="loading"
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="email">邮箱 *</label>
-        <input
-          id="email"
-          v-model="form.email"
-          type="email"
-          required
-          :disabled="loading"
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="phone">电话</label>
-        <input
-          id="phone"
-          v-model="form.phone"
-          type="tel"
-          :disabled="loading"
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="website">网站</label>
-        <input
-          id="website"
-          v-model="form.website"
-          type="url"
-          :disabled="loading"
-        />
-      </div>
-
-      <div class="form-actions">
-        <button type="button" @click="$emit('cancel')" :disabled="loading">
-          取消
-        </button>
-        <button type="submit" :disabled="loading" class="btn-primary">
-          {{ loading ? '保存中...' : '保存' }}
-        </button>
-      </div>
-    </form>
-
-    <div v-if="error" class="error">
-      ❌ {{ error.message }}
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
 import { useUsers } from '@/composables/useUsers'
 import { useNotification } from '@/composables/useNotification'
-import type { User, CreateUserRequest, UpdateUserRequest } from '@/api/types'
+import type { CreateUserRequest, UpdateUserRequest, User } from '@/api/types'
 
 interface Props {
   user?: User
@@ -716,7 +655,8 @@ watch(() => props.user, (user) => {
     form.email = user.email
     form.phone = user.phone || ''
     form.website = user.website || ''
-  } else {
+  }
+ else {
     // 重置表单
     Object.assign(form, {
       name: '',
@@ -728,7 +668,7 @@ watch(() => props.user, (user) => {
   }
 }, { immediate: true })
 
-const handleSubmit = async () => {
+async function handleSubmit() {
   loading.value = true
   error.value = null
 
@@ -747,7 +687,8 @@ const handleSubmit = async () => {
       }
       result = await updateUser(updateData)
       showSuccess('更新成功', `用户 "${result.name}" 已更新`)
-    } else {
+    }
+ else {
       // 新增模式
       const createData: CreateUserRequest = {
         name: form.name,
@@ -761,17 +702,93 @@ const handleSubmit = async () => {
     }
 
     emit('success', result)
-  } catch (err: any) {
+  }
+ catch (err: any) {
     error.value = err
     showError(
       isEdit.value ? '更新失败' : '创建失败',
       err.message
     )
-  } finally {
+  }
+ finally {
     loading.value = false
   }
 }
 </script>
+
+<template>
+  <div class="user-form">
+    <h3>{{ isEdit ? '编辑用户' : '新增用户' }}</h3>
+
+    <form @submit.prevent="handleSubmit">
+      <div class="form-group">
+        <label for="name">姓名 *</label>
+        <input
+          id="name"
+          v-model="form.name"
+          type="text"
+          required
+          :disabled="loading"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="username">用户名 *</label>
+        <input
+          id="username"
+          v-model="form.username"
+          type="text"
+          required
+          :disabled="loading"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="email">邮箱 *</label>
+        <input
+          id="email"
+          v-model="form.email"
+          type="email"
+          required
+          :disabled="loading"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="phone">电话</label>
+        <input
+          id="phone"
+          v-model="form.phone"
+          type="tel"
+          :disabled="loading"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="website">网站</label>
+        <input
+          id="website"
+          v-model="form.website"
+          type="url"
+          :disabled="loading"
+        >
+      </div>
+
+      <div class="form-actions">
+        <button type="button" :disabled="loading" @click="$emit('cancel')">
+          取消
+        </button>
+        <button type="submit" :disabled="loading" class="btn-primary">
+          {{ loading ? '保存中...' : '保存' }}
+        </button>
+      </div>
+    </form>
+
+    <div v-if="error" class="error">
+      ❌ {{ error.message }}
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .user-form {
@@ -857,6 +874,44 @@ const handleSubmit = async () => {
 ### UserManagement.vue
 
 ```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import UserList from '@/components/UserList.vue'
+import UserForm from '@/components/UserForm.vue'
+import UserDetail from '@/components/UserDetail.vue'
+import NotificationContainer from '@/components/NotificationContainer.vue'
+import type { User } from '@/api/types'
+
+type ViewType = 'list' | 'form' | 'detail'
+
+const currentView = ref<ViewType>('list')
+const selectedUser = ref<User | undefined>()
+
+function showList() {
+  currentView.value = 'list'
+  selectedUser.value = undefined
+}
+
+function showCreateForm() {
+  currentView.value = 'form'
+  selectedUser.value = undefined
+}
+
+function showEditForm(user: User) {
+  currentView.value = 'form'
+  selectedUser.value = user
+}
+
+function showUserDetail(user: User) {
+  currentView.value = 'detail'
+  selectedUser.value = user
+}
+
+function handleFormSuccess(user: User) {
+  showList()
+}
+</script>
+
 <template>
   <div class="user-management">
     <header class="page-header">
@@ -892,44 +947,6 @@ const handleSubmit = async () => {
     <NotificationContainer />
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref } from 'vue'
-import UserList from '@/components/UserList.vue'
-import UserForm from '@/components/UserForm.vue'
-import UserDetail from '@/components/UserDetail.vue'
-import NotificationContainer from '@/components/NotificationContainer.vue'
-import type { User } from '@/api/types'
-
-type ViewType = 'list' | 'form' | 'detail'
-
-const currentView = ref<ViewType>('list')
-const selectedUser = ref<User | undefined>()
-
-const showList = () => {
-  currentView.value = 'list'
-  selectedUser.value = undefined
-}
-
-const showCreateForm = () => {
-  currentView.value = 'form'
-  selectedUser.value = undefined
-}
-
-const showEditForm = (user: User) => {
-  currentView.value = 'form'
-  selectedUser.value = user
-}
-
-const showUserDetail = (user: User) => {
-  currentView.value = 'detail'
-  selectedUser.value = user
-}
-
-const handleFormSuccess = (user: User) => {
-  showList()
-}
-</script>
 
 <style scoped>
 .user-management {
@@ -971,8 +988,8 @@ npm install @ldesign/http vue@^3.0.0
 
 ```typescript
 import { createApp } from 'vue'
-import { createHttpPlugin } from '@ldesign/http'
 import App from './App.vue'
+import { createHttpPlugin } from '@ldesign/http'
 
 const app = createApp(App)
 
@@ -987,15 +1004,15 @@ app.mount('#app')
 ### 3. 使用组件
 
 ```vue
+<script setup lang="ts">
+import UserManagement from '@/views/UserManagement.vue'
+</script>
+
 <template>
   <div id="app">
     <UserManagement />
   </div>
 </template>
-
-<script setup lang="ts">
-import UserManagement from '@/views/UserManagement.vue'
-</script>
 ```
 
 ## 功能特性

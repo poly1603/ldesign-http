@@ -5,10 +5,10 @@
 
 import type {
   HttpAdapter,
-  RequestConfig,
-  HttpResponse,
   HttpError,
-  HttpMethod
+  HttpMethod,
+  HttpResponse,
+  RequestConfig,
 } from '../types'
 
 export class FetchAdapter implements HttpAdapter {
@@ -21,28 +21,29 @@ export class FetchAdapter implements HttpAdapter {
     try {
       const url = this.buildURL(config)
       const fetchOptions = this.buildFetchOptions(config)
-      
+
       // 创建AbortController用于取消请求
       const abortController = new AbortController()
       const requestId = this.generateRequestId()
       this.abortControllers.set(requestId, abortController)
-      
+
       fetchOptions.signal = abortController.signal
-      
+
       // 设置超时
       if (config.timeout) {
         setTimeout(() => {
           abortController.abort()
         }, config.timeout)
       }
-      
+
       const response = await fetch(url, fetchOptions)
-      
+
       // 清理AbortController
       this.abortControllers.delete(requestId)
-      
+
       return await this.transformResponse<T>(response, config)
-    } catch (error: any) {
+    }
+ catch (error: any) {
       throw this.transformError(error, config)
     }
   }
@@ -57,7 +58,8 @@ export class FetchAdapter implements HttpAdapter {
         controller.abort()
         this.abortControllers.delete(requestId)
       }
-    } else {
+    }
+ else {
       // 取消所有请求
       this.abortControllers.forEach(controller => controller.abort())
       this.abortControllers.clear()
@@ -76,19 +78,19 @@ export class FetchAdapter implements HttpAdapter {
    */
   private buildURL(config: RequestConfig): string {
     let url = config.url
-    
+
     // 添加baseURL
     if (config.baseURL && !this.isAbsoluteURL(url)) {
       url = this.combineURLs(config.baseURL, url)
     }
-    
+
     // 添加查询参数
     if (config.params && Object.keys(config.params).length > 0) {
       const separator = url.includes('?') ? '&' : '?'
       const queryString = this.buildQueryString(config.params)
       url = `${url}${separator}${queryString}`
     }
-    
+
     return url
   }
 
@@ -99,14 +101,14 @@ export class FetchAdapter implements HttpAdapter {
     const options: RequestInit = {
       method: config.method || HttpMethod.GET,
       headers: this.buildHeaders(config),
-      credentials: config.withCredentials ? 'include' : 'same-origin'
+      credentials: config.withCredentials ? 'include' : 'same-origin',
     }
-    
+
     // 添加请求体
     if (config.data && this.shouldHaveBody(config.method)) {
       options.body = this.transformRequestData(config.data, config.headers)
     }
-    
+
     return options
   }
 
@@ -115,7 +117,7 @@ export class FetchAdapter implements HttpAdapter {
    */
   private buildHeaders(config: RequestConfig): Headers {
     const headers = new Headers()
-    
+
     if (config.headers) {
       Object.entries(config.headers).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
@@ -123,7 +125,7 @@ export class FetchAdapter implements HttpAdapter {
         }
       })
     }
-    
+
     return headers
   }
 
@@ -134,18 +136,18 @@ export class FetchAdapter implements HttpAdapter {
     if (data === null || data === undefined) {
       return ''
     }
-    
+
     // 如果是FormData、Blob、ArrayBuffer等，直接返回
     if (
-      data instanceof FormData ||
-      data instanceof Blob ||
-      data instanceof ArrayBuffer ||
-      data instanceof URLSearchParams ||
-      typeof data === 'string'
+      data instanceof FormData
+      || data instanceof Blob
+      || data instanceof ArrayBuffer
+      || data instanceof URLSearchParams
+      || typeof data === 'string'
     ) {
       return data
     }
-    
+
     // 如果是对象，转换为JSON
     if (typeof data === 'object') {
       // 自动设置Content-Type
@@ -154,7 +156,7 @@ export class FetchAdapter implements HttpAdapter {
       }
       return JSON.stringify(data)
     }
-    
+
     return String(data)
   }
 
@@ -163,28 +165,29 @@ export class FetchAdapter implements HttpAdapter {
    */
   private async transformResponse<T>(response: Response, config: RequestConfig): Promise<HttpResponse<T>> {
     const headers = this.transformResponseHeaders(response.headers)
-    
+
     let data: T
     try {
       data = await this.parseResponseData<T>(response, config.responseType)
-    } catch (error) {
+    }
+ catch (error) {
       throw new Error(`Failed to parse response data: ${error}`)
     }
-    
+
     const httpResponse: HttpResponse<T> = {
       data,
       status: response.status,
       statusText: response.statusText,
       headers,
       config,
-      raw: response
+      raw: response,
     }
-    
+
     // 检查响应状态
     if (!response.ok) {
       throw this.createResponseError(httpResponse)
     }
-    
+
     return httpResponse
   }
 
@@ -193,7 +196,7 @@ export class FetchAdapter implements HttpAdapter {
    */
   private async parseResponseData<T>(response: Response, responseType?: string): Promise<T> {
     const clonedResponse = response.clone()
-    
+
     switch (responseType) {
       case 'text':
         return (await clonedResponse.text()) as T
@@ -207,7 +210,8 @@ export class FetchAdapter implements HttpAdapter {
       default:
         try {
           return await clonedResponse.json()
-        } catch {
+        }
+ catch {
           // 如果JSON解析失败，尝试返回文本
           return (await response.text()) as T
         }
@@ -231,21 +235,23 @@ export class FetchAdapter implements HttpAdapter {
   private transformError(error: any, config: RequestConfig): HttpError {
     const httpError = new Error(error.message || 'Request failed') as HttpError
     httpError.config = config
-    
+
     if (error.name === 'AbortError') {
       httpError.code = 'CANCELLED'
       httpError.isCancelError = true
       httpError.message = 'Request was cancelled'
-    } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+    }
+ else if (error.name === 'TypeError' && error.message.includes('fetch')) {
       httpError.code = 'NETWORK_ERROR'
       httpError.isNetworkError = true
       httpError.message = 'Network error occurred'
-    } else if (error.name === 'TimeoutError') {
+    }
+ else if (error.name === 'TimeoutError') {
       httpError.code = 'TIMEOUT'
       httpError.isTimeoutError = true
       httpError.message = 'Request timeout'
     }
-    
+
     return httpError
   }
 
@@ -265,17 +271,18 @@ export class FetchAdapter implements HttpAdapter {
    */
   private buildQueryString(params: Record<string, any>): string {
     const searchParams = new URLSearchParams()
-    
+
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         if (Array.isArray(value)) {
           value.forEach(item => searchParams.append(key, String(item)))
-        } else {
+        }
+ else {
           searchParams.append(key, String(value))
         }
       }
     })
-    
+
     return searchParams.toString()
   }
 
@@ -291,7 +298,7 @@ export class FetchAdapter implements HttpAdapter {
    */
   private combineURLs(baseURL: string, relativeURL: string): string {
     return relativeURL
-      ? baseURL.replace(/\/+$/, '') + '/' + relativeURL.replace(/^\/+/, '')
+      ? `${baseURL.replace(/\/+$/, '')}/${relativeURL.replace(/^\/+/, '')}`
       : baseURL
   }
 
@@ -299,9 +306,9 @@ export class FetchAdapter implements HttpAdapter {
    * 检查请求方法是否应该有请求体
    */
   private shouldHaveBody(method?: HttpMethod): boolean {
-    return method !== HttpMethod.GET && 
-           method !== HttpMethod.HEAD && 
-           method !== HttpMethod.OPTIONS
+    return method !== HttpMethod.GET
+      && method !== HttpMethod.HEAD
+      && method !== HttpMethod.OPTIONS
   }
 
   /**
@@ -323,7 +330,7 @@ export function createFetchAdapter(): FetchAdapter {
  * 检查是否支持Fetch API
  */
 export function isFetchSupported(): boolean {
-  return typeof fetch !== 'undefined' && 
-         typeof AbortController !== 'undefined' && 
-         typeof Headers !== 'undefined'
+  return typeof fetch !== 'undefined'
+    && typeof AbortController !== 'undefined'
+    && typeof Headers !== 'undefined'
 }

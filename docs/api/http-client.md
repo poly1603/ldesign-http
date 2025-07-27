@@ -177,7 +177,7 @@ options<T = any>(url: string, config?: RequestConfig): Promise<HttpResponse<T>>
 ```typescript
 // 获取允许的方法
 const response = await client.options('/users')
-console.log('允许的方法:', response.headers['allow'])
+console.log('允许的方法:', response.headers.allow)
 ```
 
 ### request
@@ -194,7 +194,7 @@ const response = await client.request({
   method: 'GET',
   url: '/users',
   params: { page: 1 },
-  headers: { 'Accept': 'application/json' }
+  headers: { Accept: 'application/json' }
 })
 ```
 
@@ -221,7 +221,7 @@ const interceptorId = client.addRequestInterceptor({
     // 添加认证头
     config.headers = {
       ...config.headers,
-      'Authorization': `Bearer ${getToken()}`
+      Authorization: `Bearer ${getToken()}`
     }
     return config
   },
@@ -363,7 +363,8 @@ setTimeout(() => {
 
 try {
   const response = await requestPromise
-} catch (error: any) {
+}
+ catch (error: any) {
   if (error.isCancelError) {
     console.log('请求被取消:', error.message)
   }
@@ -471,7 +472,8 @@ switchAdapter(adapter: 'fetch' | 'axios' | 'alova'): boolean
 ```typescript
 if (client.switchAdapter('axios')) {
   console.log('已切换到 axios 适配器')
-} else {
+}
+ else {
   console.log('axios 不可用，保持当前适配器')
 }
 ```
@@ -521,7 +523,8 @@ static isCancel(error: any): boolean
 ```typescript
 try {
   await client.get('/api/data')
-} catch (error) {
+}
+ catch (error) {
   if (HttpClient.isCancel(error)) {
     console.log('请求被取消')
   }

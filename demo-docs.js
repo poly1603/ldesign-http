@@ -14,7 +14,7 @@ if (typeof window === 'undefined') {
     getItem: () => null,
     setItem: () => { },
     removeItem: () => { },
-    clear: () => { }
+    clear: () => { },
   }
 }
 
@@ -31,8 +31,8 @@ async function basicUsageDemo() {
     baseURL: 'https://jsonplaceholder.typicode.com',
     timeout: 10000,
     headers: {
-      'Content-Type': 'application/json'
-    }
+      'Content-Type': 'application/json',
+    },
   })
 
   try {
@@ -42,7 +42,7 @@ async function basicUsageDemo() {
     console.log('✅ 获取用户成功:', users.data.length, '个用户')
 
     // 显示前3个用户
-    users.data.slice(0, 3).forEach(user => {
+    users.data.slice(0, 3).forEach((user) => {
       console.log(`  - ${user.name} (${user.email})`)
     })
 
@@ -51,11 +51,11 @@ async function basicUsageDemo() {
     const newUser = await client.post('/users', {
       name: 'John Doe',
       email: 'john@example.com',
-      username: 'johndoe'
+      username: 'johndoe',
     })
     console.log('✅ 创建用户成功:', newUser.data.name)
-
-  } catch (error) {
+  }
+ catch (error) {
     console.error('❌ 请求失败:', error.message)
   }
 }
@@ -68,7 +68,7 @@ async function quickClientDemo() {
     baseURL: 'https://jsonplaceholder.typicode.com',
     timeout: 5000,
     adapter: 'fetch',
-    enableLog: true
+    enableLog: true,
   })
 
   try {
@@ -79,8 +79,8 @@ async function quickClientDemo() {
     posts.data.forEach((post, index) => {
       console.log(`  ${index + 1}. ${post.title.substring(0, 50)}...`)
     })
-
-  } catch (error) {
+  }
+ catch (error) {
     console.error('❌ 快速客户端请求失败:', error.message)
   }
 }
@@ -90,13 +90,14 @@ async function errorHandlingDemo() {
   console.log('\n=== 3. 错误处理示例 ===')
 
   const client = createHttpClient({
-    baseURL: 'https://jsonplaceholder.typicode.com'
+    baseURL: 'https://jsonplaceholder.typicode.com',
   })
 
   try {
     console.log('📤 请求不存在的资源...')
     await client.get('/nonexistent-endpoint')
-  } catch (error) {
+  }
+ catch (error) {
     console.log('✅ 成功捕获错误!')
     console.log('📄 错误信息:')
     console.log(`  - 消息: ${error.message}`)
@@ -111,7 +112,7 @@ async function interceptorDemo() {
   console.log('\n=== 4. 拦截器示例 ===')
 
   const client = createHttpClient({
-    baseURL: 'https://jsonplaceholder.typicode.com'
+    baseURL: 'https://jsonplaceholder.typicode.com',
   })
 
   // 添加请求拦截器
@@ -121,10 +122,10 @@ async function interceptorDemo() {
       config.headers = {
         ...config.headers,
         'X-Timestamp': Date.now().toString(),
-        'X-Demo': 'ldesign-http'
+        'X-Demo': 'ldesign-http',
       }
       return config
-    }
+    },
   })
 
   // 添加响应拦截器
@@ -134,14 +135,15 @@ async function interceptorDemo() {
       console.log(`  响应状态: ${response.status}`)
       console.log(`  响应大小: ${JSON.stringify(response.data).length} 字符`)
       return response
-    }
+    },
   })
 
   try {
     console.log('📤 使用拦截器发送请求...')
     const response = await client.get('/users/1')
     console.log('✅ 拦截器请求成功:', response.data.name)
-  } catch (error) {
+  }
+ catch (error) {
     console.error('❌ 拦截器请求失败:', error.message)
   }
 }
@@ -151,21 +153,21 @@ async function httpMethodsDemo() {
   console.log('\n=== 5. HTTP方法示例 ===')
 
   const client = createHttpClient({
-    baseURL: 'https://jsonplaceholder.typicode.com'
+    baseURL: 'https://jsonplaceholder.typicode.com',
   })
 
   try {
     // GET
     console.log('📤 GET 请求...')
     const getResponse = await client.get('/posts/1')
-    console.log('✅ GET 成功:', getResponse.data.title.substring(0, 30) + '...')
+    console.log('✅ GET 成功:', `${getResponse.data.title.substring(0, 30)}...`)
 
     // POST
     console.log('📤 POST 请求...')
     const postResponse = await client.post('/posts', {
       title: 'Demo Post',
       body: 'This is a demo post from @ldesign/http',
-      userId: 1
+      userId: 1,
     })
     console.log('✅ POST 成功: ID', postResponse.data.id)
 
@@ -175,16 +177,16 @@ async function httpMethodsDemo() {
       id: 1,
       title: 'Updated Demo Post',
       body: 'This post has been updated',
-      userId: 1
+      userId: 1,
     })
-    console.log('✅ PUT 成功:', putResponse.data.title.substring(0, 30) + '...')
+    console.log('✅ PUT 成功:', `${putResponse.data.title.substring(0, 30)}...`)
 
     // DELETE
     console.log('📤 DELETE 请求...')
     await client.delete('/posts/1')
     console.log('✅ DELETE 成功')
-
-  } catch (error) {
+  }
+ catch (error) {
     console.error('❌ HTTP方法请求失败:', error.message)
   }
 }
@@ -194,7 +196,7 @@ async function parametersDemo() {
   console.log('\n=== 6. 参数和数据示例 ===')
 
   const client = createHttpClient({
-    baseURL: 'https://jsonplaceholder.typicode.com'
+    baseURL: 'https://jsonplaceholder.typicode.com',
   })
 
   try {
@@ -203,8 +205,8 @@ async function parametersDemo() {
     const response1 = await client.get('/posts', {
       params: {
         userId: 1,
-        _limit: 3
-      }
+        _limit: 3,
+      },
     })
     console.log('✅ 查询参数请求成功:', response1.data.length, '条结果')
 
@@ -217,12 +219,12 @@ async function parametersDemo() {
       tags: ['demo', 'test', 'ldesign'],
       metadata: {
         source: '@ldesign/http',
-        version: '1.0.0'
-      }
+        version: '1.0.0',
+      },
     })
     console.log('✅ 请求体POST成功: ID', response2.data.id)
-
-  } catch (error) {
+  }
+ catch (error) {
     console.error('❌ 参数请求失败:', error.message)
   }
 }
@@ -248,7 +250,7 @@ async function eventSystemDemo() {
   console.log('\n=== 8. 事件系统示例 ===')
 
   const client = createHttpClient({
-    baseURL: 'https://jsonplaceholder.typicode.com'
+    baseURL: 'https://jsonplaceholder.typicode.com',
   })
 
   // 监听事件
@@ -268,7 +270,8 @@ async function eventSystemDemo() {
     console.log('📤 发送带事件监听的请求...')
     const response = await client.get('/albums/1')
     console.log('✅ 事件请求成功:', response.data.title)
-  } catch (error) {
+  }
+ catch (error) {
     console.error('❌ 事件请求失败:', error.message)
   }
 }
@@ -282,8 +285,8 @@ async function comprehensiveDemo() {
     timeout: 8000,
     headers: {
       'User-Agent': '@ldesign/http-demo',
-      'X-Client-Version': '1.0.0'
-    }
+      'X-Client-Version': '1.0.0',
+    },
   })
 
   // 添加全局拦截器
@@ -291,7 +294,7 @@ async function comprehensiveDemo() {
     onFulfilled: (config) => {
       console.log(`🚀 发起请求: ${config.method?.toUpperCase()} ${config.url}`)
       return config
-    }
+    },
   })
 
   client.addResponseInterceptor({
@@ -302,7 +305,7 @@ async function comprehensiveDemo() {
     onRejected: (error) => {
       console.log(`❌ 请求失败: ${error.message}`)
       return Promise.reject(error)
-    }
+    },
   })
 
   try {
@@ -312,12 +315,12 @@ async function comprehensiveDemo() {
 
     console.log('📤 获取用户文章...')
     const posts = await client.get('/posts', {
-      params: { userId: user.data.id, _limit: 2 }
+      params: { userId: user.data.id, _limit: 2 },
     })
 
     console.log('📤 获取用户相册...')
     const albums = await client.get('/albums', {
-      params: { userId: user.data.id, _limit: 2 }
+      params: { userId: user.data.id, _limit: 2 },
     })
 
     console.log('\n📊 综合结果:')
@@ -325,8 +328,8 @@ async function comprehensiveDemo() {
     console.log(`  公司: ${user.data.company.name}`)
     console.log(`  文章数: ${posts.data.length}`)
     console.log(`  相册数: ${albums.data.length}`)
-
-  } catch (error) {
+  }
+ catch (error) {
     console.error('❌ 综合示例失败:', error.message)
   }
 }
@@ -351,8 +354,8 @@ async function runAllDemos() {
     console.log('  - 文档: http://localhost:5173')
     console.log('  - GitHub: https://github.com/your-org/ldesign')
     console.log('  - npm: https://www.npmjs.com/package/@ldesign/http')
-
-  } catch (error) {
+  }
+ catch (error) {
     console.error('\n💥 演示过程中发生错误:', error.message)
   }
 }
@@ -361,5 +364,14 @@ async function runAllDemos() {
 runAllDemos()
 
 export {
-  adapterInfoDemo, basicUsageDemo, comprehensiveDemo, errorHandlingDemo, eventSystemDemo, httpMethodsDemo, interceptorDemo, parametersDemo, quickClientDemo, runAllDemos
+  adapterInfoDemo,
+basicUsageDemo,
+comprehensiveDemo,
+errorHandlingDemo,
+eventSystemDemo,
+httpMethodsDemo,
+interceptorDemo,
+parametersDemo,
+quickClientDemo,
+runAllDemos,
 }

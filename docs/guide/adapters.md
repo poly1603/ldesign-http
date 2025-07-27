@@ -53,9 +53,9 @@ const client = createFetchHttpClient({
   baseURL: 'https://api.example.com',
   // Fetch 特有选项
   credentials: 'include', // 包含 cookies
-  mode: 'cors',           // CORS 模式
-  cache: 'no-cache',      // 缓存策略
-  redirect: 'follow'      // 重定向策略
+  mode: 'cors', // CORS 模式
+  cache: 'no-cache', // 缓存策略
+  redirect: 'follow' // 重定向策略
 })
 ```
 
@@ -66,7 +66,8 @@ import { isFetchSupported } from '@ldesign/http'
 
 if (isFetchSupported()) {
   console.log('当前环境支持 Fetch API')
-} else {
+}
+ else {
   console.log('需要 Fetch polyfill')
 }
 ```
@@ -112,9 +113,9 @@ const client = createHttpClient({
 const client = createAxiosHttpClient({
   baseURL: 'https://api.example.com',
   // Axios 特有选项
-  maxRedirects: 5,        // 最大重定向次数
+  maxRedirects: 5, // 最大重定向次数
   maxContentLength: 2000, // 最大内容长度
-  validateStatus: (status) => status < 400, // 状态验证
+  validateStatus: status => status < 400, // 状态验证
   transformRequest: [(data) => {
     // 请求数据转换
     return JSON.stringify(data)
@@ -133,7 +134,8 @@ import { isAxiosSupported } from '@ldesign/http'
 
 if (isAxiosSupported()) {
   console.log('Axios 可用')
-} else {
+}
+ else {
   console.log('需要安装 axios')
 }
 ```
@@ -178,9 +180,9 @@ const client = createHttpClient({
 const client = createAlovaHttpClient({
   baseURL: 'https://api.example.com',
   // Alova 特有选项
-  cacheFor: 300000,       // 缓存时间
-  hitSource: 'memory',    // 缓存来源
-  enableCache: true,      // 启用缓存
+  cacheFor: 300000, // 缓存时间
+  hitSource: 'memory', // 缓存来源
+  enableCache: true, // 启用缓存
   enableSilentMode: false // 静默模式
 })
 ```
@@ -192,7 +194,8 @@ import { isAlovaSupported } from '@ldesign/http'
 
 if (isAlovaSupported()) {
   console.log('Alova 可用')
-} else {
+}
+ else {
   console.log('需要安装 alova')
 }
 ```
@@ -212,7 +215,8 @@ console.log(client.getAdapterInfo()) // { name: 'fetch', isCustom: false }
 // 切换到 axios（如果可用）
 if (client.switchAdapter('axios')) {
   console.log('已切换到 axios 适配器')
-} else {
+}
+ else {
   console.log('axios 不可用，保持当前适配器')
 }
 ```
@@ -231,7 +235,7 @@ const client = createHttpClient({
 ### 实现适配器接口
 
 ```typescript
-import type { HttpAdapter, RequestConfig, HttpResponse } from '@ldesign/http'
+import type { HttpAdapter, HttpResponse, RequestConfig } from '@ldesign/http'
 
 class CustomAdapter implements HttpAdapter {
   async request<T>(config: RequestConfig): Promise<HttpResponse<T>> {
@@ -241,7 +245,7 @@ class CustomAdapter implements HttpAdapter {
       headers: config.headers,
       body: config.data ? JSON.stringify(config.data) : undefined
     })
-    
+
     return {
       data: await response.json(),
       status: response.status,
@@ -250,11 +254,11 @@ class CustomAdapter implements HttpAdapter {
       config
     }
   }
-  
+
   cancel(): void {
     // 实现取消逻辑
   }
-  
+
   getName(): string {
     return 'custom'
   }

@@ -27,10 +27,20 @@ const newUser = await client.post('/users', {
 ### Vue3 组合式函数
 
 ```vue
+<script setup>
+import { useGet } from '@ldesign/http'
+
+const { data, loading, error } = useGet('/users')
+</script>
+
 <template>
   <div>
-    <div v-if="loading">加载中...</div>
-    <div v-else-if="error">错误: {{ error.message }}</div>
+    <div v-if="loading">
+      加载中...
+    </div>
+    <div v-else-if="error">
+      错误: {{ error.message }}
+    </div>
     <div v-else>
       <ul>
         <li v-for="user in data" :key="user.id">
@@ -40,12 +50,6 @@ const newUser = await client.post('/users', {
     </div>
   </div>
 </template>
-
-<script setup>
-import { useGet } from '@ldesign/http'
-
-const { data, loading, error } = useGet('/users')
-</script>
 ```
 
 ## 📚 示例分类
@@ -86,7 +90,7 @@ const { data: posts } = useGet('/posts', {
 
 // 条件查询
 const searchQuery = ref('')
-const { data: results } = useGet(() => 
+const { data: results } = useGet(() =>
   searchQuery.value ? `/search?q=${searchQuery.value}` : null
 )
 ```
@@ -115,10 +119,10 @@ const { execute: deleteUser } = useDelete('/users/1', {
 ### 文件操作
 ```typescript
 // 文件上传
-const uploadFile = async (file) => {
+async function uploadFile(file) {
   const formData = new FormData()
   formData.append('file', file)
-  
+
   const response = await client.post('/upload', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
@@ -127,7 +131,7 @@ const uploadFile = async (file) => {
       console.log(`上传进度: ${progress.percentage}%`)
     }
   })
-  
+
   return response.data
 }
 ```
@@ -160,10 +164,10 @@ const client = createQuickClient({
 
 ### 插件配置
 ```typescript
-import { 
-  createCachePlugin, 
-  createRetryPlugin,
-  createLogInterceptor 
+import {
+  createCachePlugin,
+  createLogInterceptor,
+  createRetryPlugin
 } from '@ldesign/http'
 
 const client = createHttpClient({
@@ -208,7 +212,7 @@ app.use(createHttpPlugin({
 ```vue
 <script setup>
 import { ref } from 'vue'
-import { useRequest, useGet, usePost } from '@ldesign/http'
+import { useGet, usePost, useRequest } from '@ldesign/http'
 
 // 通用请求
 const { data, loading, error, execute } = useRequest('/api/data', {
@@ -236,10 +240,10 @@ const { data: user } = useGet(() => `/users/${userId.value}`)
 // api/index.ts
 export const userApi = {
   getUsers: () => client.get('/users'),
-  getUser: (id) => client.get(`/users/${id}`),
-  createUser: (data) => client.post('/users', data),
+  getUser: id => client.get(`/users/${id}`),
+  createUser: data => client.post('/users', data),
   updateUser: (id, data) => client.put(`/users/${id}`, data),
-  deleteUser: (id) => client.delete(`/users/${id}`)
+  deleteUser: id => client.delete(`/users/${id}`)
 }
 ```
 
@@ -251,7 +255,8 @@ client.addResponseInterceptor({
     if (error.response?.status === 401) {
       // 跳转登录
       router.push('/login')
-    } else if (error.response?.status >= 500) {
+    }
+ else if (error.response?.status >= 500) {
       // 显示错误提示
       showErrorMessage('服务器错误')
     }

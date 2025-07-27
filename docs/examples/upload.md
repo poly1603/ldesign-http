@@ -36,7 +36,8 @@ async function uploadFile(file: File) {
 
     console.log('上传成功:', response.data)
     return response.data
-  } catch (error) {
+  }
+ catch (error) {
     console.error('上传失败:', error)
     throw error
   }
@@ -82,70 +83,8 @@ function updateProgressBar(percentage: number) {
 ### Vue 3 上传组件
 
 ```vue
-<template>
-  <div class="upload-container">
-    <div class="upload-area" @drop="handleDrop" @dragover.prevent>
-      <input
-        ref="fileInput"
-        type="file"
-        multiple
-        @change="handleFileSelect"
-        style="display: none"
-      />
-
-      <div v-if="!uploading" class="upload-prompt" @click="selectFiles">
-        <div class="upload-icon">📁</div>
-        <p>点击选择文件或拖拽文件到此处</p>
-        <p class="upload-hint">支持多文件上传</p>
-      </div>
-
-      <div v-else class="upload-progress">
-        <div class="progress-circle">
-          <svg viewBox="0 0 36 36" class="circular-chart">
-            <path
-              class="circle-bg"
-              d="M18 2.0845
-                a 15.9155 15.9155 0 0 1 0 31.831
-                a 15.9155 15.9155 0 0 1 0 -31.831"
-            />
-            <path
-              class="circle"
-              :stroke-dasharray="`${progress.percentage}, 100`"
-              d="M18 2.0845
-                a 15.9155 15.9155 0 0 1 0 31.831
-                a 15.9155 15.9155 0 0 1 0 -31.831"
-            />
-          </svg>
-          <div class="percentage">{{ progress.percentage.toFixed(1) }}%</div>
-        </div>
-
-        <div class="upload-info">
-          <p>正在上传 {{ selectedFiles.length }} 个文件</p>
-          <p>{{ formatBytes(progress.loaded) }} / {{ formatBytes(progress.total) }}</p>
-          <p>速度: {{ formatSpeed(progress.rate) }}</p>
-          <p v-if="progress.estimated > 0">
-            剩余时间: {{ formatTime(progress.estimated) }}
-          </p>
-        </div>
-
-        <button @click="cancelUpload" class="cancel-btn">取消上传</button>
-      </div>
-    </div>
-
-    <div v-if="uploadResults.length > 0" class="upload-results">
-      <h3>上传结果</h3>
-      <div v-for="(result, index) in uploadResults" :key="index" class="result-item">
-        <span class="file-name">{{ result.filename }}</span>
-        <span class="file-status" :class="result.status">
-          {{ result.status === 'success' ? '✅ 成功' : '❌ 失败' }}
-        </span>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useHttp } from '@ldesign/http'
 
 const http = useHttp()
@@ -164,11 +103,11 @@ const progress = reactive({
 
 let cancelToken: any = null
 
-const selectFiles = () => {
+function selectFiles() {
   fileInput.value?.click()
 }
 
-const handleFileSelect = (event: Event) => {
+function handleFileSelect(event: Event) {
   const target = event.target as HTMLInputElement
   if (target.files) {
     selectedFiles.value = Array.from(target.files)
@@ -176,7 +115,7 @@ const handleFileSelect = (event: Event) => {
   }
 }
 
-const handleDrop = (event: DragEvent) => {
+function handleDrop(event: DragEvent) {
   event.preventDefault()
   if (event.dataTransfer?.files) {
     selectedFiles.value = Array.from(event.dataTransfer.files)
@@ -184,8 +123,9 @@ const handleDrop = (event: DragEvent) => {
   }
 }
 
-const uploadFiles = async () => {
-  if (selectedFiles.value.length === 0) return
+async function uploadFiles() {
+  if (selectedFiles.value.length === 0)
+return
 
   uploading.value = true
   uploadResults.value = []
@@ -223,8 +163,8 @@ const uploadFiles = async () => {
       status: 'success',
       size: file.size
     }))
-
-  } catch (error: any) {
+  }
+ catch (error: any) {
     if (!error.isCancelError) {
       console.error('上传失败:', error)
       uploadResults.value = selectedFiles.value.map(file => ({
@@ -233,45 +173,119 @@ const uploadFiles = async () => {
         error: error.message
       }))
     }
-  } finally {
+  }
+ finally {
     uploading.value = false
     cancelToken = null
     selectedFiles.value = []
   }
 }
 
-const cancelUpload = () => {
+function cancelUpload() {
   if (cancelToken) {
     cancelToken.cancel('用户取消上传')
   }
 }
 
-const formatBytes = (bytes: number): string => {
-  if (bytes === 0) return '0 B'
+function formatBytes(bytes: number): string {
+  if (bytes === 0)
+return '0 B'
   const k = 1024
   const sizes = ['B', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  return `${Number.parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`
 }
 
-const formatSpeed = (bytesPerSecond: number): string => {
-  return formatBytes(bytesPerSecond) + '/s'
+function formatSpeed(bytesPerSecond: number): string {
+  return `${formatBytes(bytesPerSecond)}/s`
 }
 
-const formatTime = (milliseconds: number): string => {
+function formatTime(milliseconds: number): string {
   const seconds = Math.floor(milliseconds / 1000)
   const minutes = Math.floor(seconds / 60)
   const hours = Math.floor(minutes / 60)
 
   if (hours > 0) {
     return `${hours}:${(minutes % 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`
-  } else if (minutes > 0) {
+  }
+ else if (minutes > 0) {
     return `${minutes}:${(seconds % 60).toString().padStart(2, '0')}`
-  } else {
+  }
+ else {
     return `${seconds}s`
   }
 }
 </script>
+
+<template>
+  <div class="upload-container">
+    <div class="upload-area" @drop="handleDrop" @dragover.prevent>
+      <input
+        ref="fileInput"
+        type="file"
+        multiple
+        style="display: none"
+        @change="handleFileSelect"
+      >
+
+      <div v-if="!uploading" class="upload-prompt" @click="selectFiles">
+        <div class="upload-icon">
+          📁
+        </div>
+        <p>点击选择文件或拖拽文件到此处</p>
+        <p class="upload-hint">
+          支持多文件上传
+        </p>
+      </div>
+
+      <div v-else class="upload-progress">
+        <div class="progress-circle">
+          <svg viewBox="0 0 36 36" class="circular-chart">
+            <path
+              class="circle-bg"
+              d="M18 2.0845
+                a 15.9155 15.9155 0 0 1 0 31.831
+                a 15.9155 15.9155 0 0 1 0 -31.831"
+            />
+            <path
+              class="circle"
+              :stroke-dasharray="`${progress.percentage}, 100`"
+              d="M18 2.0845
+                a 15.9155 15.9155 0 0 1 0 31.831
+                a 15.9155 15.9155 0 0 1 0 -31.831"
+            />
+          </svg>
+          <div class="percentage">
+            {{ progress.percentage.toFixed(1) }}%
+          </div>
+        </div>
+
+        <div class="upload-info">
+          <p>正在上传 {{ selectedFiles.length }} 个文件</p>
+          <p>{{ formatBytes(progress.loaded) }} / {{ formatBytes(progress.total) }}</p>
+          <p>速度: {{ formatSpeed(progress.rate) }}</p>
+          <p v-if="progress.estimated > 0">
+            剩余时间: {{ formatTime(progress.estimated) }}
+          </p>
+        </div>
+
+        <button class="cancel-btn" @click="cancelUpload">
+          取消上传
+        </button>
+      </div>
+    </div>
+
+    <div v-if="uploadResults.length > 0" class="upload-results">
+      <h3>上传结果</h3>
+      <div v-for="(result, index) in uploadResults" :key="index" class="result-item">
+        <span class="file-name">{{ result.filename }}</span>
+        <span class="file-status" :class="result.status">
+          {{ result.status === 'success' ? '✅ 成功' : '❌ 失败' }}
+        </span>
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .upload-container {
@@ -508,7 +522,7 @@ class ChunkedUploader {
 // 使用示例
 const uploader = new ChunkedUploader()
 
-const handleLargeFileUpload = async (file: File) => {
+async function handleLargeFileUpload(file: File) {
   try {
     const result = await uploader.uploadLargeFile(file, (progress) => {
       console.log(`上传进度: ${progress.percentage.toFixed(1)}%`)
@@ -516,7 +530,8 @@ const handleLargeFileUpload = async (file: File) => {
     })
 
     console.log('大文件上传成功:', result)
-  } catch (error) {
+  }
+ catch (error) {
     console.error('大文件上传失败:', error)
   }
 }
@@ -527,51 +542,6 @@ const handleLargeFileUpload = async (file: File) => {
 ### 图片上传组件
 
 ```vue
-<template>
-  <div class="image-upload">
-    <div class="image-preview" v-if="previewUrl">
-      <img :src="previewUrl" alt="预览图片" />
-      <div class="image-actions">
-        <button @click="removeImage" class="remove-btn">删除</button>
-        <button @click="uploadImage" :disabled="uploading" class="upload-btn">
-          {{ uploading ? '上传中...' : '上传图片' }}
-        </button>
-      </div>
-    </div>
-
-    <div v-else class="image-selector" @click="selectImage">
-      <div class="selector-content">
-        <div class="upload-icon">🖼️</div>
-        <p>点击选择图片</p>
-        <p class="format-hint">支持 JPG, PNG, GIF 格式</p>
-      </div>
-    </div>
-
-    <input
-      ref="fileInput"
-      type="file"
-      accept="image/*"
-      @change="handleImageSelect"
-      style="display: none"
-    />
-
-    <div v-if="uploading" class="upload-progress">
-      <div class="progress-bar">
-        <div
-          class="progress-fill"
-          :style="{ width: `${uploadProgress}%` }"
-        ></div>
-      </div>
-      <span>{{ uploadProgress.toFixed(1) }}%</span>
-    </div>
-
-    <div v-if="uploadResult" class="upload-result">
-      <p>✅ 上传成功!</p>
-      <p>图片URL: <a :href="uploadResult.url" target="_blank">{{ uploadResult.url }}</a></p>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useHttp } from '@ldesign/http'
@@ -584,11 +554,11 @@ const uploading = ref(false)
 const uploadProgress = ref(0)
 const uploadResult = ref<any>(null)
 
-const selectImage = () => {
+function selectImage() {
   fileInput.value?.click()
 }
 
-const handleImageSelect = (event: Event) => {
+function handleImageSelect(event: Event) {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
 
@@ -619,7 +589,7 @@ const handleImageSelect = (event: Event) => {
   }
 }
 
-const removeImage = () => {
+function removeImage() {
   selectedFile.value = null
   previewUrl.value = ''
   uploadResult.value = null
@@ -630,8 +600,9 @@ const removeImage = () => {
   }
 }
 
-const uploadImage = async () => {
-  if (!selectedFile.value) return
+async function uploadImage() {
+  if (!selectedFile.value)
+return
 
   uploading.value = true
   uploadProgress.value = 0
@@ -656,15 +627,67 @@ const uploadImage = async () => {
       filename: selectedFile.value.name,
       size: selectedFile.value.size
     }
-
-  } catch (error) {
+  }
+ catch (error) {
     console.error('图片上传失败:', error)
     alert('图片上传失败，请重试')
-  } finally {
+  }
+ finally {
     uploading.value = false
   }
 }
 </script>
+
+<template>
+  <div class="image-upload">
+    <div v-if="previewUrl" class="image-preview">
+      <img :src="previewUrl" alt="预览图片">
+      <div class="image-actions">
+        <button class="remove-btn" @click="removeImage">
+          删除
+        </button>
+        <button :disabled="uploading" class="upload-btn" @click="uploadImage">
+          {{ uploading ? '上传中...' : '上传图片' }}
+        </button>
+      </div>
+    </div>
+
+    <div v-else class="image-selector" @click="selectImage">
+      <div class="selector-content">
+        <div class="upload-icon">
+          🖼️
+        </div>
+        <p>点击选择图片</p>
+        <p class="format-hint">
+          支持 JPG, PNG, GIF 格式
+        </p>
+      </div>
+    </div>
+
+    <input
+      ref="fileInput"
+      type="file"
+      accept="image/*"
+      style="display: none"
+      @change="handleImageSelect"
+    >
+
+    <div v-if="uploading" class="upload-progress">
+      <div class="progress-bar">
+        <div
+          class="progress-fill"
+          :style="{ width: `${uploadProgress}%` }"
+        />
+      </div>
+      <span>{{ uploadProgress.toFixed(1) }}%</span>
+    </div>
+
+    <div v-if="uploadResult" class="upload-result">
+      <p>✅ 上传成功!</p>
+      <p>图片URL: <a :href="uploadResult.url" target="_blank">{{ uploadResult.url }}</a></p>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .image-upload {
@@ -784,7 +807,7 @@ const uploadImage = async () => {
 ### 1. 文件验证
 
 ```typescript
-function validateFile(file: File): { valid: boolean; error?: string } {
+function validateFile(file: File): { valid: boolean, error?: string } {
   // 检查文件类型
   const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf']
   if (!allowedTypes.includes(file.type)) {
@@ -808,7 +831,8 @@ async function uploadWithRetry(file: File, maxRetries = 3): Promise<any> {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await uploadFile(file)
-    } catch (error) {
+    }
+ catch (error) {
       console.log(`上传失败，第${attempt}次尝试`)
 
       if (attempt === maxRetries) {
@@ -837,7 +861,8 @@ class UploadQueue {
   }
 
   private async processQueue() {
-    if (this.uploading || this.queue.length === 0) return
+    if (this.uploading || this.queue.length === 0)
+return
 
     this.uploading = true
 
@@ -853,9 +878,11 @@ class UploadQueue {
     try {
       await uploadFile(file)
       console.log(`${file.name} 上传成功`)
-    } catch (error) {
+    }
+ catch (error) {
       console.error(`${file.name} 上传失败:`, error)
-    } finally {
+    }
+ finally {
       this.currentUploads--
       this.processQueue()
     }

@@ -100,9 +100,19 @@ app.use(createHttpPlugin({
 
 ```vue
 <!-- 组件中使用 -->
+<script setup>
+import { useGet } from '@ldesign/http'
+
+const { data, loading, error } = useGet('/users')
+</script>
+
 <template>
-  <div v-if="loading">加载中...</div>
-  <div v-else-if="error">错误: {{ error.message }}</div>
+  <div v-if="loading">
+    加载中...
+  </div>
+  <div v-else-if="error">
+    错误: {{ error.message }}
+  </div>
   <div v-else>
     <h1>用户列表</h1>
     <ul>
@@ -112,12 +122,6 @@ app.use(createHttpPlugin({
     </ul>
   </div>
 </template>
-
-<script setup>
-import { useGet } from '@ldesign/http'
-
-const { data, loading, error } = useGet('/users')
-</script>
 ```
 
 ## 为什么选择 @ldesign/http？

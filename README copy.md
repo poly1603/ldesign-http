@@ -101,20 +101,24 @@ export const useCounterStore = createStoreClass(CounterStore)
 ### 3. 在组件中使用
 
 ```vue
-<template>
-  <div>
-    <p>Count: {{ store.count }}</p>
-    <p>Double: {{ store.doubleCount }}</p>
-    <button @click="store.increment()">+</button>
-    <button @click="store.decrement()">-</button>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { useCounterStore } from './stores/counter'
 
 const store = useCounterStore()
 </script>
+
+<template>
+  <div>
+    <p>Count: {{ store.count }}</p>
+    <p>Double: {{ store.doubleCount }}</p>
+    <button @click="store.increment()">
+      +
+    </button>
+    <button @click="store.decrement()">
+      -
+    </button>
+  </div>
+</template>
 ```
 
 ## 📖 核心概念

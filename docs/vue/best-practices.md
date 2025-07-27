@@ -49,7 +49,7 @@ apiClient.addRequestInterceptor({
     if (token) {
       config.headers = {
         ...config.headers,
-        'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`
       }
     }
     return config
@@ -99,7 +99,7 @@ export interface PaginatedResponse<T> {
 
 ```typescript
 // api/modules/user.ts - 用户相关 API
-import type { User, ApiResponse, PaginatedResponse } from '../types'
+import type { ApiResponse, PaginatedResponse, User } from '../types'
 import apiClient from '../index'
 
 export const userApi = {
@@ -140,8 +140,8 @@ export const userApi = {
 
 ```typescript
 // composables/useApi.ts
-import { ref, computed, type Ref } from 'vue'
-import type { HttpResponse, HttpError } from '@ldesign/http'
+import { type Ref, computed, ref } from 'vue'
+import type { HttpError, HttpResponse } from '@ldesign/http'
 
 interface UseApiOptions<T> {
   immediate?: boolean
@@ -185,11 +185,13 @@ export function useApi<T>(
       data.value = result
       onSuccess?.(result)
       return response
-    } catch (err: any) {
+    }
+ catch (err: any) {
       error.value = err
       onError?.(err)
       throw err
-    } finally {
+    }
+ finally {
       loading.value = false
       finished.value = true
     }
@@ -222,7 +224,7 @@ export function useApi<T>(
 
 ```typescript
 // composables/usePagination.ts
-import { ref, computed, reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import type { PaginatedResponse } from '@/api/types'
 
 interface UsePaginationOptions<T> {
@@ -232,7 +234,7 @@ interface UsePaginationOptions<T> {
 }
 
 export function usePagination<T>(
-  apiCall: (params: { page: number; limit: number }) => Promise<any>,
+  apiCall: (params: { page: number, limit: number }) => Promise<any>,
   options: UsePaginationOptions<T> = {}
 ) {
   const { pageSize = 10, immediate = true, transform } = options
@@ -262,7 +264,7 @@ export function usePagination<T>(
       })
 
       const result = response.data as PaginatedResponse<T>
-      
+
       // 数据转换
       let items = result.data
       if (transform) {
@@ -270,7 +272,7 @@ export function usePagination<T>(
       }
 
       data.value = items
-      
+
       // 更新分页信息
       Object.assign(pagination, {
         page: result.pagination.page,
@@ -279,10 +281,12 @@ export function usePagination<T>(
       })
 
       return result
-    } catch (err: any) {
+    }
+ catch (err: any) {
       error.value = err
       throw err
-    } finally {
+    }
+ finally {
       loading.value = false
     }
   }
@@ -332,7 +336,7 @@ export function usePagination<T>(
 
 ```typescript
 // composables/useForm.ts
-import { ref, reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import type { HttpError } from '@ldesign/http'
 
 interface UseFormOptions<T> {
@@ -375,25 +379,28 @@ export function useForm<T, R = any>(
       }
 
       const result = await submitFn(formData)
-      
+
       onSuccess?.(result)
-      
+
       if (resetOnSuccess) {
         reset()
       }
-      
+
       return result
-    } catch (err: any) {
+    }
+ catch (err: any) {
       // 处理验证错误
       if (err.status === 422 && err.response?.data?.errors) {
         fieldErrors.value = err.response.data.errors
-      } else {
+      }
+ else {
         errors.value = [err.message || '提交失败']
       }
-      
+
       onError?.(err)
       throw err
-    } finally {
+    }
+ finally {
       loading.value = false
     }
   }
@@ -432,7 +439,7 @@ export function useForm<T, R = any>(
 ```typescript
 // stores/user.ts
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { userApi } from '@/api/modules/user'
 import type { User } from '@/api/types'
 
@@ -456,10 +463,12 @@ export const useUserStore = defineStore('user', () => {
       const response = await userApi.getUsers(params)
       users.value = response.data.data
       return response.data
-    } catch (err: any) {
+    }
+ catch (err: any) {
       error.value = err.message
       throw err
-    } finally {
+    }
+ finally {
       loading.value = false
     }
   }
@@ -471,18 +480,20 @@ export const useUserStore = defineStore('user', () => {
     try {
       const response = await userApi.getUser(id)
       const user = response.data.data
-      
+
       // 更新用户列表中的用户信息
       const index = users.value.findIndex(u => u.id === id)
       if (index !== -1) {
         users.value[index] = user
       }
-      
+
       return user
-    } catch (err: any) {
+    }
+ catch (err: any) {
       error.value = err.message
       throw err
-    } finally {
+    }
+ finally {
       loading.value = false
     }
   }
@@ -494,13 +505,15 @@ export const useUserStore = defineStore('user', () => {
     try {
       const response = await userApi.createUser(userData)
       const newUser = response.data.data
-      
+
       users.value.push(newUser)
       return newUser
-    } catch (err: any) {
+    }
+ catch (err: any) {
       error.value = err.message
       throw err
-    } finally {
+    }
+ finally {
       loading.value = false
     }
   }
@@ -512,22 +525,24 @@ export const useUserStore = defineStore('user', () => {
     try {
       const response = await userApi.updateUser(id, userData)
       const updatedUser = response.data.data
-      
+
       // 更新本地状态
       const index = users.value.findIndex(u => u.id === id)
       if (index !== -1) {
         users.value[index] = updatedUser
       }
-      
+
       if (currentUser.value?.id === id) {
         currentUser.value = updatedUser
       }
-      
+
       return updatedUser
-    } catch (err: any) {
+    }
+ catch (err: any) {
       error.value = err.message
       throw err
-    } finally {
+    }
+ finally {
       loading.value = false
     }
   }
@@ -538,17 +553,19 @@ export const useUserStore = defineStore('user', () => {
 
     try {
       await userApi.deleteUser(id)
-      
+
       // 从本地状态中移除
       users.value = users.value.filter(u => u.id !== id)
-      
+
       if (currentUser.value?.id === id) {
         currentUser.value = null
       }
-    } catch (err: any) {
+    }
+ catch (err: any) {
       error.value = err.message
       throw err
-    } finally {
+    }
+ finally {
       loading.value = false
     }
   }
@@ -567,11 +584,11 @@ export const useUserStore = defineStore('user', () => {
     currentUser: computed(() => currentUser.value),
     loading: computed(() => loading.value),
     error: computed(() => error.value),
-    
+
     // 计算属性
     userCount,
     isLoggedIn,
-    
+
     // 操作
     fetchUsers,
     fetchUser,
@@ -590,54 +607,12 @@ export const useUserStore = defineStore('user', () => {
 
 ```vue
 <!-- components/UserList.vue -->
-<template>
-  <div class="user-list">
-    <div class="user-list-header">
-      <h2>用户列表</h2>
-      <button @click="refresh" :disabled="loading" class="refresh-btn">
-        {{ loading ? '刷新中...' : '刷新' }}
-      </button>
-    </div>
-
-    <div v-if="loading && !users.length" class="loading">
-      加载中...
-    </div>
-
-    <div v-else-if="error" class="error">
-      <p>{{ error.message }}</p>
-      <button @click="retry">重试</button>
-    </div>
-
-    <div v-else-if="users.length === 0" class="empty">
-      暂无用户数据
-    </div>
-
-    <div v-else class="user-grid">
-      <UserCard
-        v-for="user in users"
-        :key="user.id"
-        :user="user"
-        @edit="handleEdit"
-        @delete="handleDelete"
-      />
-    </div>
-
-    <Pagination
-      v-if="pagination.totalPages > 1"
-      :current-page="pagination.page"
-      :total-pages="pagination.totalPages"
-      :total="pagination.total"
-      @page-change="handlePageChange"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { watch } from 'vue'
-import { usePagination } from '@/composables/usePagination'
-import { userApi } from '@/api/modules/user'
 import UserCard from './UserCard.vue'
 import Pagination from './Pagination.vue'
+import { usePagination } from '@/composables/usePagination'
+import { userApi } from '@/api/modules/user'
 import type { User } from '@/api/types'
 
 interface Props {
@@ -665,7 +640,7 @@ const {
   goToPage,
   refresh
 } = usePagination(
-  (params) => userApi.getUsers({
+  params => userApi.getUsers({
     ...params,
     search: props.searchQuery,
     ...props.filters
@@ -685,22 +660,66 @@ watch(
   { deep: true }
 )
 
-const handlePageChange = (page: number) => {
+function handlePageChange(page: number) {
   goToPage(page)
 }
 
-const handleEdit = (user: User) => {
+function handleEdit(user: User) {
   emit('edit', user)
 }
 
-const handleDelete = (userId: number) => {
+function handleDelete(userId: number) {
   emit('delete', userId)
 }
 
-const retry = () => {
+function retry() {
   fetchData()
 }
 </script>
+
+<template>
+  <div class="user-list">
+    <div class="user-list-header">
+      <h2>用户列表</h2>
+      <button :disabled="loading" class="refresh-btn" @click="refresh">
+        {{ loading ? '刷新中...' : '刷新' }}
+      </button>
+    </div>
+
+    <div v-if="loading && !users.length" class="loading">
+      加载中...
+    </div>
+
+    <div v-else-if="error" class="error">
+      <p>{{ error.message }}</p>
+      <button @click="retry">
+        重试
+      </button>
+    </div>
+
+    <div v-else-if="users.length === 0" class="empty">
+      暂无用户数据
+    </div>
+
+    <div v-else class="user-grid">
+      <UserCard
+        v-for="user in users"
+        :key="user.id"
+        :user="user"
+        @edit="handleEdit"
+        @delete="handleDelete"
+      />
+    </div>
+
+    <Pagination
+      v-if="pagination.totalPages > 1"
+      :current-page="pagination.page"
+      :total-pages="pagination.totalPages"
+      :total="pagination.total"
+      @page-change="handlePageChange"
+    />
+  </div>
+</template>
 
 <style scoped>
 .user-list {
@@ -751,69 +770,6 @@ const retry = () => {
 
 ```vue
 <!-- components/UserForm.vue -->
-<template>
-  <form @submit.prevent="handleSubmit" class="user-form">
-    <div class="form-group">
-      <label for="name">姓名 *</label>
-      <input
-        id="name"
-        v-model="formData.name"
-        type="text"
-        required
-        class="form-input"
-        :class="{ error: fieldErrors.name }"
-      />
-      <span v-if="fieldErrors.name" class="field-error">
-        {{ fieldErrors.name }}
-      </span>
-    </div>
-
-    <div class="form-group">
-      <label for="email">邮箱 *</label>
-      <input
-        id="email"
-        v-model="formData.email"
-        type="email"
-        required
-        class="form-input"
-        :class="{ error: fieldErrors.email }"
-      />
-      <span v-if="fieldErrors.email" class="field-error">
-        {{ fieldErrors.email }}
-      </span>
-    </div>
-
-    <div class="form-group">
-      <label for="avatar">头像URL</label>
-      <input
-        id="avatar"
-        v-model="formData.avatar"
-        type="url"
-        class="form-input"
-        :class="{ error: fieldErrors.avatar }"
-      />
-      <span v-if="fieldErrors.avatar" class="field-error">
-        {{ fieldErrors.avatar }}
-      </span>
-    </div>
-
-    <div v-if="errors.length > 0" class="form-errors">
-      <ul>
-        <li v-for="error in errors" :key="error">{{ error }}</li>
-      </ul>
-    </div>
-
-    <div class="form-actions">
-      <button type="button" @click="reset" :disabled="loading">
-        重置
-      </button>
-      <button type="submit" :disabled="loading" class="primary">
-        {{ loading ? '提交中...' : (isEdit ? '更新' : '创建') }}
-      </button>
-    </div>
-  </form>
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useForm } from '@/composables/useForm'
@@ -845,11 +801,12 @@ const initialData = computed(() => ({
 }))
 
 // 提交函数
-const submitFn = async (data: any) => {
+async function submitFn(data: any) {
   if (isEdit.value && props.user) {
     const response = await userApi.updateUser(props.user.id, data)
     return response.data.data
-  } else {
+  }
+ else {
     const response = await userApi.createUser(data)
     return response.data.data
   }
@@ -869,29 +826,96 @@ const {
   },
   validate: (data) => {
     const errors: string[] = []
-    
+
     if (!data.name.trim()) {
       errors.push('姓名不能为空')
     }
-    
+
     if (!data.email.trim()) {
       errors.push('邮箱不能为空')
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+    }
+ else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
       errors.push('邮箱格式不正确')
     }
-    
+
     return errors.length > 0 ? errors : null
   }
 })
 
-const handleSubmit = async () => {
+async function handleSubmit() {
   try {
     await submit()
-  } catch (error) {
+  }
+ catch (error) {
     // 错误已在 useForm 中处理
   }
 }
 </script>
+
+<template>
+  <form class="user-form" @submit.prevent="handleSubmit">
+    <div class="form-group">
+      <label for="name">姓名 *</label>
+      <input
+        id="name"
+        v-model="formData.name"
+        type="text"
+        required
+        class="form-input"
+        :class="{ error: fieldErrors.name }"
+      >
+      <span v-if="fieldErrors.name" class="field-error">
+        {{ fieldErrors.name }}
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label for="email">邮箱 *</label>
+      <input
+        id="email"
+        v-model="formData.email"
+        type="email"
+        required
+        class="form-input"
+        :class="{ error: fieldErrors.email }"
+      >
+      <span v-if="fieldErrors.email" class="field-error">
+        {{ fieldErrors.email }}
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label for="avatar">头像URL</label>
+      <input
+        id="avatar"
+        v-model="formData.avatar"
+        type="url"
+        class="form-input"
+        :class="{ error: fieldErrors.avatar }"
+      >
+      <span v-if="fieldErrors.avatar" class="field-error">
+        {{ fieldErrors.avatar }}
+      </span>
+    </div>
+
+    <div v-if="errors.length > 0" class="form-errors">
+      <ul>
+        <li v-for="error in errors" :key="error">
+          {{ error }}
+        </li>
+      </ul>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" :disabled="loading" @click="reset">
+        重置
+      </button>
+      <button type="submit" :disabled="loading" class="primary">
+        {{ loading ? '提交中...' : (isEdit ? '更新' : '创建') }}
+      </button>
+    </div>
+  </form>
+</template>
 
 <style scoped>
 .user-form {
@@ -1007,7 +1031,7 @@ export function useRequestDeduplication() {
 
 ```typescript
 // composables/useSmartCache.ts
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 
 interface CacheItem<T> {
   data: T
@@ -1053,20 +1077,22 @@ export function useSmartCache<T>(
 
     try {
       const result = await fetcher()
-      
+
       // 更新缓存
       cache.set(key, {
         data: result,
         timestamp: Date.now(),
         ttl
       })
-      
+
       data.value = result
       return result
-    } catch (err: any) {
+    }
+ catch (err: any) {
       error.value = err
       throw err
-    } finally {
+    }
+ finally {
       loading.value = false
     }
   }
@@ -1092,22 +1118,8 @@ export function useSmartCache<T>(
 
 ```vue
 <!-- components/VirtualUserList.vue -->
-<template>
-  <div class="virtual-list" ref="containerRef">
-    <div class="virtual-list-phantom" :style="{ height: totalHeight + 'px' }"></div>
-    <div class="virtual-list-content" :style="{ transform: `translateY(${offsetY}px)` }">
-      <UserCard
-        v-for="item in visibleItems"
-        :key="item.id"
-        :user="item"
-        :style="{ height: itemHeight + 'px' }"
-      />
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type { User } from '@/api/types'
 
 interface Props {
@@ -1126,24 +1138,24 @@ const scrollTop = ref(0)
 
 const totalHeight = computed(() => props.users.length * props.itemHeight)
 
-const startIndex = computed(() => 
+const startIndex = computed(() =>
   Math.floor(scrollTop.value / props.itemHeight)
 )
 
-const endIndex = computed(() => 
+const endIndex = computed(() =>
   Math.min(
     startIndex.value + Math.ceil(props.containerHeight / props.itemHeight) + 1,
     props.users.length
   )
 )
 
-const visibleItems = computed(() => 
+const visibleItems = computed(() =>
   props.users.slice(startIndex.value, endIndex.value)
 )
 
 const offsetY = computed(() => startIndex.value * props.itemHeight)
 
-const handleScroll = (event: Event) => {
+function handleScroll(event: Event) {
   scrollTop.value = (event.target as HTMLElement).scrollTop
 }
 
@@ -1155,6 +1167,20 @@ onUnmounted(() => {
   containerRef.value?.removeEventListener('scroll', handleScroll)
 })
 </script>
+
+<template>
+  <div ref="containerRef" class="virtual-list">
+    <div class="virtual-list-phantom" :style="{ height: `${totalHeight}px` }" />
+    <div class="virtual-list-content" :style="{ transform: `translateY(${offsetY}px)` }">
+      <UserCard
+        v-for="item in visibleItems"
+        :key="item.id"
+        :user="item"
+        :style="{ height: `${itemHeight}px` }"
+      />
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .virtual-list {
@@ -1186,7 +1212,7 @@ onUnmounted(() => {
 
 ```typescript
 // tests/composables/useApi.test.ts
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useApi } from '@/composables/useApi'
 
 // Mock API 调用
@@ -1225,7 +1251,8 @@ describe('useApi', () => {
 
     try {
       await execute()
-    } catch (err) {
+    }
+ catch (err) {
       expect(err).toBe(mockError)
     }
 
@@ -1240,7 +1267,7 @@ describe('useApi', () => {
 
 ```typescript
 // tests/components/UserList.test.ts
-import { describe, it, expect, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import UserList from '@/components/UserList.vue'
 import { userApi } from '@/api/modules/user'

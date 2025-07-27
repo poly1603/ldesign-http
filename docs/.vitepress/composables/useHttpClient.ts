@@ -1,4 +1,4 @@
-import { ref, reactive } from 'vue'
+import { reactive, ref } from 'vue'
 
 // 模拟 HTTP 客户端
 interface HttpResponse<T = any> {
@@ -57,22 +57,22 @@ const globalStats = reactive({
   successRequests: 0,
   errorRequests: 0,
   cacheHits: 0,
-  retryAttempts: 0
+  retryAttempts: 0,
 })
 
 // 简单的缓存实现
-const cache = new Map<string, { data: any; timestamp: number; ttl: number }>()
+const cache = new Map<string, { data: any, timestamp: number, ttl: number }>()
 
 // 模拟网络状态监听
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
     networkStatus.value = 'online'
   })
-  
+
   window.addEventListener('offline', () => {
     networkStatus.value = 'offline'
   })
-  
+
   networkStatus.value = navigator.onLine ? 'online' : 'offline'
 }
 
@@ -108,7 +108,7 @@ export function useHttpClient() {
     cache.set(cacheKey, {
       data,
       timestamp: Date.now(),
-      ttl
+      ttl,
     })
   }
 
@@ -138,7 +138,7 @@ export function useHttpClient() {
     const fetchOptions: RequestInit = {
       method: config.method.toUpperCase(),
       headers: {},
-      signal: AbortSignal.timeout(config.timeout || 10000)
+      signal: AbortSignal.timeout(config.timeout || 10000),
     }
 
     // 添加请求头
@@ -154,9 +154,11 @@ export function useHttpClient() {
     if (config.data && ['POST', 'PUT', 'PATCH'].includes(config.method.toUpperCase())) {
       if (config.data instanceof FormData) {
         fetchOptions.body = config.data
-      } else if (typeof config.data === 'string') {
+      }
+ else if (typeof config.data === 'string') {
         fetchOptions.body = config.data
-      } else {
+      }
+ else {
         fetchOptions.body = JSON.stringify(config.data)
         if (!(fetchOptions.headers as Record<string, string>)['Content-Type']) {
           (fetchOptions.headers as Record<string, string>)['Content-Type'] = 'application/json'
@@ -166,18 +168,21 @@ export function useHttpClient() {
 
     try {
       const response = await fetch(fullUrl, fetchOptions)
-      
+
       // 解析响应数据
       let responseData: any
       const contentType = response.headers.get('content-type')
-      
+
       if (contentType && contentType.includes('application/json')) {
         responseData = await response.json()
-      } else if (config.responseType === 'blob') {
+      }
+ else if (config.responseType === 'blob') {
         responseData = await response.blob()
-      } else if (config.responseType === 'arraybuffer') {
+      }
+ else if (config.responseType === 'arraybuffer') {
         responseData = await response.arrayBuffer()
-      } else {
+      }
+ else {
         responseData = await response.text()
       }
 
@@ -187,7 +192,7 @@ export function useHttpClient() {
         status: response.status,
         statusText: response.statusText,
         headers: Object.fromEntries(response.headers.entries()),
-        config
+        config,
       }
 
       // 检查响应状态
@@ -196,20 +201,21 @@ export function useHttpClient() {
           `HTTP ${response.status}: ${response.statusText}`,
           response.status,
           false,
-          httpResponse
+          httpResponse,
         )
       }
 
       return httpResponse
-    } catch (error: any) {
+    }
+ catch (error: any) {
       if (error.name === 'AbortError' || error.name === 'TimeoutError') {
         throw createError('请求超时', 0, false, undefined, true)
       }
-      
+
       if (error instanceof TypeError && error.message.includes('fetch')) {
         throw createError('网络连接失败', 0, true)
       }
-      
+
       throw error
     }
   }
@@ -220,7 +226,7 @@ export function useHttpClient() {
     status?: number,
     isNetworkError = false,
     response?: HttpResponse,
-    isTimeoutError = false
+    isTimeoutError = false,
   ): HttpError => {
     const error = new Error(message) as HttpError
     error.status = status
@@ -234,28 +240,29 @@ export function useHttpClient() {
   const retryRequest = async (
     config: RequestConfig,
     options: RequestOptions,
-    attempt = 1
+    attempt = 1,
   ): Promise<HttpResponse> => {
     try {
       return await simulateRequest(config)
-    } catch (error: any) {
+    }
+ catch (error: any) {
       const maxRetries = options.retryCount || 3
       const shouldRetry = attempt < maxRetries && (
-        error.isNetworkError ||
-        error.isTimeoutError ||
-        (error.status && error.status >= 500)
+        error.isNetworkError
+        || error.isTimeoutError
+        || (error.status && error.status >= 500)
       )
 
       if (shouldRetry) {
         globalStats.retryAttempts++
-        
+
         // 指数退避延迟
-        const delay = (options.retryDelay || 1000) * Math.pow(2, attempt - 1)
+        const delay = (options.retryDelay || 1000) * 2 ** (attempt - 1)
         await new Promise(resolve => setTimeout(resolve, delay))
-        
+
         return retryRequest(config, options, attempt + 1)
       }
-      
+
       throw error
     }
   }
@@ -263,11 +270,11 @@ export function useHttpClient() {
   // 发送HTTP请求
   const sendHttpRequest = async (
     config: RequestConfig,
-    options: RequestOptions = {}
+    options: RequestOptions = {},
   ): Promise<HttpResponse> => {
     const requestId = generateRequestId()
     const cacheKey = generateCacheKey(config)
-    
+
     // 创建请求状态
     const requestState: RequestState = {
       id: requestId,
@@ -275,9 +282,9 @@ export function useHttpClient() {
       status: 'pending',
       startTime: Date.now(),
       retryCount: 0,
-      cacheHit: false
+      cacheHit: false,
     }
-    
+
     requestStates.set(requestId, requestState)
     activeRequests.value.add(requestId)
     loading.value = true
@@ -302,7 +309,8 @@ export function useHttpClient() {
       let response: HttpResponse
       if (options.enableRetry) {
         response = await retryRequest(config, options)
-      } else {
+      }
+ else {
         response = await simulateRequest(config)
       }
 
@@ -318,15 +326,17 @@ export function useHttpClient() {
       }
 
       return response
-    } catch (error: any) {
+    }
+ catch (error: any) {
       // 更新请求状态
       requestState.status = 'error'
       requestState.error = error
       requestState.endTime = Date.now()
       globalStats.errorRequests++
-      
+
       throw error
-    } finally {
+    }
+ finally {
       activeRequests.value.delete(requestId)
       if (activeRequests.value.size === 0) {
         loading.value = false
@@ -336,7 +346,7 @@ export function useHttpClient() {
 
   // 取消所有请求
   const cancelAllRequests = () => {
-    activeRequests.value.forEach(requestId => {
+    activeRequests.value.forEach((requestId) => {
       const state = requestStates.get(requestId)
       if (state && state.status === 'pending') {
         state.status = 'cancelled'
@@ -353,7 +363,7 @@ export function useHttpClient() {
       ...globalStats,
       activeRequests: activeRequests.value.size,
       networkStatus: networkStatus.value,
-      cacheSize: cache.size
+      cacheSize: cache.size,
     }
   }
 
@@ -375,28 +385,28 @@ export function useHttpClient() {
 
   // 模拟客户端对象
   const client = {
-    get: (url: string, config?: Partial<RequestConfig>) => 
+    get: (url: string, config?: Partial<RequestConfig>) =>
       sendHttpRequest({ method: 'GET', url, ...config }),
-    
-    post: (url: string, data?: any, config?: Partial<RequestConfig>) => 
+
+    post: (url: string, data?: any, config?: Partial<RequestConfig>) =>
       sendHttpRequest({ method: 'POST', url, data, ...config }),
-    
-    put: (url: string, data?: any, config?: Partial<RequestConfig>) => 
+
+    put: (url: string, data?: any, config?: Partial<RequestConfig>) =>
       sendHttpRequest({ method: 'PUT', url, data, ...config }),
-    
-    delete: (url: string, config?: Partial<RequestConfig>) => 
+
+    delete: (url: string, config?: Partial<RequestConfig>) =>
       sendHttpRequest({ method: 'DELETE', url, ...config }),
-    
-    patch: (url: string, data?: any, config?: Partial<RequestConfig>) => 
+
+    patch: (url: string, data?: any, config?: Partial<RequestConfig>) =>
       sendHttpRequest({ method: 'PATCH', url, data, ...config }),
-    
-    head: (url: string, config?: Partial<RequestConfig>) => 
+
+    head: (url: string, config?: Partial<RequestConfig>) =>
       sendHttpRequest({ method: 'HEAD', url, ...config }),
-    
-    options: (url: string, config?: Partial<RequestConfig>) => 
+
+    options: (url: string, config?: Partial<RequestConfig>) =>
       sendHttpRequest({ method: 'OPTIONS', url, ...config }),
 
-    request: (config: RequestConfig) => sendHttpRequest(config)
+    request: (config: RequestConfig) => sendHttpRequest(config),
   }
 
   return {
@@ -409,6 +419,6 @@ export function useHttpClient() {
     getRequestStats,
     getRequestHistory,
     clearCache,
-    clearRequestHistory
+    clearRequestHistory,
   }
 }

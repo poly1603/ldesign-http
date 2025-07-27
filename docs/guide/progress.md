@@ -14,11 +14,11 @@
 
 ```typescript
 interface ProgressEvent {
-  loaded: number      // 已传输字节数
-  total: number       // 总字节数
-  percentage: number  // 进度百分比 (0-100)
-  rate: number        // 传输速率 (字节/秒)
-  estimated: number   // 预计剩余时间 (毫秒)
+  loaded: number // 已传输字节数
+  total: number // 总字节数
+  percentage: number // 进度百分比 (0-100)
+  rate: number // 传输速率 (字节/秒)
+  estimated: number // 预计剩余时间 (毫秒)
 }
 ```
 
@@ -27,10 +27,10 @@ interface ProgressEvent {
 ### 基础文件上传
 
 ```typescript
-const uploadFile = async (file: File) => {
+async function uploadFile(file: File) {
   const formData = new FormData()
   formData.append('file', file)
-  
+
   try {
     const response = await client.post('/upload', formData, {
       headers: {
@@ -43,10 +43,11 @@ const uploadFile = async (file: File) => {
         console.log(`预计剩余: ${(progress.estimated / 1000).toFixed(1)} 秒`)
       }
     })
-    
+
     console.log('上传完成:', response.data)
     return response.data
-  } catch (error) {
+  }
+ catch (error) {
     console.error('上传失败:', error)
     throw error
   }
@@ -64,11 +65,11 @@ if (file) {
 ### 多文件上传
 
 ```typescript
-const uploadMultipleFiles = async (files: FileList) => {
+async function uploadMultipleFiles(files: FileList) {
   const uploads = Array.from(files).map((file, index) => {
     const formData = new FormData()
     formData.append('file', file)
-    
+
     return client.post('/upload', formData, {
       onUploadProgress: (progress) => {
         console.log(`文件 ${index + 1} 上传进度: ${progress.percentage}%`)
@@ -76,12 +77,13 @@ const uploadMultipleFiles = async (files: FileList) => {
       }
     })
   })
-  
+
   try {
     const responses = await Promise.all(uploads)
     console.log('所有文件上传完成:', responses.map(r => r.data))
     return responses.map(r => r.data)
-  } catch (error) {
+  }
+ catch (error) {
     console.error('批量上传失败:', error)
     throw error
   }
@@ -100,20 +102,20 @@ function updateProgressBar(fileIndex: number, percentage: number) {
 ```typescript
 class ChunkedUploader {
   private chunkSize = 1024 * 1024 // 1MB chunks
-  
+
   async uploadFile(file: File, onProgress?: (progress: ProgressEvent) => void): Promise<any> {
     const totalChunks = Math.ceil(file.size / this.chunkSize)
     let uploadedBytes = 0
-    
+
     for (let i = 0; i < totalChunks; i++) {
       const start = i * this.chunkSize
       const end = Math.min(start + this.chunkSize, file.size)
       const chunk = file.slice(start, end)
-      
+
       await this.uploadChunk(chunk, i, totalChunks, file.name)
-      
+
       uploadedBytes += chunk.size
-      
+
       // 报告进度
       if (onProgress) {
         onProgress({
@@ -125,15 +127,15 @@ class ChunkedUploader {
         })
       }
     }
-    
+
     // 完成上传
     return this.completeUpload(file.name, totalChunks)
   }
-  
+
   private async uploadChunk(
-    chunk: Blob, 
-    index: number, 
-    total: number, 
+    chunk: Blob,
+    index: number,
+    total: number,
     filename: string
   ): Promise<void> {
     const formData = new FormData()
@@ -141,10 +143,10 @@ class ChunkedUploader {
     formData.append('index', index.toString())
     formData.append('total', total.toString())
     formData.append('filename', filename)
-    
+
     await client.post('/upload/chunk', formData)
   }
-  
+
   private async completeUpload(filename: string, totalChunks: number): Promise<any> {
     const response = await client.post('/upload/complete', {
       filename,
@@ -166,7 +168,7 @@ await uploader.uploadFile(file, (progress) => {
 ### 基础文件下载
 
 ```typescript
-const downloadFile = async (url: string, filename: string) => {
+async function downloadFile(url: string, filename: string) {
   try {
     const response = await client.get(url, {
       responseType: 'blob',
@@ -176,7 +178,7 @@ const downloadFile = async (url: string, filename: string) => {
         updateDownloadProgress(progress.percentage)
       }
     })
-    
+
     // 创建下载链接
     const blob = new Blob([response.data])
     const downloadUrl = window.URL.createObjectURL(blob)
@@ -187,9 +189,10 @@ const downloadFile = async (url: string, filename: string) => {
     link.click()
     document.body.removeChild(link)
     window.URL.revokeObjectURL(downloadUrl)
-    
+
     console.log('下载完成')
-  } catch (error) {
+  }
+ catch (error) {
     console.error('下载失败:', error)
     throw error
   }
@@ -210,28 +213,29 @@ await downloadFile('/files/large-file.zip', 'large-file.zip')
 ### 流式下载
 
 ```typescript
-const streamDownload = async (url: string, onProgress?: (progress: ProgressEvent) => void) => {
+async function streamDownload(url: string, onProgress?: (progress: ProgressEvent) => void) {
   const response = await fetch(url)
-  
+
   if (!response.body) {
     throw new Error('Response body is null')
   }
-  
+
   const contentLength = response.headers.get('Content-Length')
-  const total = contentLength ? parseInt(contentLength, 10) : 0
+  const total = contentLength ? Number.parseInt(contentLength, 10) : 0
   let loaded = 0
-  
+
   const reader = response.body.getReader()
   const chunks: Uint8Array[] = []
-  
+
   while (true) {
     const { done, value } = await reader.read()
-    
-    if (done) break
-    
+
+    if (done)
+break
+
     chunks.push(value)
     loaded += value.length
-    
+
     if (onProgress && total > 0) {
       onProgress({
         loaded,
@@ -242,7 +246,7 @@ const streamDownload = async (url: string, onProgress?: (progress: ProgressEvent
       })
     }
   }
-  
+
   // 合并所有块
   const allChunks = new Uint8Array(loaded)
   let position = 0
@@ -250,7 +254,7 @@ const streamDownload = async (url: string, onProgress?: (progress: ProgressEvent
     allChunks.set(chunk, position)
     position += chunk.length
   }
-  
+
   return allChunks
 }
 ```
@@ -260,21 +264,73 @@ const streamDownload = async (url: string, onProgress?: (progress: ProgressEvent
 ### 上传组件
 
 ```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useUpload } from '@/composables/useUpload'
+
+const fileInput = ref<HTMLInputElement>()
+const {
+  uploading,
+  progress,
+  uploadResult,
+  uploadFile,
+  cancelUpload
+} = useUpload()
+
+function handleFileSelect(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+
+  if (file) {
+    uploadFile(file)
+  }
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0)
+return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return `${Number.parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`
+}
+
+function formatSpeed(bytesPerSecond: number): string {
+  return `${formatBytes(bytesPerSecond)}/s`
+}
+
+function formatTime(milliseconds: number): string {
+  const seconds = Math.floor(milliseconds / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+
+  if (hours > 0) {
+    return `${hours}:${(minutes % 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`
+  }
+ else if (minutes > 0) {
+    return `${minutes}:${(seconds % 60).toString().padStart(2, '0')}`
+  }
+ else {
+    return `${seconds}s`
+  }
+}
+</script>
+
 <template>
   <div class="upload-component">
-    <input 
+    <input
       ref="fileInput"
-      type="file" 
-      @change="handleFileSelect"
+      type="file"
       :disabled="uploading"
-    />
-    
+      @change="handleFileSelect"
+    >
+
     <div v-if="uploading" class="progress-container">
       <div class="progress-bar">
-        <div 
-          class="progress-fill" 
+        <div
+          class="progress-fill"
           :style="{ width: `${progress.percentage}%` }"
-        ></div>
+        />
       </div>
       <div class="progress-info">
         <span>{{ progress.percentage.toFixed(1) }}%</span>
@@ -282,63 +338,16 @@ const streamDownload = async (url: string, onProgress?: (progress: ProgressEvent
         <span>{{ formatSpeed(progress.rate) }}</span>
         <span>剩余: {{ formatTime(progress.estimated) }}</span>
       </div>
-      <button @click="cancelUpload">取消上传</button>
+      <button @click="cancelUpload">
+        取消上传
+      </button>
     </div>
-    
+
     <div v-if="uploadResult" class="upload-result">
       上传成功: {{ uploadResult.filename }}
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref } from 'vue'
-import { useUpload } from '@/composables/useUpload'
-
-const fileInput = ref<HTMLInputElement>()
-const { 
-  uploading, 
-  progress, 
-  uploadResult, 
-  uploadFile, 
-  cancelUpload 
-} = useUpload()
-
-const handleFileSelect = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
-  
-  if (file) {
-    uploadFile(file)
-  }
-}
-
-const formatBytes = (bytes: number): string => {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-}
-
-const formatSpeed = (bytesPerSecond: number): string => {
-  return formatBytes(bytesPerSecond) + '/s'
-}
-
-const formatTime = (milliseconds: number): string => {
-  const seconds = Math.floor(milliseconds / 1000)
-  const minutes = Math.floor(seconds / 60)
-  const hours = Math.floor(minutes / 60)
-  
-  if (hours > 0) {
-    return `${hours}:${(minutes % 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`
-  } else if (minutes > 0) {
-    return `${minutes}:${(seconds % 60).toString().padStart(2, '0')}`
-  } else {
-    return `${seconds}s`
-  }
-}
-</script>
 
 <style scoped>
 .upload-component {
@@ -387,7 +396,7 @@ const formatTime = (milliseconds: number): string => {
 
 ```typescript
 // composables/useUpload.ts
-import { ref, reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useHttp } from '@ldesign/http'
 
 export function useUpload() {
@@ -401,13 +410,13 @@ export function useUpload() {
     rate: 0,
     estimated: 0
   })
-  
+
   let cancelToken: any = null
-  
+
   const uploadFile = async (file: File) => {
     uploading.value = true
     uploadResult.value = null
-    
+
     // 重置进度
     Object.assign(progress, {
       loaded: 0,
@@ -416,12 +425,12 @@ export function useUpload() {
       rate: 0,
       estimated: 0
     })
-    
+
     const formData = new FormData()
     formData.append('file', file)
-    
+
     cancelToken = http.createCancelToken()
-    
+
     try {
       const response = await http.post('/upload', formData, {
         headers: {
@@ -432,25 +441,27 @@ export function useUpload() {
           Object.assign(progress, progressEvent)
         }
       })
-      
+
       uploadResult.value = response.data
-    } catch (error: any) {
+    }
+ catch (error: any) {
       if (!error.isCancelError) {
         console.error('上传失败:', error)
         throw error
       }
-    } finally {
+    }
+ finally {
       uploading.value = false
       cancelToken = null
     }
   }
-  
+
   const cancelUpload = () => {
     if (cancelToken) {
       cancelToken.cancel('用户取消上传')
     }
   }
-  
+
   return {
     uploading,
     progress,
@@ -466,32 +477,6 @@ export function useUpload() {
 ### 圆形进度条
 
 ```vue
-<template>
-  <div class="circular-progress">
-    <svg :width="size" :height="size" class="progress-ring">
-      <circle
-        class="progress-ring-background"
-        :stroke-width="strokeWidth"
-        :r="normalizedRadius"
-        :cx="size / 2"
-        :cy="size / 2"
-      />
-      <circle
-        class="progress-ring-progress"
-        :stroke-width="strokeWidth"
-        :stroke-dasharray="circumference + ' ' + circumference"
-        :stroke-dashoffset="strokeDashoffset"
-        :r="normalizedRadius"
-        :cx="size / 2"
-        :cy="size / 2"
-      />
-    </svg>
-    <div class="progress-text">
-      {{ percentage.toFixed(1) }}%
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue'
 
@@ -506,18 +491,44 @@ const props = withDefaults(defineProps<Props>(), {
   strokeWidth: 8
 })
 
-const normalizedRadius = computed(() => 
+const normalizedRadius = computed(() =>
   (props.size - props.strokeWidth * 2) / 2
 )
 
-const circumference = computed(() => 
+const circumference = computed(() =>
   normalizedRadius.value * 2 * Math.PI
 )
 
-const strokeDashoffset = computed(() => 
+const strokeDashoffset = computed(() =>
   circumference.value - (props.percentage / 100) * circumference.value
 )
 </script>
+
+<template>
+  <div class="circular-progress">
+    <svg :width="size" :height="size" class="progress-ring">
+      <circle
+        class="progress-ring-background"
+        :stroke-width="strokeWidth"
+        :r="normalizedRadius"
+        :cx="size / 2"
+        :cy="size / 2"
+      />
+      <circle
+        class="progress-ring-progress"
+        :stroke-width="strokeWidth"
+        :stroke-dasharray="`${circumference} ${circumference}`"
+        :stroke-dashoffset="strokeDashoffset"
+        :r="normalizedRadius"
+        :cx="size / 2"
+        :cy="size / 2"
+      />
+    </svg>
+    <div class="progress-text">
+      {{ percentage.toFixed(1) }}%
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .circular-progress {
@@ -561,34 +572,34 @@ const strokeDashoffset = computed(() =>
 describe('进度监控', () => {
   it('应该报告上传进度', async () => {
     const progressEvents: ProgressEvent[] = []
-    
+
     const mockFile = new File(['test content'], 'test.txt', {
       type: 'text/plain'
     })
-    
+
     const formData = new FormData()
     formData.append('file', mockFile)
-    
+
     await client.post('/upload', formData, {
       onUploadProgress: (progress) => {
         progressEvents.push(progress)
       }
     })
-    
+
     expect(progressEvents.length).toBeGreaterThan(0)
     expect(progressEvents[progressEvents.length - 1].percentage).toBe(100)
   })
-  
+
   it('应该报告下载进度', async () => {
     const progressEvents: ProgressEvent[] = []
-    
+
     await client.get('/download/large-file', {
       responseType: 'blob',
       onDownloadProgress: (progress) => {
         progressEvents.push(progress)
       }
     })
-    
+
     expect(progressEvents.length).toBeGreaterThan(0)
     expect(progressEvents[0].total).toBeGreaterThan(0)
   })
@@ -601,16 +612,16 @@ describe('进度监控', () => {
 
 ```typescript
 // ✅ 提供详细的进度信息
-const onProgress = (progress: ProgressEvent) => {
+function onProgress(progress: ProgressEvent) {
   // 显示百分比
   updatePercentage(progress.percentage)
-  
+
   // 显示传输速度
   updateSpeed(progress.rate)
-  
+
   // 显示预计剩余时间
   updateETA(progress.estimated)
-  
+
   // 显示已传输/总大小
   updateSize(progress.loaded, progress.total)
 }
@@ -625,19 +636,21 @@ const debouncedUpdateProgress = debounce((progress: ProgressEvent) => {
 
 ```typescript
 // ✅ 处理进度监控中的错误
-const uploadWithProgress = async (file: File) => {
+async function uploadWithProgress(file: File) {
   try {
     await client.post('/upload', formData, {
       onUploadProgress: (progress) => {
         try {
           updateProgress(progress)
-        } catch (error) {
+        }
+ catch (error) {
           console.error('更新进度UI失败:', error)
           // 不影响上传继续进行
         }
       }
     })
-  } catch (error) {
+  }
+ catch (error) {
     // 重置进度显示
     resetProgress()
     throw error
@@ -652,7 +665,7 @@ const uploadWithProgress = async (file: File) => {
 let lastUpdateTime = 0
 const MIN_UPDATE_INTERVAL = 100 // 100ms
 
-const onProgress = (progress: ProgressEvent) => {
+function onProgress(progress: ProgressEvent) {
   const now = Date.now()
   if (now - lastUpdateTime >= MIN_UPDATE_INTERVAL) {
     updateProgressBar(progress.percentage)

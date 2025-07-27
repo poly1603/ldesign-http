@@ -84,10 +84,10 @@ interface CacheConfig {
     storage?: CacheStorage;
 }
 interface CacheStorage {
-    get(key: string): Promise<any> | any;
-    set(key: string, value: any, ttl?: number): Promise<void> | void;
-    delete(key: string): Promise<void> | void;
-    clear(): Promise<void> | void;
+    get: (key: string) => Promise<any> | any;
+    set: (key: string, value: any, ttl?: number) => Promise<void> | void;
+    delete: (key: string) => Promise<void> | void;
+    clear: () => Promise<void> | void;
 }
 interface RetryConfig {
     /** 重试次数 */
@@ -116,11 +116,11 @@ interface HttpClientConfig extends RequestConfig {
 }
 interface HttpAdapter {
     /** 发送请求 */
-    request<T = any>(config: RequestConfig): Promise<HttpResponse<T>>;
+    request: <T = any>(config: RequestConfig) => Promise<HttpResponse<T>>;
     /** 取消请求 */
-    cancel?(requestId?: string): void;
+    cancel?: (requestId?: string) => void;
     /** 获取适配器名称 */
-    getName(): string;
+    getName: () => string;
 }
 interface CancelToken {
     /** 取消原因 */
@@ -128,7 +128,7 @@ interface CancelToken {
     /** 是否已取消 */
     isCancelled: boolean;
     /** 取消方法 */
-    cancel(reason?: string): void;
+    cancel: (reason?: string) => void;
     /** 取消Promise */
     promise: Promise<string>;
 }
@@ -159,59 +159,59 @@ interface ExtendedRequestConfig extends RequestConfig {
 }
 interface HttpClientInstance {
     /** 发送GET请求 */
-    get<T = any>(url: string, config?: RequestConfig): Promise<HttpResponse<T>>;
+    get: <T = any>(url: string, config?: RequestConfig) => Promise<HttpResponse<T>>;
     /** 发送POST请求 */
-    post<T = any>(url: string, data?: any, config?: RequestConfig): Promise<HttpResponse<T>>;
+    post: <T = any>(url: string, data?: any, config?: RequestConfig) => Promise<HttpResponse<T>>;
     /** 发送PUT请求 */
-    put<T = any>(url: string, data?: any, config?: RequestConfig): Promise<HttpResponse<T>>;
+    put: <T = any>(url: string, data?: any, config?: RequestConfig) => Promise<HttpResponse<T>>;
     /** 发送DELETE请求 */
-    delete<T = any>(url: string, config?: RequestConfig): Promise<HttpResponse<T>>;
+    delete: <T = any>(url: string, config?: RequestConfig) => Promise<HttpResponse<T>>;
     /** 发送PATCH请求 */
-    patch<T = any>(url: string, data?: any, config?: RequestConfig): Promise<HttpResponse<T>>;
+    patch: <T = any>(url: string, data?: any, config?: RequestConfig) => Promise<HttpResponse<T>>;
     /** 发送HEAD请求 */
-    head<T = any>(url: string, config?: RequestConfig): Promise<HttpResponse<T>>;
+    head: <T = any>(url: string, config?: RequestConfig) => Promise<HttpResponse<T>>;
     /** 发送OPTIONS请求 */
-    options<T = any>(url: string, config?: RequestConfig): Promise<HttpResponse<T>>;
+    options: <T = any>(url: string, config?: RequestConfig) => Promise<HttpResponse<T>>;
     /** 通用请求方法 */
-    request<T = any>(config: ExtendedRequestConfig): Promise<HttpResponse<T>>;
+    request: <T = any>(config: ExtendedRequestConfig) => Promise<HttpResponse<T>>;
     /** 添加请求拦截器 */
-    addRequestInterceptor(interceptor: RequestInterceptor): number;
+    addRequestInterceptor: (interceptor: RequestInterceptor) => number;
     /** 添加响应拦截器 */
-    addResponseInterceptor(interceptor: ResponseInterceptor): number;
+    addResponseInterceptor: (interceptor: ResponseInterceptor) => number;
     /** 移除拦截器 */
-    removeInterceptor(type: 'request' | 'response', id: number): void;
+    removeInterceptor: (type: 'request' | 'response', id: number) => void;
     /** 创建取消令牌 */
-    createCancelToken(): CancelToken;
+    createCancelToken: () => CancelToken;
     /** 获取默认配置 */
-    getDefaults(): HttpClientConfig;
+    getDefaults: () => HttpClientConfig;
     /** 设置默认配置 */
-    setDefaults(config: Partial<HttpClientConfig>): void;
+    setDefaults: (config: Partial<HttpClientConfig>) => void;
 }
 interface AdapterFactory {
     /** 创建适配器实例 */
-    create(config: HttpClientConfig): HttpAdapter;
+    create: (config: HttpClientConfig) => HttpAdapter;
     /** 获取适配器名称 */
-    getName(): string;
+    getName: () => string;
     /** 检查是否支持当前环境 */
-    isSupported(): boolean;
+    isSupported: () => boolean;
 }
 interface HttpPlugin {
     /** 插件名称 */
     name: string;
     /** 插件安装方法 */
-    install(client: HttpClientInstance, options?: any): void;
+    install: (client: HttpClientInstance, options?: any) => void;
     /** 插件卸载方法 */
-    uninstall?(client: HttpClientInstance): void;
+    uninstall?: (client: HttpClientInstance) => void;
 }
 interface Middleware {
     /** 中间件名称 */
     name: string;
     /** 请求处理 */
-    request?(config: RequestConfig): RequestConfig | Promise<RequestConfig>;
+    request?: (config: RequestConfig) => RequestConfig | Promise<RequestConfig>;
     /** 响应处理 */
-    response?<T = any>(response: HttpResponse<T>): HttpResponse<T> | Promise<HttpResponse<T>>;
+    response?: <T = any>(response: HttpResponse<T>) => HttpResponse<T> | Promise<HttpResponse<T>>;
     /** 错误处理 */
-    error?(error: HttpError): HttpError | Promise<HttpError>;
+    error?: (error: HttpError) => HttpError | Promise<HttpError>;
 }
 type EventType = 'request' | 'response' | 'error' | 'retry' | 'cache-hit' | 'cache-miss';
 interface EventListener {
@@ -219,13 +219,13 @@ interface EventListener {
 }
 interface EventEmitter {
     /** 添加事件监听器 */
-    on(event: EventType, listener: EventListener): void;
+    on: (event: EventType, listener: EventListener) => void;
     /** 移除事件监听器 */
-    off(event: EventType, listener: EventListener): void;
+    off: (event: EventType, listener: EventListener) => void;
     /** 触发事件 */
-    emit(event: EventType, data: any): void;
+    emit: (event: EventType, data: any) => void;
     /** 添加一次性事件监听器 */
-    once(event: EventType, listener: EventListener): void;
+    once: (event: EventType, listener: EventListener) => void;
 }
 
 export { HttpMethod };

@@ -16,7 +16,7 @@ import type {
   Middleware,
   RequestConfig,
   RequestInterceptor,
-  ResponseInterceptor
+  ResponseInterceptor,
 } from '../types'
 import { HttpMethod } from '../types'
 
@@ -42,26 +42,26 @@ export abstract class BaseHttpClient implements HttpClientInstance {
     return {
       timeout: 10000,
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       responseType: 'json',
       withCredentials: false,
       adapter: 'fetch',
       interceptors: {
         request: [],
-        response: []
+        response: [],
       },
       cache: {
         enabled: false,
-        ttl: 5 * 60 * 1000 // 5分钟
+        ttl: 5 * 60 * 1000, // 5分钟
       },
       retry: {
         retries: 0,
         retryDelay: 1000,
         retryCondition: (error: HttpError) => {
           return !error.response || (error.response.status >= 500 && error.response.status < 600)
-        }
-      }
+        },
+      },
     }
   }
 
@@ -75,7 +75,7 @@ export abstract class BaseHttpClient implements HttpClientInstance {
    */
   protected initializeEventListeners(): void {
     const eventTypes: EventType[] = ['request', 'response', 'error', 'retry', 'cache-hit', 'cache-miss']
-    eventTypes.forEach(type => {
+    eventTypes.forEach((type) => {
       this.eventListeners.set(type, [])
     })
   }
@@ -89,26 +89,26 @@ export abstract class BaseHttpClient implements HttpClientInstance {
       ...userConfig,
       headers: {
         ...defaultConfig.headers,
-        ...userConfig.headers
+        ...userConfig.headers,
       },
       interceptors: {
         request: [
           ...(defaultConfig.interceptors?.request || []),
-          ...(userConfig.interceptors?.request || [])
+          ...(userConfig.interceptors?.request || []),
         ],
         response: [
           ...(defaultConfig.interceptors?.response || []),
-          ...(userConfig.interceptors?.response || [])
-        ]
+          ...(userConfig.interceptors?.response || []),
+        ],
       },
       cache: {
         ...defaultConfig.cache,
-        ...userConfig.cache
+        ...userConfig.cache,
       },
       retry: {
         ...defaultConfig.retry,
-        ...userConfig.retry
-      }
+        ...userConfig.retry,
+      },
     }
   }
 
@@ -119,7 +119,7 @@ export abstract class BaseHttpClient implements HttpClientInstance {
     return this.request<T>({
       ...config,
       url,
-      method: HttpMethod.GET
+      method: HttpMethod.GET,
     })
   }
 
@@ -131,7 +131,7 @@ export abstract class BaseHttpClient implements HttpClientInstance {
       ...config,
       url,
       method: HttpMethod.POST,
-      data
+      data,
     })
   }
 
@@ -143,7 +143,7 @@ export abstract class BaseHttpClient implements HttpClientInstance {
       ...config,
       url,
       method: HttpMethod.PUT,
-      data
+      data,
     })
   }
 
@@ -154,7 +154,7 @@ export abstract class BaseHttpClient implements HttpClientInstance {
     return this.request<T>({
       ...config,
       url,
-      method: HttpMethod.DELETE
+      method: HttpMethod.DELETE,
     })
   }
 
@@ -166,7 +166,7 @@ export abstract class BaseHttpClient implements HttpClientInstance {
       ...config,
       url,
       method: HttpMethod.PATCH,
-      data
+      data,
     })
   }
 
@@ -177,7 +177,7 @@ export abstract class BaseHttpClient implements HttpClientInstance {
     return this.request<T>({
       ...config,
       url,
-      method: HttpMethod.HEAD
+      method: HttpMethod.HEAD,
     })
   }
 
@@ -188,7 +188,7 @@ export abstract class BaseHttpClient implements HttpClientInstance {
     return this.request<T>({
       ...config,
       url,
-      method: HttpMethod.OPTIONS
+      method: HttpMethod.OPTIONS,
     })
   }
 
@@ -228,7 +228,8 @@ export abstract class BaseHttpClient implements HttpClientInstance {
       this.emit('response', { config: processedConfig, response: processedResponse })
 
       return processedResponse
-    } catch (error) {
+    }
+ catch (error) {
       const httpError = this.createHttpError(error, config)
       this.emit('error', { config, error: httpError })
       throw httpError
@@ -244,8 +245,8 @@ export abstract class BaseHttpClient implements HttpClientInstance {
       ...config,
       headers: {
         ...this.config.headers,
-        ...config.headers
-      }
+        ...config.headers,
+      },
     }
   }
 
@@ -259,10 +260,12 @@ export abstract class BaseHttpClient implements HttpClientInstance {
       if (interceptor.onFulfilled) {
         try {
           processedConfig = await interceptor.onFulfilled(processedConfig)
-        } catch (error) {
+        }
+ catch (error) {
           if (interceptor.onRejected) {
             processedConfig = await interceptor.onRejected(error)
-          } else {
+          }
+ else {
             throw error
           }
         }
@@ -282,10 +285,12 @@ export abstract class BaseHttpClient implements HttpClientInstance {
       if (interceptor.onFulfilled) {
         try {
           processedResponse = await interceptor.onFulfilled(processedResponse)
-        } catch (error) {
+        }
+ catch (error) {
           if (interceptor.onRejected) {
             throw await interceptor.onRejected(error)
-          } else {
+          }
+ else {
             throw error
           }
         }
@@ -301,19 +306,20 @@ export abstract class BaseHttpClient implements HttpClientInstance {
   protected async requestWithRetry<T>(config: ExtendedRequestConfig, retryCount = 0): Promise<HttpResponse<T>> {
     try {
       return await this.adapter.request<T>(config)
-    } catch (error) {
+    }
+ catch (error) {
       const httpError = this.createHttpError(error, config)
       const retryConfig = this.config.retry!
 
       if (
-        retryCount < retryConfig.retries! &&
-        retryConfig.retryCondition!(httpError)
+        retryCount < retryConfig.retries!
+        && retryConfig.retryCondition!(httpError)
       ) {
         this.emit('retry', { config, error: httpError, retryCount: retryCount + 1 })
 
         const delay = retryConfig.retryDelayCalculator
           ? retryConfig.retryDelayCalculator(retryCount + 1, httpError)
-          : retryConfig.retryDelay! * Math.pow(2, retryCount)
+          : retryConfig.retryDelay! * 2 ** retryCount
 
         await this.delay(delay)
         return this.requestWithRetry<T>(config, retryCount + 1)
@@ -348,7 +354,7 @@ export abstract class BaseHttpClient implements HttpClientInstance {
    */
   protected async cacheResponse<T>(config: ExtendedRequestConfig, response: HttpResponse<T>): Promise<void> {
     if (!this.config.cache?.enabled || config.method !== HttpMethod.GET) {
-      return
+
     }
 
     // 这里应该实现具体的缓存逻辑
@@ -393,7 +399,8 @@ export abstract class BaseHttpClient implements HttpClientInstance {
   removeInterceptor(type: 'request' | 'response', id: number): void {
     if (type === 'request') {
       this.requestInterceptors.delete(id)
-    } else {
+    }
+ else {
       this.responseInterceptors.delete(id)
     }
   }
@@ -420,7 +427,7 @@ export abstract class BaseHttpClient implements HttpClientInstance {
       reason,
       isCancelled,
       cancel: cancel!,
-      promise
+      promise,
     }
   }
 
@@ -463,10 +470,11 @@ export abstract class BaseHttpClient implements HttpClientInstance {
    */
   emit(event: EventType, data: any): void {
     const listeners = this.eventListeners.get(event) || []
-    listeners.forEach(listener => {
+    listeners.forEach((listener) => {
       try {
         listener(data)
-      } catch (error) {
+      }
+ catch (error) {
         console.error(`Error in event listener for ${event}:`, error)
       }
     })

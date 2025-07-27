@@ -22,7 +22,8 @@ async function getAllUsers() {
     const response = await api.get('/users')
     console.log('用户列表:', response.data)
     return response.data
-  } catch (error) {
+  }
+ catch (error) {
     console.error('获取用户失败:', error.message)
   }
 }
@@ -33,7 +34,8 @@ async function getUser(id: number) {
     const response = await api.get(`/users/${id}`)
     console.log('用户信息:', response.data)
     return response.data
-  } catch (error) {
+  }
+ catch (error) {
     console.error('获取用户失败:', error.message)
   }
 }
@@ -44,7 +46,8 @@ async function createUser(userData: any) {
     const response = await api.post('/users', userData)
     console.log('创建成功:', response.data)
     return response.data
-  } catch (error) {
+  }
+ catch (error) {
     console.error('创建用户失败:', error.message)
   }
 }
@@ -55,7 +58,8 @@ async function updateUser(id: number, userData: any) {
     const response = await api.put(`/users/${id}`, userData)
     console.log('更新成功:', response.data)
     return response.data
-  } catch (error) {
+  }
+ catch (error) {
     console.error('更新用户失败:', error.message)
   }
 }
@@ -65,7 +69,8 @@ async function deleteUser(id: number) {
   try {
     await api.delete(`/users/${id}`)
     console.log('删除成功')
-  } catch (error) {
+  }
+ catch (error) {
     console.error('删除用户失败:', error.message)
   }
 }
@@ -74,81 +79,6 @@ async function deleteUser(id: number) {
 ### Vue3组合式函数示例
 
 ```vue
-<template>
-  <div class="api-demo">
-    <h1>JSONPlaceholder API 演示</h1>
-
-    <!-- 用户列表 -->
-    <section>
-      <h2>用户列表</h2>
-      <div v-if="usersLoading">🔄 加载中...</div>
-      <div v-else-if="usersError" class="error">
-        ❌ {{ usersError.message }}
-        <button @click="refreshUsers">重试</button>
-      </div>
-      <div v-else>
-        <div class="user-grid">
-          <div v-for="user in users" :key="user.id" class="user-card">
-            <h3>{{ user.name }}</h3>
-            <p>📧 {{ user.email }}</p>
-            <p>🏢 {{ user.company.name }}</p>
-            <p>🌐 {{ user.website }}</p>
-            <button @click="selectUser(user.id)">查看详情</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 用户详情 -->
-    <section v-if="selectedUserId">
-      <h2>用户详情</h2>
-      <div v-if="userLoading">🔄 加载用户详情...</div>
-      <div v-else-if="userError" class="error">
-        ❌ {{ userError.message }}
-      </div>
-      <div v-else-if="userDetail" class="user-detail">
-        <h3>{{ userDetail.name }}</h3>
-        <div class="detail-grid">
-          <div>
-            <h4>联系信息</h4>
-            <p>📧 {{ userDetail.email }}</p>
-            <p>📱 {{ userDetail.phone }}</p>
-            <p>🌐 {{ userDetail.website }}</p>
-          </div>
-          <div>
-            <h4>地址</h4>
-            <p>🏠 {{ userDetail.address.street }}, {{ userDetail.address.suite }}</p>
-            <p>🏙️ {{ userDetail.address.city }}</p>
-            <p>📮 {{ userDetail.address.zipcode }}</p>
-          </div>
-          <div>
-            <h4>公司</h4>
-            <p>🏢 {{ userDetail.company.name }}</p>
-            <p>💼 {{ userDetail.company.catchPhrase }}</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 用户文章 -->
-    <section v-if="selectedUserId">
-      <h2>用户文章</h2>
-      <div v-if="postsLoading">🔄 加载文章...</div>
-      <div v-else-if="postsError" class="error">
-        ❌ {{ postsError.message }}
-      </div>
-      <div v-else>
-        <div class="posts-list">
-          <article v-for="post in userPosts" :key="post.id" class="post-card">
-            <h4>{{ post.title }}</h4>
-            <p>{{ post.body }}</p>
-          </article>
-        </div>
-      </div>
-    </section>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useGet } from '@ldesign/http'
@@ -213,10 +143,95 @@ const {
 )
 
 // 选择用户
-const selectUser = (userId: number) => {
+function selectUser(userId: number) {
   selectedUserId.value = userId
 }
 </script>
+
+<template>
+  <div class="api-demo">
+    <h1>JSONPlaceholder API 演示</h1>
+
+    <!-- 用户列表 -->
+    <section>
+      <h2>用户列表</h2>
+      <div v-if="usersLoading">
+        🔄 加载中...
+      </div>
+      <div v-else-if="usersError" class="error">
+        ❌ {{ usersError.message }}
+        <button @click="refreshUsers">
+          重试
+        </button>
+      </div>
+      <div v-else>
+        <div class="user-grid">
+          <div v-for="user in users" :key="user.id" class="user-card">
+            <h3>{{ user.name }}</h3>
+            <p>📧 {{ user.email }}</p>
+            <p>🏢 {{ user.company.name }}</p>
+            <p>🌐 {{ user.website }}</p>
+            <button @click="selectUser(user.id)">
+              查看详情
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 用户详情 -->
+    <section v-if="selectedUserId">
+      <h2>用户详情</h2>
+      <div v-if="userLoading">
+        🔄 加载用户详情...
+      </div>
+      <div v-else-if="userError" class="error">
+        ❌ {{ userError.message }}
+      </div>
+      <div v-else-if="userDetail" class="user-detail">
+        <h3>{{ userDetail.name }}</h3>
+        <div class="detail-grid">
+          <div>
+            <h4>联系信息</h4>
+            <p>📧 {{ userDetail.email }}</p>
+            <p>📱 {{ userDetail.phone }}</p>
+            <p>🌐 {{ userDetail.website }}</p>
+          </div>
+          <div>
+            <h4>地址</h4>
+            <p>🏠 {{ userDetail.address.street }}, {{ userDetail.address.suite }}</p>
+            <p>🏙️ {{ userDetail.address.city }}</p>
+            <p>📮 {{ userDetail.address.zipcode }}</p>
+          </div>
+          <div>
+            <h4>公司</h4>
+            <p>🏢 {{ userDetail.company.name }}</p>
+            <p>💼 {{ userDetail.company.catchPhrase }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 用户文章 -->
+    <section v-if="selectedUserId">
+      <h2>用户文章</h2>
+      <div v-if="postsLoading">
+        🔄 加载文章...
+      </div>
+      <div v-else-if="postsError" class="error">
+        ❌ {{ postsError.message }}
+      </div>
+      <div v-else>
+        <div class="posts-list">
+          <article v-for="post in userPosts" :key="post.id" class="post-card">
+            <h4>{{ post.title }}</h4>
+            <p>{{ post.body }}</p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </div>
+</template>
 
 <style scoped>
 .api-demo {
@@ -339,7 +354,8 @@ async function getGitHubUser(username: string) {
   try {
     const response = await github.get(`/users/${username}`)
     return response.data
-  } catch (error) {
+  }
+ catch (error) {
     console.error('获取GitHub用户失败:', error.message)
   }
 }
@@ -354,7 +370,8 @@ async function getUserRepos(username: string) {
       }
     })
     return response.data
-  } catch (error) {
+  }
+ catch (error) {
     console.error('获取仓库失败:', error.message)
   }
 }
@@ -371,7 +388,8 @@ async function searchRepos(query: string) {
       }
     })
     return response.data.items
-  } catch (error) {
+  }
+ catch (error) {
     console.error('搜索仓库失败:', error.message)
   }
 }
@@ -415,7 +433,8 @@ async function getCurrentWeather(city: string, apiKey: string) {
       }
     })
     return response.data
-  } catch (error) {
+  }
+ catch (error) {
     console.error('获取天气失败:', error.message)
   }
 }
@@ -432,7 +451,8 @@ async function getWeatherForecast(city: string, apiKey: string) {
       }
     })
     return response.data
-  } catch (error) {
+  }
+ catch (error) {
     console.error('获取天气预报失败:', error.message)
   }
 }
@@ -441,6 +461,38 @@ async function getWeatherForecast(city: string, apiKey: string) {
 ```
 
 ```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRequest } from '@ldesign/http'
+
+const cityName = ref('Beijing')
+const apiKey = 'your-openweather-api-key' // 需要注册获取
+
+const {
+  data: weatherData,
+  loading,
+  error,
+  execute: fetchWeather
+} = useRequest(null, {
+  immediate: false
+})
+
+function searchWeather() {
+  if (!cityName.value.trim())
+return
+
+  fetchWeather({
+    url: 'https://api.openweathermap.org/data/2.5/weather',
+    params: {
+      q: cityName.value,
+      appid: apiKey,
+      units: 'metric',
+      lang: 'zh_cn'
+    }
+  })
+}
+</script>
+
 <template>
   <div class="weather-app">
     <h1>🌤️ 天气查询</h1>
@@ -450,8 +502,8 @@ async function getWeatherForecast(city: string, apiKey: string) {
         v-model="cityName"
         placeholder="输入城市名称"
         @keyup.enter="searchWeather"
-      />
-      <button @click="searchWeather" :disabled="loading">
+      >
+      <button :disabled="loading" @click="searchWeather">
         {{ loading ? '查询中...' : '查询天气' }}
       </button>
     </div>
@@ -479,37 +531,6 @@ async function getWeatherForecast(city: string, apiKey: string) {
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref } from 'vue'
-import { useRequest } from '@ldesign/http'
-
-const cityName = ref('Beijing')
-const apiKey = 'your-openweather-api-key' // 需要注册获取
-
-const {
-  data: weatherData,
-  loading,
-  error,
-  execute: fetchWeather
-} = useRequest(null, {
-  immediate: false
-})
-
-const searchWeather = () => {
-  if (!cityName.value.trim()) return
-
-  fetchWeather({
-    url: 'https://api.openweathermap.org/data/2.5/weather',
-    params: {
-      q: cityName.value,
-      appid: apiKey,
-      units: 'metric',
-      lang: 'zh_cn'
-    }
-  })
-}
-</script>
 
 <style scoped>
 .weather-app {
@@ -601,7 +622,8 @@ async function getTopHeadlines(apiKey: string, country = 'cn') {
       }
     })
     return response.data.articles
-  } catch (error) {
+  }
+ catch (error) {
     console.error('获取新闻失败:', error.message)
   }
 }
@@ -618,7 +640,8 @@ async function searchNews(query: string, apiKey: string) {
       }
     })
     return response.data.articles
-  } catch (error) {
+  }
+ catch (error) {
     console.error('搜索新闻失败:', error.message)
   }
 }
@@ -646,7 +669,8 @@ async function generateRandomUsers(count = 10) {
       }
     })
     return response.data.results
-  } catch (error) {
+  }
+ catch (error) {
     console.error('生成随机用户失败:', error.message)
   }
 }
@@ -655,36 +679,6 @@ async function generateRandomUsers(count = 10) {
 ```
 
 ```vue
-<template>
-  <div class="random-users">
-    <h1>👥 随机用户生成器</h1>
-
-    <div class="controls">
-      <label>
-        用户数量:
-        <input v-model.number="userCount" type="number" min="1" max="50" />
-      </label>
-      <button @click="generateUsers" :disabled="loading">
-        {{ loading ? '生成中...' : '生成用户' }}
-      </button>
-    </div>
-
-    <div v-if="error" class="error">
-      ❌ {{ error.message }}
-    </div>
-
-    <div v-if="users" class="users-grid">
-      <div v-for="user in users" :key="user.email" class="user-card">
-        <img :src="user.picture.medium" :alt="user.name.first" />
-        <h3>{{ user.name.first }} {{ user.name.last }}</h3>
-        <p>📧 {{ user.email }}</p>
-        <p>📱 {{ user.phone }}</p>
-        <p>📍 {{ user.location.city }}, {{ user.location.country }}</p>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRequest } from '@ldesign/http'
@@ -703,7 +697,7 @@ const {
   }
 })
 
-const generateUsers = () => {
+function generateUsers() {
   fetchUsers({
     url: 'https://randomuser.me/api',
     params: {
@@ -717,6 +711,36 @@ const generateUsers = () => {
 // 初始加载
 generateUsers()
 </script>
+
+<template>
+  <div class="random-users">
+    <h1>👥 随机用户生成器</h1>
+
+    <div class="controls">
+      <label>
+        用户数量:
+        <input v-model.number="userCount" type="number" min="1" max="50">
+      </label>
+      <button :disabled="loading" @click="generateUsers">
+        {{ loading ? '生成中...' : '生成用户' }}
+      </button>
+    </div>
+
+    <div v-if="error" class="error">
+      ❌ {{ error.message }}
+    </div>
+
+    <div v-if="users" class="users-grid">
+      <div v-for="user in users" :key="user.email" class="user-card">
+        <img :src="user.picture.medium" :alt="user.name.first">
+        <h3>{{ user.name.first }} {{ user.name.last }}</h3>
+        <p>📧 {{ user.email }}</p>
+        <p>📱 {{ user.phone }}</p>
+        <p>📍 {{ user.location.city }}, {{ user.location.country }}</p>
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .random-users {

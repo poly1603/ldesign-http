@@ -2,16 +2,16 @@
  * @ldesign/http 基础使用示例
  */
 
-import { 
-  createHttpClient, 
-  createFetchHttpClient, 
-  createAxiosHttpClient,
+import {
   createAlovaHttpClient,
-  createQuickClient,
+  createAuthInterceptor,
+  createAxiosHttpClient,
   createCachePlugin,
-  createRetryPlugin,
+  createFetchHttpClient,
+  createHttpClient,
   createLogInterceptor,
-  createAuthInterceptor
+  createQuickClient,
+  createRetryPlugin,
 } from '../src'
 
 // 1. 基础使用
@@ -19,7 +19,7 @@ console.log('=== 基础使用 ===')
 
 const basicClient = createHttpClient({
   baseURL: 'https://jsonplaceholder.typicode.com',
-  timeout: 10000
+  timeout: 10000,
 })
 
 // GET 请求
@@ -27,7 +27,8 @@ async function fetchUsers() {
   try {
     const response = await basicClient.get('/users')
     console.log('用户列表:', response.data)
-  } catch (error) {
+  }
+ catch (error) {
     console.error('获取用户失败:', error)
   }
 }
@@ -37,10 +38,11 @@ async function createUser() {
   try {
     const response = await basicClient.post('/users', {
       name: 'John Doe',
-      email: 'john@example.com'
+      email: 'john@example.com',
     })
     console.log('创建用户成功:', response.data)
-  } catch (error) {
+  }
+ catch (error) {
     console.error('创建用户失败:', error)
   }
 }
@@ -50,17 +52,17 @@ console.log('=== 不同适配器使用 ===')
 
 // Fetch 适配器
 const fetchClient = createFetchHttpClient({
-  baseURL: 'https://api.example.com'
+  baseURL: 'https://api.example.com',
 })
 
 // Axios 适配器
 const axiosClient = createAxiosHttpClient({
-  baseURL: 'https://api.example.com'
+  baseURL: 'https://api.example.com',
 })
 
 // Alova 适配器
 const alovaClient = createAlovaHttpClient({
-  baseURL: 'https://api.example.com'
+  baseURL: 'https://api.example.com',
 })
 
 // 3. 快速创建客户端
@@ -73,7 +75,7 @@ const quickClient = createQuickClient({
   enableCache: true,
   enableRetry: true,
   enableLog: true,
-  authToken: () => localStorage.getItem('token') || ''
+  authToken: () => localStorage.getItem('token') || '',
 })
 
 // 4. 手动配置插件
@@ -81,7 +83,7 @@ console.log('=== 手动配置插件 ===')
 
 const advancedClient = createHttpClient({
   baseURL: 'https://api.example.com',
-  timeout: 10000
+  timeout: 10000,
 })
 
 // 添加缓存插件
@@ -95,7 +97,7 @@ cachePlugin.install(advancedClient)
 const retryPlugin = createRetryPlugin({
   retries: 3,
   retryDelay: 1000,
-  strategy: 'exponential'
+  strategy: 'exponential',
 })
 retryPlugin.install(advancedClient)
 
@@ -103,7 +105,7 @@ retryPlugin.install(advancedClient)
 const logInterceptors = createLogInterceptor({
   logRequests: true,
   logResponses: true,
-  logErrors: true
+  logErrors: true,
 })
 advancedClient.addRequestInterceptor(logInterceptors.request)
 advancedClient.addResponseInterceptor(logInterceptors.response)
@@ -111,7 +113,7 @@ advancedClient.addResponseInterceptor(logInterceptors.response)
 // 添加认证拦截器
 const authInterceptor = createAuthInterceptor({
   getToken: () => localStorage.getItem('token') || '',
-  tokenType: 'Bearer'
+  tokenType: 'Bearer',
 })
 advancedClient.addRequestInterceptor(authInterceptor)
 
@@ -122,16 +124,21 @@ async function handleErrors() {
   try {
     const response = await advancedClient.get('/protected-resource')
     console.log('受保护资源:', response.data)
-  } catch (error: any) {
+  }
+ catch (error: any) {
     if (error.isNetworkError) {
       console.error('网络错误:', error.message)
-    } else if (error.isTimeoutError) {
+    }
+ else if (error.isTimeoutError) {
       console.error('请求超时:', error.message)
-    } else if (error.response?.status === 401) {
+    }
+ else if (error.response?.status === 401) {
       console.error('未授权，请重新登录')
-    } else if (error.response?.status >= 500) {
+    }
+ else if (error.response?.status >= 500) {
       console.error('服务器错误:', error.response.status)
-    } else {
+    }
+ else {
       console.error('其他错误:', error.message)
     }
   }
@@ -142,21 +149,23 @@ console.log('=== 请求取消示例 ===')
 
 async function cancelableRequest() {
   const cancelToken = advancedClient.createCancelToken()
-  
+
   // 5秒后取消请求
   setTimeout(() => {
     cancelToken.cancel('用户取消了请求')
   }, 5000)
-  
+
   try {
     const response = await advancedClient.get('/slow-endpoint', {
-      cancelToken
+      cancelToken,
     })
     console.log('慢速请求完成:', response.data)
-  } catch (error: any) {
+  }
+ catch (error: any) {
     if (error.isCancelError) {
       console.log('请求被取消:', error.message)
-    } else {
+    }
+ else {
       console.error('请求失败:', error.message)
     }
   }
@@ -200,15 +209,16 @@ console.log('=== 进度监控示例 ===')
 async function uploadWithProgress(file: File) {
   const formData = new FormData()
   formData.append('file', file)
-  
+
   try {
     const response = await advancedClient.post('/upload', formData, {
       onUploadProgress: (progress) => {
         console.log(`上传进度: ${progress.percentage}%`)
-      }
+      },
     })
     console.log('上传完成:', response.data)
-  } catch (error) {
+  }
+ catch (error) {
     console.error('上传失败:', error)
   }
 }
@@ -219,10 +229,11 @@ async function downloadWithProgress(url: string) {
       responseType: 'blob',
       onDownloadProgress: (progress) => {
         console.log(`下载进度: ${progress.percentage}%`)
-      }
+      },
     })
     console.log('下载完成:', response.data)
-  } catch (error) {
+  }
+ catch (error) {
     console.error('下载失败:', error)
   }
 }
@@ -230,12 +241,12 @@ async function downloadWithProgress(url: string) {
 // 执行示例
 async function runExamples() {
   console.log('开始执行示例...')
-  
+
   await fetchUsers()
   await createUser()
   await handleErrors()
   await cancelableRequest()
-  
+
   console.log('示例执行完成!')
 }
 
@@ -251,5 +262,5 @@ export {
   alovaClient,
   quickClient,
   advancedClient,
-  runExamples
+  runExamples,
 }

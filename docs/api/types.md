@@ -25,12 +25,12 @@ enum HttpMethod {
 响应数据类型。
 
 ```typescript
-type ResponseType = 
-  | 'json' 
-  | 'text' 
-  | 'blob' 
-  | 'arraybuffer' 
-  | 'document' 
+type ResponseType =
+  | 'json'
+  | 'text'
+  | 'blob'
+  | 'arraybuffer'
+  | 'document'
   | 'stream'
 ```
 
@@ -75,32 +75,32 @@ interface ExtendedRequestConfig extends RequestConfig {
   // 取消相关
   cancelToken?: CancelToken
   signal?: AbortSignal
-  
+
   // 进度监控
   onUploadProgress?: (progress: ProgressEvent) => void
   onDownloadProgress?: (progress: ProgressEvent) => void
-  
+
   // 缓存配置
   cache?: {
     enabled?: boolean
     ttl?: number
     key?: string
   }
-  
+
   // 重试配置
   retry?: {
     retries?: number
     retryDelay?: number
     retryCondition?: (error: HttpError) => boolean
   }
-  
+
   // 验证配置
   validateStatus?: (status: number) => boolean
-  
+
   // 转换器
   transformRequest?: Array<(data: any, headers: Record<string, string>) => any>
   transformResponse?: Array<(data: any) => any>
-  
+
   // 适配器特定配置
   adapter?: 'fetch' | 'axios' | 'alova'
   customAdapter?: HttpAdapter
@@ -134,22 +134,22 @@ interface HttpError extends Error {
   name: string
   message: string
   stack?: string
-  
+
   // HTTP 特有属性
   response?: HttpResponse
   request?: RequestConfig
   config?: RequestConfig
-  
+
   // 错误类型标识
   isNetworkError: boolean
   isTimeoutError: boolean
   isCancelError: boolean
   isValidationError: boolean
-  
+
   // 快捷访问
   status?: number
   statusText?: string
-  
+
   // 错误代码
   code?: string
   errno?: number
@@ -201,9 +201,9 @@ interface ResponseInterceptor {
 
 ```typescript
 interface InterceptorManager<T> {
-  use(onFulfilled?: T['onFulfilled'], onRejected?: T['onRejected']): number
-  eject(id: number): void
-  clear(): void
+  use: (onFulfilled?: T['onFulfilled'], onRejected?: T['onRejected']) => number
+  eject: (id: number) => void
+  clear: () => void
 }
 ```
 
@@ -218,10 +218,10 @@ interface CancelToken {
   promise: Promise<Cancel>
   reason?: Cancel
   isCancelled: boolean
-  
-  cancel(message?: string): void
-  onCancel(callback: (reason: Cancel) => void): void
-  throwIfRequested(): void
+
+  cancel: (message?: string) => void
+  onCancel: (callback: (reason: Cancel) => void) => void
+  throwIfRequested: () => void
 }
 ```
 
@@ -243,7 +243,7 @@ interface Cancel {
 ```typescript
 interface CancelTokenSource {
   token: CancelToken
-  cancel(message?: string): void
+  cancel: (message?: string) => void
 }
 ```
 
@@ -255,11 +255,11 @@ interface CancelTokenSource {
 
 ```typescript
 interface ProgressEvent {
-  loaded: number      // 已传输字节数
-  total: number       // 总字节数
-  percentage: number  // 进度百分比 (0-100)
-  rate: number        // 传输速率 (字节/秒)
-  estimated: number   // 预计剩余时间 (毫秒)
+  loaded: number // 已传输字节数
+  total: number // 总字节数
+  percentage: number // 进度百分比 (0-100)
+  rate: number // 传输速率 (字节/秒)
+  estimated: number // 预计剩余时间 (毫秒)
   lengthComputable: boolean // 是否可计算长度
 }
 ```
@@ -272,11 +272,11 @@ HTTP 适配器接口。
 
 ```typescript
 interface HttpAdapter {
-  request<T = any>(config: RequestConfig): Promise<HttpResponse<T>>
-  cancel(): void
-  getName(): string
-  getVersion?(): string
-  isSupported?(): boolean
+  request: <T = any>(config: RequestConfig) => Promise<HttpResponse<T>>
+  cancel: () => void
+  getName: () => string
+  getVersion?: () => string
+  isSupported?: () => boolean
 }
 ```
 
@@ -304,19 +304,19 @@ interface HttpClientConfig extends RequestConfig {
   // 适配器配置
   adapter?: 'fetch' | 'axios' | 'alova'
   customAdapter?: HttpAdapter
-  
+
   // 缓存配置
   cache?: CacheConfig
-  
+
   // 重试配置
   retry?: RetryConfig
-  
+
   // 拦截器配置
   interceptors?: {
     request?: RequestInterceptor[]
     response?: ResponseInterceptor[]
   }
-  
+
   // 默认配置
   defaults?: Partial<RequestConfig>
 }
@@ -329,39 +329,39 @@ HTTP 客户端实例接口。
 ```typescript
 interface HttpClientInstance {
   // HTTP 方法
-  get<T = any>(url: string, config?: RequestConfig): Promise<HttpResponse<T>>
-  post<T = any>(url: string, data?: any, config?: RequestConfig): Promise<HttpResponse<T>>
-  put<T = any>(url: string, data?: any, config?: RequestConfig): Promise<HttpResponse<T>>
-  delete<T = any>(url: string, config?: RequestConfig): Promise<HttpResponse<T>>
-  patch<T = any>(url: string, data?: any, config?: RequestConfig): Promise<HttpResponse<T>>
-  head<T = any>(url: string, config?: RequestConfig): Promise<HttpResponse<T>>
-  options<T = any>(url: string, config?: RequestConfig): Promise<HttpResponse<T>>
-  request<T = any>(config: ExtendedRequestConfig): Promise<HttpResponse<T>>
-  
+  get: <T = any>(url: string, config?: RequestConfig) => Promise<HttpResponse<T>>
+  post: <T = any>(url: string, data?: any, config?: RequestConfig) => Promise<HttpResponse<T>>
+  put: <T = any>(url: string, data?: any, config?: RequestConfig) => Promise<HttpResponse<T>>
+  delete: <T = any>(url: string, config?: RequestConfig) => Promise<HttpResponse<T>>
+  patch: <T = any>(url: string, data?: any, config?: RequestConfig) => Promise<HttpResponse<T>>
+  head: <T = any>(url: string, config?: RequestConfig) => Promise<HttpResponse<T>>
+  options: <T = any>(url: string, config?: RequestConfig) => Promise<HttpResponse<T>>
+  request: <T = any>(config: ExtendedRequestConfig) => Promise<HttpResponse<T>>
+
   // 拦截器管理
-  addRequestInterceptor(interceptor: RequestInterceptor): number
-  addResponseInterceptor(interceptor: ResponseInterceptor): number
-  removeInterceptor(type: 'request' | 'response', id: number): void
-  clearRequestInterceptors(): void
-  clearResponseInterceptors(): void
-  clearAllInterceptors(): void
-  
+  addRequestInterceptor: (interceptor: RequestInterceptor) => number
+  addResponseInterceptor: (interceptor: ResponseInterceptor) => number
+  removeInterceptor: (type: 'request' | 'response', id: number) => void
+  clearRequestInterceptors: () => void
+  clearResponseInterceptors: () => void
+  clearAllInterceptors: () => void
+
   // 配置管理
-  getDefaults(): HttpClientConfig
-  setDefaults(config: Partial<HttpClientConfig>): void
-  
+  getDefaults: () => HttpClientConfig
+  setDefaults: (config: Partial<HttpClientConfig>) => void
+
   // 取消功能
-  createCancelToken(): CancelToken
-  
+  createCancelToken: () => CancelToken
+
   // 事件系统
-  on(event: EventType, listener: EventListener): void
-  off(event: EventType, listener: EventListener): void
-  emit(event: EventType, data: any): void
-  once(event: EventType, listener: EventListener): void
-  
+  on: (event: EventType, listener: EventListener) => void
+  off: (event: EventType, listener: EventListener) => void
+  emit: (event: EventType, data: any) => void
+  once: (event: EventType, listener: EventListener) => void
+
   // 适配器管理
-  getAdapterInfo(): AdapterInfo
-  switchAdapter(adapter: string): boolean
+  getAdapterInfo: () => AdapterInfo
+  switchAdapter: (adapter: string) => boolean
 }
 ```
 
@@ -389,13 +389,13 @@ interface CacheConfig {
 
 ```typescript
 interface CacheStorage {
-  get(key: string): Promise<CacheItem | null>
-  set(key: string, value: CacheItem): Promise<void>
-  delete(key: string): Promise<boolean>
-  clear(): Promise<void>
-  has(key: string): Promise<boolean>
-  keys(): Promise<string[]>
-  size(): Promise<number>
+  get: (key: string) => Promise<CacheItem | null>
+  set: (key: string, value: CacheItem) => Promise<void>
+  delete: (key: string) => Promise<boolean>
+  clear: () => Promise<void>
+  has: (key: string) => Promise<boolean>
+  keys: () => Promise<string[]>
+  size: () => Promise<number>
 }
 ```
 
@@ -449,7 +449,7 @@ interface ExtendedRetryConfig extends RetryConfig {
 事件类型枚举。
 
 ```typescript
-type EventType = 
+type EventType =
   | 'request'
   | 'response'
   | 'error'
@@ -496,15 +496,15 @@ interface UseRequestOptions<T> extends ExtendedRequestConfig {
   immediate?: boolean // 是否立即执行
   initialData?: T // 初始数据
   resetOnExecute?: boolean // 执行时是否重置状态
-  
+
   // 生命周期回调
   onSuccess?: (data: T, response: HttpResponse<T>) => void
   onError?: (error: HttpError) => void
   onFinally?: () => void
-  
+
   // 依赖项
   deps?: Ref<any>[] | (() => any[])
-  
+
   // 防抖和节流
   debounce?: number
   throttle?: number
@@ -522,7 +522,7 @@ interface UseRequestResult<T> {
   error: Ref<HttpError | null>
   finished: Ref<boolean>
   cancelled: Ref<boolean>
-  
+
   execute: (config?: Partial<ExtendedRequestConfig>) => Promise<HttpResponse<T>>
   cancel: (reason?: string) => void
   reset: () => void
@@ -540,8 +540,8 @@ HTTP 插件接口。
 interface HttpPlugin {
   name: string
   version?: string
-  install(client: HttpClientInstance): void
-  uninstall?(client: HttpClientInstance): void
+  install: (client: HttpClientInstance) => void
+  uninstall?: (client: HttpClientInstance) => void
 }
 ```
 

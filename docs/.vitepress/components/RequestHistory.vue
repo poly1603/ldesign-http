@@ -1,225 +1,5 @@
-<template>
-  <div class="request-history">
-    <div class="history-header">
-      <h3>📜 请求历史</h3>
-      <div class="history-actions">
-        <button @click="toggleView" class="view-toggle-btn">
-          {{ isListView ? '📊 卡片视图' : '📋 列表视图' }}
-        </button>
-        <button @click="exportHistory" class="export-btn">
-          📤 导出
-        </button>
-        <button @click="clearHistory" class="clear-btn">
-          🗑️ 清空
-        </button>
-      </div>
-    </div>
-
-    <!-- 过滤和搜索 -->
-    <div class="history-filters">
-      <div class="search-box">
-        <input 
-          v-model="searchQuery"
-          placeholder="搜索 URL、方法或状态..."
-          class="search-input"
-        />
-        <span class="search-icon">🔍</span>
-      </div>
-      
-      <div class="filter-tabs">
-        <button 
-          v-for="filter in filters"
-          :key="filter.key"
-          @click="activeFilter = filter.key"
-          :class="['filter-tab', { active: activeFilter === filter.key }]"
-        >
-          {{ filter.label }}
-          <span v-if="getFilterCount(filter.key)" class="filter-count">
-            {{ getFilterCount(filter.key) }}
-          </span>
-        </button>
-      </div>
-    </div>
-
-    <!-- 历史记录列表 -->
-    <div class="history-content">
-      <div v-if="filteredHistory.length === 0" class="empty-state">
-        <div class="empty-icon">📭</div>
-        <p class="empty-text">
-          {{ searchQuery ? '没有找到匹配的请求' : '暂无请求历史' }}
-        </p>
-      </div>
-
-      <!-- 列表视图 -->
-      <div v-else-if="isListView" class="history-list">
-        <div 
-          v-for="(item, index) in filteredHistory" 
-          :key="index"
-          class="history-item"
-          :class="{ 
-            'error': !item.status,
-            'favorite': favorites.includes(item.id)
-          }"
-          @click="loadRequest(item)"
-        >
-          <div class="item-method">
-            <span class="method-badge" :class="getMethodClass(item.method)">
-              {{ item.method }}
-            </span>
-          </div>
-          
-          <div class="item-url">
-            <div class="url-text" :title="item.url">{{ item.url }}</div>
-            <div class="url-meta">
-              <span class="timestamp">{{ formatTime(item.timestamp) }}</span>
-              <span v-if="item.duration" class="duration">{{ item.duration }}ms</span>
-            </div>
-          </div>
-          
-          <div class="item-status">
-            <span 
-              v-if="item.status"
-              class="status-badge" 
-              :class="getStatusClass(item.status)"
-            >
-              {{ item.status }}
-            </span>
-            <span v-else class="error-badge">Error</span>
-          </div>
-          
-          <div class="item-actions">
-            <button 
-              @click.stop="toggleFavorite(item.id)"
-              class="favorite-btn"
-              :class="{ active: favorites.includes(item.id) }"
-              :title="favorites.includes(item.id) ? '取消收藏' : '收藏'"
-            >
-              {{ favorites.includes(item.id) ? '⭐' : '☆' }}
-            </button>
-            
-            <button 
-              @click.stop="copyRequest(item)"
-              class="copy-btn"
-              title="复制为 cURL"
-            >
-              📋
-            </button>
-            
-            <button 
-              @click.stop="deleteRequest(index)"
-              class="delete-btn"
-              title="删除"
-            >
-              🗑️
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 卡片视图 -->
-      <div v-else class="history-grid">
-        <div 
-          v-for="(item, index) in filteredHistory" 
-          :key="index"
-          class="history-card"
-          :class="{ 
-            'error': !item.status,
-            'favorite': favorites.includes(item.id)
-          }"
-          @click="loadRequest(item)"
-        >
-          <div class="card-header">
-            <div class="card-method">
-              <span class="method-badge" :class="getMethodClass(item.method)">
-                {{ item.method }}
-              </span>
-            </div>
-            
-            <div class="card-actions">
-              <button 
-                @click.stop="toggleFavorite(item.id)"
-                class="favorite-btn"
-                :class="{ active: favorites.includes(item.id) }"
-              >
-                {{ favorites.includes(item.id) ? '⭐' : '☆' }}
-              </button>
-              
-              <button 
-                @click.stop="deleteRequest(index)"
-                class="delete-btn"
-              >
-                🗑️
-              </button>
-            </div>
-          </div>
-          
-          <div class="card-url">
-            <div class="url-text" :title="item.url">{{ item.url }}</div>
-          </div>
-          
-          <div class="card-meta">
-            <div class="meta-row">
-              <span class="meta-label">状态:</span>
-              <span 
-                v-if="item.status"
-                class="status-badge" 
-                :class="getStatusClass(item.status)"
-              >
-                {{ item.status }}
-              </span>
-              <span v-else class="error-badge">Error</span>
-            </div>
-            
-            <div class="meta-row">
-              <span class="meta-label">时间:</span>
-              <span class="timestamp">{{ formatTime(item.timestamp) }}</span>
-            </div>
-            
-            <div v-if="item.duration" class="meta-row">
-              <span class="meta-label">耗时:</span>
-              <span class="duration">{{ item.duration }}ms</span>
-            </div>
-          </div>
-          
-          <div class="card-footer">
-            <button 
-              @click.stop="copyRequest(item)"
-              class="copy-request-btn"
-            >
-              📋 复制 cURL
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 分页 -->
-    <div v-if="totalPages > 1" class="history-pagination">
-      <button 
-        @click="currentPage = Math.max(1, currentPage - 1)"
-        :disabled="currentPage === 1"
-        class="page-btn"
-      >
-        ← 上一页
-      </button>
-      
-      <span class="page-info">
-        第 {{ currentPage }} 页，共 {{ totalPages }} 页
-      </span>
-      
-      <button 
-        @click="currentPage = Math.min(totalPages, currentPage + 1)"
-        :disabled="currentPage === totalPages"
-        class="page-btn"
-      >
-        下一页 →
-      </button>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 
 interface HistoryItem {
   id: string
@@ -258,7 +38,7 @@ const filters = [
   { key: 'all', label: '全部' },
   { key: 'success', label: '成功' },
   { key: 'error', label: '错误' },
-  { key: 'favorites', label: '收藏' }
+  { key: 'favorites', label: '收藏' },
 ]
 
 // 计算属性
@@ -268,10 +48,10 @@ const filteredHistory = computed(() => {
   // 搜索过滤
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(item => 
-      item.url.toLowerCase().includes(query) ||
-      item.method.toLowerCase().includes(query) ||
-      (item.status && item.status.toString().includes(query))
+    filtered = filtered.filter(item =>
+      item.url.toLowerCase().includes(query)
+      || item.method.toLowerCase().includes(query)
+      || (item.status && item.status.toString().includes(query)),
     )
   }
 
@@ -299,10 +79,10 @@ const totalPages = computed(() => {
 
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(item => 
-      item.url.toLowerCase().includes(query) ||
-      item.method.toLowerCase().includes(query) ||
-      (item.status && item.status.toString().includes(query))
+    filtered = filtered.filter(item =>
+      item.url.toLowerCase().includes(query)
+      || item.method.toLowerCase().includes(query)
+      || (item.status && item.status.toString().includes(query)),
     )
   }
 
@@ -322,9 +102,9 @@ const totalPages = computed(() => {
 })
 
 // 方法
-const getFilterCount = (filterKey: string): number | null => {
+function getFilterCount(filterKey: string): number | null {
   let count = 0
-  
+
   switch (filterKey) {
     case 'all':
       count = props.history.length
@@ -339,11 +119,11 @@ const getFilterCount = (filterKey: string): number | null => {
       count = props.favorites.length
       break
   }
-  
+
   return count > 0 ? count : null
 }
 
-const getMethodClass = (method: string): string => {
+function getMethodClass(method: string): string {
   switch (method.toUpperCase()) {
     case 'GET': return 'method-get'
     case 'POST': return 'method-post'
@@ -354,88 +134,96 @@ const getMethodClass = (method: string): string => {
   }
 }
 
-const getStatusClass = (status: number): string => {
-  if (status >= 200 && status < 300) return 'status-success'
-  if (status >= 300 && status < 400) return 'status-redirect'
-  if (status >= 400 && status < 500) return 'status-client-error'
+function getStatusClass(status: number): string {
+  if (status >= 200 && status < 300)
+return 'status-success'
+  if (status >= 300 && status < 400)
+return 'status-redirect'
+  if (status >= 400 && status < 500)
+return 'status-client-error'
   return 'status-server-error'
 }
 
-const formatTime = (timestamp: number): string => {
+function formatTime(timestamp: number): string {
   const date = new Date(timestamp)
   const now = new Date()
   const diff = now.getTime() - date.getTime()
-  
+
   if (diff < 60000) { // 1分钟内
     return '刚刚'
-  } else if (diff < 3600000) { // 1小时内
+  }
+ else if (diff < 3600000) { // 1小时内
     return `${Math.floor(diff / 60000)}分钟前`
-  } else if (diff < 86400000) { // 1天内
+  }
+ else if (diff < 86400000) { // 1天内
     return `${Math.floor(diff / 3600000)}小时前`
-  } else {
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString()
+  }
+ else {
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`
   }
 }
 
-const toggleView = () => {
+function toggleView() {
   isListView.value = !isListView.value
 }
 
-const loadRequest = (item: HistoryItem) => {
+function loadRequest(item: HistoryItem) {
   emit('load-request', item)
 }
 
-const toggleFavorite = (id: string) => {
+function toggleFavorite(id: string) {
   emit('toggle-favorite', id)
 }
 
-const clearHistory = () => {
+function clearHistory() {
   if (confirm('确定要清空所有历史记录吗？')) {
     emit('clear-history')
   }
 }
 
-const deleteRequest = (index: number) => {
+function deleteRequest(index: number) {
   emit('delete-request', index)
 }
 
-const copyRequest = async (item: HistoryItem) => {
-  if (!item.config) return
-  
+async function copyRequest(item: HistoryItem) {
+  if (!item.config)
+return
+
   const config = item.config
   let curl = `curl -X ${config.method?.toUpperCase() || 'GET'}`
-  
+
   // 添加URL
   curl += ` "${config.url}"`
-  
+
   // 添加请求头
   if (config.headers) {
     Object.entries(config.headers).forEach(([key, value]) => {
       curl += ` \\\n  -H "${key}: ${value}"`
     })
   }
-  
+
   // 添加请求体
   if (config.data) {
-    const dataStr = typeof config.data === 'string' 
-      ? config.data 
+    const dataStr = typeof config.data === 'string'
+      ? config.data
       : JSON.stringify(config.data)
     curl += ` \\\n  -d '${dataStr}'`
   }
-  
+
   try {
     await navigator.clipboard.writeText(curl)
     // 显示复制成功提示
-  } catch (error) {
+  }
+ catch (error) {
     console.error('复制失败:', error)
   }
 }
 
-const exportHistory = () => {
+function exportHistory() {
   const data = JSON.stringify(props.history, null, 2)
   const blob = new Blob([data], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
-  
+
   const a = document.createElement('a')
   a.href = url
   a.download = `request_history_${Date.now()}.json`
@@ -445,6 +233,232 @@ const exportHistory = () => {
   URL.revokeObjectURL(url)
 }
 </script>
+
+<template>
+  <div class="request-history">
+    <div class="history-header">
+      <h3>📜 请求历史</h3>
+      <div class="history-actions">
+        <button class="view-toggle-btn" @click="toggleView">
+          {{ isListView ? '📊 卡片视图' : '📋 列表视图' }}
+        </button>
+        <button class="export-btn" @click="exportHistory">
+          📤 导出
+        </button>
+        <button class="clear-btn" @click="clearHistory">
+          🗑️ 清空
+        </button>
+      </div>
+    </div>
+
+    <!-- 过滤和搜索 -->
+    <div class="history-filters">
+      <div class="search-box">
+        <input
+          v-model="searchQuery"
+          placeholder="搜索 URL、方法或状态..."
+          class="search-input"
+        >
+        <span class="search-icon">🔍</span>
+      </div>
+
+      <div class="filter-tabs">
+        <button
+          v-for="filter in filters"
+          :key="filter.key"
+          class="filter-tab" :class="[{ active: activeFilter === filter.key }]"
+          @click="activeFilter = filter.key"
+        >
+          {{ filter.label }}
+          <span v-if="getFilterCount(filter.key)" class="filter-count">
+            {{ getFilterCount(filter.key) }}
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 历史记录列表 -->
+    <div class="history-content">
+      <div v-if="filteredHistory.length === 0" class="empty-state">
+        <div class="empty-icon">
+          📭
+        </div>
+        <p class="empty-text">
+          {{ searchQuery ? '没有找到匹配的请求' : '暂无请求历史' }}
+        </p>
+      </div>
+
+      <!-- 列表视图 -->
+      <div v-else-if="isListView" class="history-list">
+        <div
+          v-for="(item, index) in filteredHistory"
+          :key="index"
+          class="history-item"
+          :class="{
+            error: !item.status,
+            favorite: favorites.includes(item.id),
+          }"
+          @click="loadRequest(item)"
+        >
+          <div class="item-method">
+            <span class="method-badge" :class="getMethodClass(item.method)">
+              {{ item.method }}
+            </span>
+          </div>
+
+          <div class="item-url">
+            <div class="url-text" :title="item.url">
+              {{ item.url }}
+            </div>
+            <div class="url-meta">
+              <span class="timestamp">{{ formatTime(item.timestamp) }}</span>
+              <span v-if="item.duration" class="duration">{{ item.duration }}ms</span>
+            </div>
+          </div>
+
+          <div class="item-status">
+            <span
+              v-if="item.status"
+              class="status-badge"
+              :class="getStatusClass(item.status)"
+            >
+              {{ item.status }}
+            </span>
+            <span v-else class="error-badge">Error</span>
+          </div>
+
+          <div class="item-actions">
+            <button
+              class="favorite-btn"
+              :class="{ active: favorites.includes(item.id) }"
+              :title="favorites.includes(item.id) ? '取消收藏' : '收藏'"
+              @click.stop="toggleFavorite(item.id)"
+            >
+              {{ favorites.includes(item.id) ? '⭐' : '☆' }}
+            </button>
+
+            <button
+              class="copy-btn"
+              title="复制为 cURL"
+              @click.stop="copyRequest(item)"
+            >
+              📋
+            </button>
+
+            <button
+              class="delete-btn"
+              title="删除"
+              @click.stop="deleteRequest(index)"
+            >
+              🗑️
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 卡片视图 -->
+      <div v-else class="history-grid">
+        <div
+          v-for="(item, index) in filteredHistory"
+          :key="index"
+          class="history-card"
+          :class="{
+            error: !item.status,
+            favorite: favorites.includes(item.id),
+          }"
+          @click="loadRequest(item)"
+        >
+          <div class="card-header">
+            <div class="card-method">
+              <span class="method-badge" :class="getMethodClass(item.method)">
+                {{ item.method }}
+              </span>
+            </div>
+
+            <div class="card-actions">
+              <button
+                class="favorite-btn"
+                :class="{ active: favorites.includes(item.id) }"
+                @click.stop="toggleFavorite(item.id)"
+              >
+                {{ favorites.includes(item.id) ? '⭐' : '☆' }}
+              </button>
+
+              <button
+                class="delete-btn"
+                @click.stop="deleteRequest(index)"
+              >
+                🗑️
+              </button>
+            </div>
+          </div>
+
+          <div class="card-url">
+            <div class="url-text" :title="item.url">
+              {{ item.url }}
+            </div>
+          </div>
+
+          <div class="card-meta">
+            <div class="meta-row">
+              <span class="meta-label">状态:</span>
+              <span
+                v-if="item.status"
+                class="status-badge"
+                :class="getStatusClass(item.status)"
+              >
+                {{ item.status }}
+              </span>
+              <span v-else class="error-badge">Error</span>
+            </div>
+
+            <div class="meta-row">
+              <span class="meta-label">时间:</span>
+              <span class="timestamp">{{ formatTime(item.timestamp) }}</span>
+            </div>
+
+            <div v-if="item.duration" class="meta-row">
+              <span class="meta-label">耗时:</span>
+              <span class="duration">{{ item.duration }}ms</span>
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <button
+              class="copy-request-btn"
+              @click.stop="copyRequest(item)"
+            >
+              📋 复制 cURL
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分页 -->
+    <div v-if="totalPages > 1" class="history-pagination">
+      <button
+        :disabled="currentPage === 1"
+        class="page-btn"
+        @click="currentPage = Math.max(1, currentPage - 1)"
+      >
+        ← 上一页
+      </button>
+
+      <span class="page-info">
+        第 {{ currentPage }} 页，共 {{ totalPages }} 页
+      </span>
+
+      <button
+        :disabled="currentPage === totalPages"
+        class="page-btn"
+        @click="currentPage = Math.min(totalPages, currentPage + 1)"
+      >
+        下一页 →
+      </button>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .request-history {

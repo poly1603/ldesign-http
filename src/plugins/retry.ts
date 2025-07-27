@@ -4,11 +4,11 @@
  */
 
 import type {
-  RetryConfig,
-  HttpError,
   HttpClientInstance,
+  HttpError,
   HttpPlugin,
-  RequestConfig
+  RequestConfig,
+  RetryConfig,
 } from '../types'
 
 /**
@@ -22,7 +22,7 @@ export enum RetryStrategy {
   /** 线性增长 */
   LINEAR = 'linear',
   /** 自定义 */
-  CUSTOM = 'custom'
+  CUSTOM = 'custom',
 }
 
 /**
@@ -58,7 +58,7 @@ export class RetryManager {
       retryDelayCalculator: this.createDelayCalculator(),
       onRetry: () => {},
       onRetryFailed: () => {},
-      ...config
+      ...config,
     }
 
     // 如果没有提供自定义延迟计算器，根据策略创建
@@ -75,12 +75,12 @@ export class RetryManager {
     if (error.isNetworkError || error.isTimeoutError) {
       return true
     }
-    
+
     if (error.response) {
       const status = error.response.status
       return status >= 500 && status < 600
     }
-    
+
     return false
   }
 
@@ -99,7 +99,7 @@ export class RetryManager {
           delay = this.config.retryDelay * retryCount
           break
         case RetryStrategy.EXPONENTIAL:
-          delay = this.config.retryDelay * Math.pow(2, retryCount - 1)
+          delay = this.config.retryDelay * 2 ** (retryCount - 1)
           break
         default:
           delay = this.config.retryDelay
@@ -124,7 +124,7 @@ export class RetryManager {
    */
   async executeWithRetry<T>(
     requestFn: () => Promise<T>,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<T> {
     let lastError: HttpError
     let retryCount = 0
@@ -132,9 +132,10 @@ export class RetryManager {
     while (retryCount <= this.config.retries) {
       try {
         return await requestFn()
-      } catch (error: any) {
+      }
+ catch (error: any) {
         lastError = error as HttpError
-        
+
         // 如果不满足重试条件或已达到最大重试次数，直接抛出错误
         if (retryCount >= this.config.retries || !this.config.retryCondition(lastError)) {
           if (retryCount > 0) {
@@ -144,13 +145,13 @@ export class RetryManager {
         }
 
         retryCount++
-        
+
         // 触发重试回调
         this.config.onRetry(lastError, retryCount)
 
         // 计算延迟时间
         const delay = this.config.retryDelayCalculator(retryCount, lastError)
-        
+
         // 等待延迟
         if (delay > 0) {
           await this.delay(delay)
@@ -173,7 +174,7 @@ export class RetryManager {
    */
   updateConfig(config: Partial<ExtendedRetryConfig>): void {
     this.config = { ...this.config, ...config }
-    
+
     // 如果策略改变了，重新创建延迟计算器
     if (config.strategy && !config.retryDelayCalculator) {
       this.config.retryDelayCalculator = this.createDelayCalculator()
@@ -196,24 +197,24 @@ export function createRetryPlugin(config: ExtendedRetryConfig = {}): HttpPlugin 
     name: 'retry',
     install(client: HttpClientInstance) {
       const retryManager = new RetryManager(config)
-      
+
       // 保存原始请求方法
       const originalRequest = client.request.bind(client)
-      
+
       // 重写请求方法以支持重试
       client.request = async function<T>(requestConfig: any): Promise<T> {
         return retryManager.executeWithRetry(
           () => originalRequest<T>(requestConfig),
-          requestConfig
+          requestConfig,
         )
       }
-      
+
       // 扩展客户端方法
       ;(client as any).retry = {
         updateConfig: (newConfig: Partial<ExtendedRetryConfig>) => retryManager.updateConfig(newConfig),
-        getConfig: () => retryManager.getConfig()
+        getConfig: () => retryManager.getConfig(),
       }
-    }
+    },
   }
 }
 
@@ -222,12 +223,12 @@ export function createRetryPlugin(config: ExtendedRetryConfig = {}): HttpPlugin 
  */
 export function createFixedRetryConfig(
   retries: number = 3,
-  delay: number = 1000
+  delay: number = 1000,
 ): ExtendedRetryConfig {
   return {
     retries,
     retryDelay: delay,
-    strategy: RetryStrategy.FIXED
+    strategy: RetryStrategy.FIXED,
   }
 }
 
@@ -237,13 +238,13 @@ export function createFixedRetryConfig(
 export function createExponentialRetryConfig(
   retries: number = 3,
   initialDelay: number = 1000,
-  maxDelay: number = 30000
+  maxDelay: number = 30000,
 ): ExtendedRetryConfig {
   return {
     retries,
     retryDelay: initialDelay,
     strategy: RetryStrategy.EXPONENTIAL,
-    maxDelay
+    maxDelay,
   }
 }
 
@@ -252,12 +253,12 @@ export function createExponentialRetryConfig(
  */
 export function createLinearRetryConfig(
   retries: number = 3,
-  delay: number = 1000
+  delay: number = 1000,
 ): ExtendedRetryConfig {
   return {
     retries,
     retryDelay: delay,
-    strategy: RetryStrategy.LINEAR
+    strategy: RetryStrategy.LINEAR,
   }
 }
 
@@ -267,12 +268,12 @@ export function createLinearRetryConfig(
 export function createCustomRetryConfig(
   retries: number,
   delayCalculator: (retryCount: number, error: HttpError) => number,
-  retryCondition?: (error: HttpError) => boolean
+  retryCondition?: (error: HttpError) => boolean,
 ): ExtendedRetryConfig {
   return {
     retries,
     strategy: RetryStrategy.CUSTOM,
     retryDelayCalculator: delayCalculator,
-    retryCondition
+    retryCondition,
   }
 }

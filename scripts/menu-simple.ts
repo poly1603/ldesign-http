@@ -1,9 +1,9 @@
 #!/usr/bin/env tsx
 
-import chalk from 'chalk'
-import { config } from 'dotenv'
 import { execSync } from 'node:child_process'
 import { join } from 'node:path'
+import chalk from 'chalk'
+import { config } from 'dotenv'
 import ora from 'ora'
 
 // 加载 .env.local 文件
@@ -410,12 +410,14 @@ class TokenConfigManager {
             process.stdin.setRawMode(true)
           }
           resolve(input.trim())
-        } else if (chunk === KEYS.BACKSPACE) {
+        }
+ else if (chunk === KEYS.BACKSPACE) {
           if (input.length > 0) {
             input = input.slice(0, -1)
             process.stdout.write('\b \b')
           }
-        } else if (chunk >= ' ' && chunk <= '~') {
+        }
+ else if (chunk >= ' ' && chunk <= '~') {
           input += chunk
           process.stdout.write('*') // 隐藏实际输入
         }
@@ -444,7 +446,8 @@ class TokenConfigManager {
       if (isSelected) {
         console.log(chalk.bgBlue.white(`❯ ${token.icon} ${token.name} ${statusIcon}`))
         console.log(chalk.bgBlue.white(`  ${token.desc} - ${statusText}`))
-      } else {
+      }
+ else {
         console.log(chalk.gray(`  ${token.icon} ${token.name} ${statusIcon}`))
         console.log(chalk.gray(`  ${token.desc} - ${statusText}`))
       }
@@ -481,7 +484,8 @@ class TokenConfigManager {
           await this.configureToken(selectedToken)
         }
       }
-    } finally {
+    }
+ finally {
       // 恢复终端设置
       if (process.stdin.setRawMode) {
         process.stdin.setRawMode(false)
@@ -521,7 +525,8 @@ class TokenConfigManager {
           await this.deleteToken(token)
           break
       }
-    } else {
+    }
+ else {
       console.log(chalk.red('❌ 当前状态：未配置'))
       console.log()
       console.log(chalk.yellow('获取 Token 步骤：'))
@@ -563,7 +568,8 @@ class TokenConfigManager {
     if (newToken.trim()) {
       this.saveTokenToEnv(token.env, newToken.trim())
       console.log(chalk.green('\n✅ Token 配置成功！'))
-    } else {
+    }
+ else {
       console.log(chalk.red('\n❌ Token 不能为空'))
     }
 
@@ -581,7 +587,8 @@ class TokenConfigManager {
     if (confirm.toLowerCase() === 'y') {
       this.removeTokenFromEnv(token.env)
       console.log(chalk.green('\n✅ Token 已删除'))
-    } else {
+    }
+ else {
       console.log(chalk.gray('\n已取消'))
     }
 
@@ -602,8 +609,9 @@ class TokenConfigManager {
 
     if (regex.test(envContent)) {
       envContent = envContent.replace(regex, newLine)
-    } else {
-      envContent += envContent.endsWith('\n') ? newLine + '\n' : '\n' + newLine + '\n'
+    }
+ else {
+      envContent += envContent.endsWith('\n') ? `${newLine}\n` : `\n${newLine}\n`
     }
 
     fs.writeFileSync(this.envFilePath, envContent)
@@ -613,7 +621,8 @@ class TokenConfigManager {
 
   private removeTokenFromEnv(key: string): void {
     const fs = require('node:fs')
-    if (!fs.existsSync(this.envFilePath)) return
+    if (!fs.existsSync(this.envFilePath))
+return
 
     const envContent = fs.readFileSync(this.envFilePath, 'utf-8')
     const regex = new RegExp(`^${key}=.*$\n?`, 'm')

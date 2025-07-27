@@ -4,29 +4,30 @@
  */
 
 import type {
-  CacheStorage,
   CacheConfig,
-  RequestConfig,
-  HttpResponse,
+  CacheStorage,
   HttpClientInstance,
-  HttpPlugin
+  HttpPlugin,
+  HttpResponse,
+  RequestConfig,
 } from '../types'
 
 /**
  * 内存缓存存储
  */
 export class MemoryCacheStorage implements CacheStorage {
-  private cache = new Map<string, { value: any; expiry: number }>()
+  private cache = new Map<string, { value: any, expiry: number }>()
 
   async get(key: string): Promise<any> {
     const item = this.cache.get(key)
-    if (!item) return null
-    
+    if (!item)
+return null
+
     if (Date.now() > item.expiry) {
       this.cache.delete(key)
       return null
     }
-    
+
     return item.value
   }
 
@@ -76,16 +77,18 @@ export class LocalStorageCacheStorage implements CacheStorage {
   async get(key: string): Promise<any> {
     try {
       const item = localStorage.getItem(this.prefix + key)
-      if (!item) return null
-      
+      if (!item)
+return null
+
       const parsed = JSON.parse(item)
       if (Date.now() > parsed.expiry) {
         localStorage.removeItem(this.prefix + key)
         return null
       }
-      
+
       return parsed.value
-    } catch {
+    }
+ catch {
       return null
     }
   }
@@ -95,7 +98,8 @@ export class LocalStorageCacheStorage implements CacheStorage {
       const expiry = Date.now() + ttl
       const item = { value, expiry }
       localStorage.setItem(this.prefix + key, JSON.stringify(item))
-    } catch (error) {
+    }
+ catch (error) {
       console.warn('Failed to set cache in localStorage:', error)
     }
   }
@@ -106,7 +110,7 @@ export class LocalStorageCacheStorage implements CacheStorage {
 
   async clear(): Promise<void> {
     const keys = Object.keys(localStorage)
-    keys.forEach(key => {
+    keys.forEach((key) => {
       if (key.startsWith(this.prefix)) {
         localStorage.removeItem(key)
       }
@@ -127,16 +131,18 @@ export class SessionStorageCacheStorage implements CacheStorage {
   async get(key: string): Promise<any> {
     try {
       const item = sessionStorage.getItem(this.prefix + key)
-      if (!item) return null
-      
+      if (!item)
+return null
+
       const parsed = JSON.parse(item)
       if (Date.now() > parsed.expiry) {
         sessionStorage.removeItem(this.prefix + key)
         return null
       }
-      
+
       return parsed.value
-    } catch {
+    }
+ catch {
       return null
     }
   }
@@ -146,7 +152,8 @@ export class SessionStorageCacheStorage implements CacheStorage {
       const expiry = Date.now() + ttl
       const item = { value, expiry }
       sessionStorage.setItem(this.prefix + key, JSON.stringify(item))
-    } catch (error) {
+    }
+ catch (error) {
       console.warn('Failed to set cache in sessionStorage:', error)
     }
   }
@@ -157,7 +164,7 @@ export class SessionStorageCacheStorage implements CacheStorage {
 
   async clear(): Promise<void> {
     const keys = Object.keys(sessionStorage)
-    keys.forEach(key => {
+    keys.forEach((key) => {
       if (key.startsWith(this.prefix)) {
         sessionStorage.removeItem(key)
       }
@@ -178,7 +185,7 @@ export class CacheManager {
       ttl: 5 * 60 * 1000, // 5分钟
       keyGenerator: this.defaultKeyGenerator,
       storage: new MemoryCacheStorage(),
-      ...config
+      ...config,
     }
     this.storage = this.config.storage
   }
@@ -189,7 +196,7 @@ export class CacheManager {
   private defaultKeyGenerator(config: RequestConfig): string {
     const { url, method = 'GET', params, data } = config
     const key = `${method.toUpperCase()}:${url}`
-    
+
     if (params && Object.keys(params).length > 0) {
       const sortedParams = Object.keys(params)
         .sort()
@@ -197,12 +204,12 @@ export class CacheManager {
         .join('&')
       return `${key}?${sortedParams}`
     }
-    
+
     if (data && method.toUpperCase() !== 'GET') {
       const dataStr = typeof data === 'string' ? data : JSON.stringify(data)
       return `${key}:${this.hashCode(dataStr)}`
     }
-    
+
     return key
   }
 
@@ -223,8 +230,9 @@ export class CacheManager {
    * 获取缓存
    */
   async get<T>(config: RequestConfig): Promise<HttpResponse<T> | null> {
-    if (!this.config.enabled) return null
-    
+    if (!this.config.enabled)
+return null
+
     const key = this.config.keyGenerator(config)
     return await this.storage.get(key)
   }
@@ -233,8 +241,9 @@ export class CacheManager {
    * 设置缓存
    */
   async set<T>(config: RequestConfig, response: HttpResponse<T>): Promise<void> {
-    if (!this.config.enabled) return
-    
+    if (!this.config.enabled)
+return
+
     const key = this.config.keyGenerator(config)
     await this.storage.set(key, response, this.config.ttl)
   }
@@ -280,7 +289,7 @@ export function createCachePlugin(config: CacheConfig = {}): HttpPlugin {
     name: 'cache',
     install(client: HttpClientInstance) {
       const cacheManager = new CacheManager(config)
-      
+
       // 添加请求拦截器检查缓存
       client.addRequestInterceptor({
         onFulfilled: async (requestConfig) => {
@@ -293,9 +302,9 @@ export function createCachePlugin(config: CacheConfig = {}): HttpPlugin {
             }
           }
           return requestConfig
-        }
+        },
       })
-      
+
       // 添加响应拦截器设置缓存
       client.addResponseInterceptor({
         onFulfilled: async (response) => {
@@ -311,17 +320,17 @@ export function createCachePlugin(config: CacheConfig = {}): HttpPlugin {
             return Promise.resolve(error.response)
           }
           return Promise.reject(error)
-        }
+        },
       })
-      
+
       // 扩展客户端方法
       ;(client as any).cache = {
         clear: () => cacheManager.clear(),
         delete: (config: RequestConfig) => cacheManager.delete(config),
         updateConfig: (newConfig: Partial<CacheConfig>) => cacheManager.updateConfig(newConfig),
-        getConfig: () => cacheManager.getConfig()
+        getConfig: () => cacheManager.getConfig(),
       }
-    }
+    },
   }
 }
 

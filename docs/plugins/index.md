@@ -22,9 +22,9 @@
 ### 使用内置插件
 
 ```typescript
-import { 
-  createHttpClient,
+import {
   createCachePlugin,
+  createHttpClient,
   createRetryPlugin
 } from '@ldesign/http'
 
@@ -55,9 +55,9 @@ import { createQuickClient } from '@ldesign/http'
 // 自动启用常用插件
 const client = createQuickClient({
   baseURL: 'https://api.example.com',
-  enableCache: true,    // 启用缓存
-  enableRetry: true,    // 启用重试
-  enableLog: true       // 启用日志
+  enableCache: true, // 启用缓存
+  enableRetry: true, // 启用重试
+  enableLog: true // 启用日志
 })
 ```
 
@@ -67,10 +67,10 @@ const client = createQuickClient({
 
 ```typescript
 interface HttpPlugin {
-  name: string                                    // 插件名称
-  version?: string                               // 插件版本
-  install(client: HttpClientInstance): void     // 安装方法
-  uninstall?(client: HttpClientInstance): void  // 卸载方法
+  name: string // 插件名称
+  version?: string // 插件版本
+  install: (client: HttpClientInstance) => void // 安装方法
+  uninstall?: (client: HttpClientInstance) => void // 卸载方法
 }
 ```
 
@@ -80,9 +80,9 @@ interface HttpPlugin {
 class LoggerPlugin implements HttpPlugin {
   name = 'logger'
   version = '1.0.0'
-  
+
   constructor(private options: LoggerOptions = {}) {}
-  
+
   install(client: HttpClientInstance): void {
     // 添加请求日志
     client.addRequestInterceptor({
@@ -91,7 +91,7 @@ class LoggerPlugin implements HttpPlugin {
         return config
       }
     })
-    
+
     // 添加响应日志
     client.addResponseInterceptor({
       onFulfilled: (response) => {
@@ -104,7 +104,7 @@ class LoggerPlugin implements HttpPlugin {
       }
     })
   }
-  
+
   uninstall(client: HttpClientInstance): void {
     // 清理逻辑
     console.log('Logger plugin uninstalled')
@@ -127,11 +127,11 @@ import { createCachePlugin } from '@ldesign/http'
 
 const cachePlugin = createCachePlugin({
   enabled: true,
-  ttl: 10 * 60 * 1000,        // 10分钟缓存
-  storage: 'localStorage',     // 存储类型
-  maxSize: 100,               // 最大缓存条目
-  include: ['/api/users'],    // 包含的URL
-  exclude: ['/api/auth']      // 排除的URL
+  ttl: 10 * 60 * 1000, // 10分钟缓存
+  storage: 'localStorage', // 存储类型
+  maxSize: 100, // 最大缓存条目
+  include: ['/api/users'], // 包含的URL
+  exclude: ['/api/auth'] // 排除的URL
 })
 
 cachePlugin.install(client)
@@ -151,9 +151,9 @@ cachePlugin.install(client)
 import { createRetryPlugin } from '@ldesign/http'
 
 const retryPlugin = createRetryPlugin({
-  retries: 3,                 // 重试次数
-  retryDelay: 1000,          // 重试延迟
-  strategy: 'exponential',    // 重试策略
+  retries: 3, // 重试次数
+  retryDelay: 1000, // 重试延迟
+  strategy: 'exponential', // 重试策略
   retryCondition: (error) => {
     // 自定义重试条件
     return error.isNetworkError || error.status >= 500
@@ -174,10 +174,10 @@ retryPlugin.install(client)
 预置的常用拦截器。
 
 ```typescript
-import { 
+import {
   createAuthInterceptor,
-  createLogInterceptor,
-  createErrorHandlerInterceptor
+  createErrorHandlerInterceptor,
+  createLogInterceptor
 } from '@ldesign/http'
 
 // 认证拦截器
@@ -214,7 +214,7 @@ client.addResponseInterceptor(errorHandler)
 ```typescript
 class TimestampPlugin implements HttpPlugin {
   name = 'timestamp'
-  
+
   install(client: HttpClientInstance): void {
     client.addRequestInterceptor({
       onFulfilled: (config) => {
@@ -241,10 +241,10 @@ interface MetricsOptions {
 class MetricsPlugin implements HttpPlugin {
   name = 'metrics'
   version = '1.0.0'
-  
+
   private metrics: any[] = []
   private timer?: NodeJS.Timeout
-  
+
   constructor(private options: MetricsOptions = {}) {
     this.options = {
       batchSize: 10,
@@ -252,11 +252,11 @@ class MetricsPlugin implements HttpPlugin {
       ...options
     }
   }
-  
+
   install(client: HttpClientInstance): void {
     // 开始定时上报
     this.startReporting()
-    
+
     // 监听请求事件
     client.on('request', (event) => {
       this.recordMetric('request', {
@@ -265,7 +265,7 @@ class MetricsPlugin implements HttpPlugin {
         timestamp: Date.now()
       })
     })
-    
+
     // 监听响应事件
     client.on('response', (event) => {
       this.recordMetric('response', {
@@ -274,7 +274,7 @@ class MetricsPlugin implements HttpPlugin {
         duration: Date.now() - event.timestamp
       })
     })
-    
+
     // 监听错误事件
     client.on('error', (event) => {
       this.recordMetric('error', {
@@ -284,38 +284,39 @@ class MetricsPlugin implements HttpPlugin {
       })
     })
   }
-  
+
   uninstall(client: HttpClientInstance): void {
     // 清理定时器
     if (this.timer) {
       clearInterval(this.timer)
     }
-    
+
     // 最后一次上报
     this.flushMetrics()
   }
-  
+
   private recordMetric(type: string, data: any): void {
     this.metrics.push({ type, data, timestamp: Date.now() })
-    
+
     // 达到批次大小时立即上报
     if (this.metrics.length >= this.options.batchSize!) {
       this.flushMetrics()
     }
   }
-  
+
   private startReporting(): void {
     this.timer = setInterval(() => {
       this.flushMetrics()
     }, this.options.flushInterval)
   }
-  
+
   private async flushMetrics(): Promise<void> {
-    if (this.metrics.length === 0) return
-    
+    if (this.metrics.length === 0)
+return
+
     const metricsToSend = [...this.metrics]
     this.metrics = []
-    
+
     try {
       if (this.options.endpoint) {
         await fetch(this.options.endpoint, {
@@ -323,10 +324,12 @@ class MetricsPlugin implements HttpPlugin {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(metricsToSend)
         })
-      } else {
+      }
+ else {
         console.log('Metrics:', metricsToSend)
       }
-    } catch (error) {
+    }
+ catch (error) {
       console.error('Failed to send metrics:', error)
       // 重新加入队列
       this.metrics.unshift(...metricsToSend)
@@ -351,16 +354,16 @@ metricsPlugin.install(client)
 ```typescript
 class PluginManager {
   private plugins = new Map<string, HttpPlugin>()
-  
+
   register(plugin: HttpPlugin, client: HttpClientInstance): void {
     if (this.plugins.has(plugin.name)) {
       throw new Error(`Plugin ${plugin.name} already registered`)
     }
-    
+
     plugin.install(client)
     this.plugins.set(plugin.name, plugin)
   }
-  
+
   unregister(name: string, client: HttpClientInstance): void {
     const plugin = this.plugins.get(name)
     if (plugin) {
@@ -368,11 +371,11 @@ class PluginManager {
       this.plugins.delete(name)
     }
   }
-  
+
   getPlugin(name: string): HttpPlugin | undefined {
     return this.plugins.get(name)
   }
-  
+
   listPlugins(): string[] {
     return Array.from(this.plugins.keys())
   }
@@ -411,12 +414,12 @@ function loadPlugins(client: HttpClientInstance, config: any) {
     const cachePlugin = createCachePlugin(config.cache)
     cachePlugin.install(client)
   }
-  
+
   if (config.retry?.enabled) {
     const retryPlugin = createRetryPlugin(config.retry)
     retryPlugin.install(client)
   }
-  
+
   if (config.metrics?.enabled) {
     const metricsPlugin = new MetricsPlugin(config.metrics)
     metricsPlugin.install(client)
@@ -431,13 +434,13 @@ function loadPlugins(client: HttpClientInstance, config: any) {
 ```typescript
 // vue-plugin-wrapper.ts
 import type { App } from 'vue'
-import type { HttpPlugin, HttpClientInstance } from '@ldesign/http'
+import type { HttpClientInstance, HttpPlugin } from '@ldesign/http'
 
 export function createVuePlugin(httpPlugin: HttpPlugin) {
   return {
     install(app: App, client: HttpClientInstance) {
       httpPlugin.install(client)
-      
+
       // 提供插件实例
       app.provide(`http-plugin-${httpPlugin.name}`, httpPlugin)
     }
@@ -464,15 +467,15 @@ export function usePlugin<T extends HttpPlugin>(name: string): T | undefined {
 // 使用示例
 export function useCache() {
   const cachePlugin = usePlugin('cache')
-  
+
   const clearCache = () => {
     cachePlugin?.clear()
   }
-  
+
   const getCacheStats = () => {
     return cachePlugin?.getStats()
   }
-  
+
   return {
     clearCache,
     getCacheStats
@@ -487,7 +490,7 @@ export function useCache() {
 ```typescript
 class PerformancePlugin implements HttpPlugin {
   name = 'performance'
-  
+
   install(client: HttpClientInstance): void {
     client.addRequestInterceptor({
       onFulfilled: (config) => {
@@ -498,7 +501,7 @@ class PerformancePlugin implements HttpPlugin {
         return config
       }
     })
-    
+
     client.addResponseInterceptor({
       onFulfilled: (response) => {
         const startTime = response.config.metadata?.startTime
@@ -517,7 +520,7 @@ class PerformancePlugin implements HttpPlugin {
 
 ```typescript
 // 延迟加载插件
-const lazyLoadPlugin = async (name: string) => {
+async function lazyLoadPlugin(name: string) {
   switch (name) {
     case 'cache':
       const { createCachePlugin } = await import('@ldesign/http/plugins/cache')
@@ -557,7 +560,8 @@ class RobustPlugin implements HttpPlugin {
   install(client: HttpClientInstance): void {
     try {
       // 插件逻辑
-    } catch (error) {
+    }
+ catch (error) {
       console.error(`Plugin ${this.name} installation failed:`, error)
     }
   }
@@ -587,19 +591,19 @@ metricsPlugin.install(client)
 describe('CustomPlugin', () => {
   let client: HttpClientInstance
   let plugin: CustomPlugin
-  
+
   beforeEach(() => {
     client = createHttpClient()
     plugin = new CustomPlugin()
   })
-  
+
   it('should install successfully', () => {
     expect(() => plugin.install(client)).not.toThrow()
   })
-  
+
   it('should add functionality', async () => {
     plugin.install(client)
-    
+
     // 测试插件功能
     const response = await client.get('/test')
     expect(response.headers['X-Custom']).toBeDefined()

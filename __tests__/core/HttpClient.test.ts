@@ -7,7 +7,7 @@ import { HttpClient, createHttpClient } from '../../src'
 import type { HttpClientConfig } from '../../src/types'
 import { createMockError, createMockResponse, resetAllMocks } from '../setup'
 
-describe('HttpClient', () => {
+describe('httpClient', () => {
   let client: HttpClient
   let mockFetch: any
 
@@ -36,8 +36,8 @@ describe('HttpClient', () => {
         baseURL: 'https://api.example.com',
         timeout: 5000,
         headers: {
-          'Custom-Header': 'test'
-        }
+          'Custom-Header': 'test',
+        },
       }
 
       const customClient = createHttpClient(config)
@@ -49,7 +49,7 @@ describe('HttpClient', () => {
     })
   })
 
-  describe('HTTP方法', () => {
+  describe('hTTP方法', () => {
     it('应该能够发送GET请求', async () => {
       const mockData = { id: 1, name: 'test' }
       mockFetch.mockResolvedValue(createMockResponse(mockData))
@@ -59,8 +59,8 @@ describe('HttpClient', () => {
       expect(mockFetch).toHaveBeenCalledWith(
         '/users/1',
         expect.objectContaining({
-          method: 'GET'
-        })
+          method: 'GET',
+        }),
       )
       expect(response.data).toEqual(mockData)
       expect(response.status).toBe(200)
@@ -77,8 +77,8 @@ describe('HttpClient', () => {
         '/users',
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify(postData)
-        })
+          body: JSON.stringify(postData),
+        }),
       )
       expect(response.data).toEqual(mockData)
       expect(response.status).toBe(201)
@@ -95,8 +95,8 @@ describe('HttpClient', () => {
         '/users/1',
         expect.objectContaining({
           method: 'PUT',
-          body: JSON.stringify(putData)
-        })
+          body: JSON.stringify(putData),
+        }),
       )
       expect(response.data).toEqual(mockData)
     })
@@ -109,8 +109,8 @@ describe('HttpClient', () => {
       expect(mockFetch).toHaveBeenCalledWith(
         '/users/1',
         expect.objectContaining({
-          method: 'DELETE'
-        })
+          method: 'DELETE',
+        }),
       )
       expect(response.status).toBe(204)
     })
@@ -123,22 +123,22 @@ describe('HttpClient', () => {
 
       await client.get('/test', {
         headers: { 'Custom-Header': 'value' },
-        params: { page: 1, size: 10 }
+        params: { page: 1, size: 10 },
       })
 
       expect(mockFetch).toHaveBeenCalledWith(
         '/test?page=1&size=10',
         expect.objectContaining({
           headers: expect.objectContaining({
-            set: expect.any(Function)
-          })
-        })
+            set: expect.any(Function),
+          }),
+        }),
       )
     })
 
     it('应该能够处理baseURL', async () => {
       const clientWithBase = createHttpClient({
-        baseURL: 'https://api.example.com'
+        baseURL: 'https://api.example.com',
       })
 
       const mockData = { success: true }
@@ -148,7 +148,7 @@ describe('HttpClient', () => {
 
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.example.com/users',
-        expect.any(Object)
+        expect.any(Object),
       )
     })
   })
@@ -164,7 +164,7 @@ describe('HttpClient', () => {
       })
 
       client.addRequestInterceptor({
-        onFulfilled: requestInterceptor
+        onFulfilled: requestInterceptor,
       })
 
       await client.get('/test')
@@ -182,7 +182,7 @@ describe('HttpClient', () => {
       })
 
       client.addResponseInterceptor({
-        onFulfilled: responseInterceptor
+        onFulfilled: responseInterceptor,
       })
 
       const response = await client.get('/test')
@@ -193,7 +193,7 @@ describe('HttpClient', () => {
 
     it('应该能够移除拦截器', () => {
       const interceptorId = client.addRequestInterceptor({
-        onFulfilled: (config) => config
+        onFulfilled: config => config,
       })
 
       expect(interceptorId).toBeTypeOf('number')
@@ -215,7 +215,7 @@ describe('HttpClient', () => {
       mockFetch.mockResolvedValue(createMockResponse(
         { error: 'Not found' },
         404,
-        'Not Found'
+        'Not Found',
       ))
 
       await expect(client.get('/test')).rejects.toThrow()

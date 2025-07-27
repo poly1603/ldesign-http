@@ -66,8 +66,8 @@ await http.delete('/users/1')
 ```typescript
 // main.ts
 import { createApp } from 'vue'
-import { createHttpPlugin } from '@ldesign/http'
 import App from './App.vue'
+import { createHttpPlugin } from '@ldesign/http'
 
 const app = createApp(App)
 
@@ -83,44 +83,6 @@ app.mount('#app')
 ### 在组件中使用
 
 ```vue
-<template>
-  <div>
-    <!-- 用户列表 -->
-    <div v-if="usersLoading">加载用户中...</div>
-    <div v-else-if="usersError" class="error">
-      加载失败: {{ usersError.message }}
-      <button @click="refreshUsers">重试</button>
-    </div>
-    <div v-else>
-      <h2>用户列表</h2>
-      <ul>
-        <li v-for="user in users" :key="user.id">
-          {{ user.name }} - {{ user.email }}
-        </li>
-      </ul>
-      <button @click="refreshUsers">刷新</button>
-    </div>
-
-    <!-- 创建用户 -->
-    <div class="create-user">
-      <h2>创建用户</h2>
-      <form @submit.prevent="handleCreateUser">
-        <input v-model="newUser.name" placeholder="姓名" required />
-        <input v-model="newUser.email" placeholder="邮箱" type="email" required />
-        <button type="submit" :disabled="createLoading">
-          {{ createLoading ? '创建中...' : '创建用户' }}
-        </button>
-      </form>
-      <div v-if="createError" class="error">
-        创建失败: {{ createError.message }}
-      </div>
-      <div v-if="createdUser" class="success">
-        用户创建成功: {{ createdUser.name }}
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { reactive } from 'vue'
 import { useGet, usePost } from '@ldesign/http'
@@ -162,12 +124,56 @@ const {
   }
 })
 
-const handleCreateUser = () => {
+function handleCreateUser() {
   executeCreate({
     data: { ...newUser }
   })
 }
 </script>
+
+<template>
+  <div>
+    <!-- 用户列表 -->
+    <div v-if="usersLoading">
+      加载用户中...
+    </div>
+    <div v-else-if="usersError" class="error">
+      加载失败: {{ usersError.message }}
+      <button @click="refreshUsers">
+        重试
+      </button>
+    </div>
+    <div v-else>
+      <h2>用户列表</h2>
+      <ul>
+        <li v-for="user in users" :key="user.id">
+          {{ user.name }} - {{ user.email }}
+        </li>
+      </ul>
+      <button @click="refreshUsers">
+        刷新
+      </button>
+    </div>
+
+    <!-- 创建用户 -->
+    <div class="create-user">
+      <h2>创建用户</h2>
+      <form @submit.prevent="handleCreateUser">
+        <input v-model="newUser.name" placeholder="姓名" required>
+        <input v-model="newUser.email" placeholder="邮箱" type="email" required>
+        <button type="submit" :disabled="createLoading">
+          {{ createLoading ? '创建中...' : '创建用户' }}
+        </button>
+      </form>
+      <div v-if="createError" class="error">
+        创建失败: {{ createError.message }}
+      </div>
+      <div v-if="createdUser" class="success">
+        用户创建成功: {{ createdUser.name }}
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .error {
@@ -253,7 +259,7 @@ console.log('新文章ID:', newPost.data.id)
 const github = createHttpClient({
   baseURL: 'https://api.github.com',
   headers: {
-    'Accept': 'application/vnd.github.v3+json'
+    Accept: 'application/vnd.github.v3+json'
   }
 })
 
@@ -296,9 +302,9 @@ const client = createQuickClient({
   baseURL: 'https://api.example.com',
   timeout: 10000,
   adapter: 'fetch',
-  enableCache: true,    // 启用缓存
-  enableRetry: true,    // 启用重试
-  enableLog: true,      // 启用日志
+  enableCache: true, // 启用缓存
+  enableRetry: true, // 启用重试
+  enableLog: true, // 启用日志
   authToken: () => localStorage.getItem('token') // 自动添加认证
 })
 
@@ -311,14 +317,18 @@ const response = await client.get('/protected-data')
 ```typescript
 try {
   const response = await http.get('/users/999')
-} catch (error) {
+}
+ catch (error) {
   if (error.response?.status === 404) {
     console.log('用户不存在')
-  } else if (error.isNetworkError) {
+  }
+ else if (error.isNetworkError) {
     console.log('网络连接失败')
-  } else if (error.isTimeoutError) {
+  }
+ else if (error.isTimeoutError) {
     console.log('请求超时')
-  } else {
+  }
+ else {
     console.log('其他错误:', error.message)
   }
 }

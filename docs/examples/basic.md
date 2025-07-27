@@ -28,7 +28,8 @@ async function getUsers() {
     const response = await client.get('/users')
     console.log('用户列表:', response.data)
     return response.data
-  } catch (error) {
+  }
+ catch (error) {
     console.error('获取用户失败:', error.message)
     throw error
   }
@@ -58,7 +59,7 @@ const posts = await client.get('/posts', {
 // 3. 带自定义头部
 const data = await client.get('/protected', {
   headers: {
-    'Authorization': 'Bearer your-token'
+    Authorization: 'Bearer your-token'
   }
 })
 
@@ -155,7 +156,7 @@ const blob = await client.get('/download/file.pdf', {
 
 // 自定义验证状态码
 const response = await client.get('/api/data', {
-  validateStatus: (status) => status < 500 // 只有5xx才算错误
+  validateStatus: status => status < 500 // 只有5xx才算错误
 })
 ```
 
@@ -176,7 +177,7 @@ const apiClient = createHttpClient({
 // 运行时更新默认配置
 apiClient.setDefaults({
   headers: {
-    'Authorization': `Bearer ${getAuthToken()}`
+    Authorization: `Bearer ${getAuthToken()}`
   }
 })
 ```
@@ -190,19 +191,23 @@ async function fetchUserData(userId: number) {
   try {
     const response = await client.get(`/users/${userId}`)
     return response.data
-  } catch (error: any) {
+  }
+ catch (error: any) {
     // 检查错误类型
     if (error.response) {
       // 服务器响应了错误状态码
       console.log('错误状态:', error.response.status)
       console.log('错误数据:', error.response.data)
-    } else if (error.isNetworkError) {
+    }
+ else if (error.isNetworkError) {
       // 网络错误
       console.log('网络连接失败')
-    } else if (error.isTimeoutError) {
+    }
+ else if (error.isTimeoutError) {
       // 超时错误
       console.log('请求超时')
-    } else {
+    }
+ else {
       // 其他错误
       console.log('未知错误:', error.message)
     }
@@ -219,7 +224,8 @@ async function robustApiCall() {
   try {
     const response = await client.get('/api/data')
     return response.data
-  } catch (error: any) {
+  }
+ catch (error: any) {
     // 根据状态码处理
     switch (error.response?.status) {
       case 400:
@@ -239,9 +245,11 @@ async function robustApiCall() {
       default:
         if (error.isNetworkError) {
           throw new Error('网络连接失败，请检查网络设置')
-        } else if (error.isTimeoutError) {
+        }
+ else if (error.isTimeoutError) {
           throw new Error('请求超时，请稍后重试')
-        } else {
+        }
+ else {
           throw new Error('请求失败，请稍后重试')
         }
     }
@@ -268,7 +276,8 @@ async function fetchDashboardData() {
       posts: posts.data,
       comments: comments.data
     }
-  } catch (error) {
+  }
+ catch (error) {
     console.error('获取仪表板数据失败:', error)
     throw error
   }
@@ -294,7 +303,8 @@ async function fetchOptionalData() {
 
     if (result.status === 'fulfilled') {
       data[keys[index]] = result.value.data
-    } else {
+    }
+ else {
       console.warn(`获取 ${keys[index]} 失败:`, result.reason.message)
       data[keys[index]] = null
     }
@@ -400,12 +410,13 @@ class AuthService {
       // 设置默认认证头
       this.client.setDefaults({
         headers: {
-          'Authorization': `Bearer ${response.data.token}`
+          Authorization: `Bearer ${response.data.token}`
         }
       })
 
       return response.data.user
-    } catch (error: any) {
+    }
+ catch (error: any) {
       if (error.response?.status === 401) {
         throw new Error('用户名或密码错误')
       }
@@ -416,14 +427,15 @@ class AuthService {
   async logout() {
     try {
       await this.client.post('/auth/logout')
-    } finally {
+    }
+ finally {
       // 清除本地数据
       localStorage.removeItem('token')
 
       // 移除认证头
       this.client.setDefaults({
         headers: {
-          'Authorization': undefined
+          Authorization: undefined
         }
       })
     }
@@ -442,7 +454,8 @@ const authService = new AuthService()
 try {
   const user = await authService.login('john', 'password123')
   console.log('登录成功:', user)
-} catch (error) {
+}
+ catch (error) {
   console.error('登录失败:', error.message)
 }
 ```

@@ -12,17 +12,17 @@ interface HttpClientConfig {
   baseURL?: string
   timeout?: number
   headers?: Record<string, string>
-  
+
   // 适配器配置
   adapter?: 'fetch' | 'axios' | 'alova'
   customAdapter?: HttpAdapter
-  
+
   // 缓存配置
   cache?: CacheConfig
-  
+
   // 重试配置
   retry?: RetryConfig
-  
+
   // 拦截器配置
   interceptors?: {
     request?: RequestInterceptor[]
@@ -46,7 +46,7 @@ const client = createHttpClient({
 await client.get('/users')
 ```
 
-**类型**: `string`  
+**类型**: `string`
 **默认值**: `undefined`
 
 #### timeout
@@ -59,7 +59,7 @@ const client = createHttpClient({
 })
 ```
 
-**类型**: `number`  
+**类型**: `number`
 **默认值**: `0` (无超时)
 
 #### headers
@@ -76,7 +76,7 @@ const client = createHttpClient({
 })
 ```
 
-**类型**: `Record<string, string>`  
+**类型**: `Record<string, string>`
 **默认值**: `{}`
 
 ## 🎯 适配器配置
@@ -102,7 +102,7 @@ const alovaClient = createHttpClient({
 })
 ```
 
-**类型**: `'fetch' | 'axios' | 'alova'`  
+**类型**: `'fetch' | 'axios' | 'alova'`
 **默认值**: `'fetch'`
 
 ### customAdapter
@@ -114,11 +114,11 @@ class MyCustomAdapter implements HttpAdapter {
   async request<T>(config: RequestConfig): Promise<HttpResponse<T>> {
     // 自定义实现
   }
-  
+
   cancel(): void {
     // 取消逻辑
   }
-  
+
   getName(): string {
     return 'custom'
   }
@@ -129,7 +129,7 @@ const client = createHttpClient({
 })
 ```
 
-**类型**: `HttpAdapter`  
+**类型**: `HttpAdapter`
 **默认值**: `undefined`
 
 ## 💾 缓存配置
@@ -216,7 +216,7 @@ import { createExponentialRetryConfig } from '@ldesign/http'
 
 const client = createHttpClient({
   retry: createExponentialRetryConfig(
-    3,    // 重试次数
+    3, // 重试次数
     1000, // 初始延迟
     10000 // 最大延迟
   )
@@ -228,9 +228,9 @@ const client = createHttpClient({
 ### 预设拦截器
 
 ```typescript
-import { 
-  createAuthInterceptor, 
-  createLogInterceptor 
+import {
+  createAuthInterceptor,
+  createLogInterceptor
 } from '@ldesign/http'
 
 const authInterceptor = createAuthInterceptor({
@@ -274,12 +274,12 @@ const devClient = createHttpClient({
 ### 生产环境配置
 
 ```typescript
-import { 
-  createHttpClient,
+import {
+  createAuthInterceptor,
   createCachePlugin,
-  createRetryPlugin,
+  createHttpClient,
   createLogInterceptor,
-  createAuthInterceptor
+  createRetryPlugin
 } from '@ldesign/http'
 
 const prodClient = createHttpClient({
@@ -383,7 +383,7 @@ client.setDefaults({
 const response = await client.get('/users', {
   timeout: 5000, // 覆盖默认超时
   headers: {
-    'Accept': 'application/xml' // 覆盖默认Accept头
+    Accept: 'application/xml' // 覆盖默认Accept头
   },
   cache: {
     enabled: false // 禁用此次请求的缓存
@@ -398,7 +398,7 @@ const response = await client.get('/users', {
 ```typescript
 const client = createHttpClient({
   baseURL: process.env.VUE_APP_API_BASE_URL || 'http://localhost:3000',
-  timeout: parseInt(process.env.VUE_APP_API_TIMEOUT || '10000'),
+  timeout: Number.parseInt(process.env.VUE_APP_API_TIMEOUT || '10000'),
   headers: {
     'X-API-Key': process.env.VUE_APP_API_KEY || ''
   }

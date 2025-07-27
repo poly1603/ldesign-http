@@ -3,15 +3,15 @@
  * 支持多种适配器的HTTP客户端
  */
 
-import { BaseHttpClient } from './HttpClient'
-import { FetchAdapter, createFetchAdapter, isFetchSupported } from '../adapters/FetchAdapter'
-import { AxiosAdapter, createAxiosAdapter, isAxiosSupported } from '../adapters/AxiosAdapter'
-import { AlovaAdapter, createAlovaAdapter, isAlovaSupported } from '../adapters/AlovaAdapter'
+import { createFetchAdapter, isFetchSupported } from '../adapters/FetchAdapter'
+import { createAxiosAdapter, isAxiosSupported } from '../adapters/AxiosAdapter'
+import { createAlovaAdapter, isAlovaSupported } from '../adapters/AlovaAdapter'
 import type {
-  HttpClientConfig,
+  AdapterFactory,
   HttpAdapter,
-  AdapterFactory
+  HttpClientConfig,
 } from '../types'
+import { BaseHttpClient } from './HttpClient'
 
 /**
  * 适配器工厂实现
@@ -19,7 +19,7 @@ import type {
 class HttpAdapterFactory implements AdapterFactory {
   constructor(
     private adapterType: 'fetch' | 'axios' | 'alova',
-    private config: HttpClientConfig
+    private config: HttpClientConfig,
   ) {}
 
   create(config: HttpClientConfig): HttpAdapter {
@@ -77,7 +77,7 @@ export class HttpClient extends BaseHttpClient {
     if (!factory.isSupported()) {
       // 如果指定的适配器不支持，尝试使用备用适配器
       const fallbackAdapters: Array<'fetch' | 'axios' | 'alova'> = ['fetch', 'axios', 'alova']
-      
+
       for (const fallback of fallbackAdapters) {
         if (fallback !== adapterType) {
           const fallbackFactory = new HttpAdapterFactory(fallback, this.config)
@@ -87,7 +87,7 @@ export class HttpClient extends BaseHttpClient {
           }
         }
       }
-      
+
       throw new Error(`No supported HTTP adapter found. Please ensure at least one of fetch, axios, or alova is available.`)
     }
 
@@ -105,7 +105,8 @@ export class HttpClient extends BaseHttpClient {
       }
       this.adapter = factory.create(this.config)
       this.config.adapter = adapterType
-    } else {
+    }
+ else {
       this.adapter = adapterType
       this.config.customAdapter = adapterType
     }
@@ -114,10 +115,10 @@ export class HttpClient extends BaseHttpClient {
   /**
    * 获取当前适配器信息
    */
-  getAdapterInfo(): { name: string; isCustom: boolean } {
+  getAdapterInfo(): { name: string, isCustom: boolean } {
     return {
       name: this.adapter.getName(),
-      isCustom: !!this.config.customAdapter
+      isCustom: !!this.config.customAdapter,
     }
   }
 
@@ -142,11 +143,14 @@ export class HttpClient extends BaseHttpClient {
    */
   static getSupportedAdapters(): Array<'fetch' | 'axios' | 'alova'> {
     const adapters: Array<'fetch' | 'axios' | 'alova'> = []
-    
-    if (isFetchSupported()) adapters.push('fetch')
-    if (isAxiosSupported()) adapters.push('axios')
-    if (isAlovaSupported()) adapters.push('alova')
-    
+
+    if (isFetchSupported())
+adapters.push('fetch')
+    if (isAxiosSupported())
+adapters.push('axios')
+    if (isAlovaSupported())
+adapters.push('alova')
+
     return adapters
   }
 
@@ -162,11 +166,11 @@ export class HttpClient extends BaseHttpClient {
    */
   static createWithAdapter(
     adapterType: 'fetch' | 'axios' | 'alova',
-    config: HttpClientConfig = {}
+    config: HttpClientConfig = {},
   ): HttpClient {
     return new HttpClient({
       ...config,
-      adapter: adapterType
+      adapter: adapterType,
     })
   }
 
@@ -175,11 +179,11 @@ export class HttpClient extends BaseHttpClient {
    */
   static createWithCustomAdapter(
     adapter: HttpAdapter,
-    config: HttpClientConfig = {}
+    config: HttpClientConfig = {},
   ): HttpClient {
     return new HttpClient({
       ...config,
-      customAdapter: adapter
+      customAdapter: adapter,
     })
   }
 }

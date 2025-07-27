@@ -3,19 +3,19 @@
  * 基于Axios库实现HTTP请求
  */
 
-import axios, { 
-  type AxiosInstance, 
-  type AxiosRequestConfig, 
-  type AxiosResponse,
+import axios, {
   type AxiosError,
-  type CancelTokenSource
+  type AxiosInstance,
+  type AxiosRequestConfig,
+  type AxiosResponse,
+  type CancelTokenSource,
 } from 'axios'
 import type {
   HttpAdapter,
-  RequestConfig,
-  HttpResponse,
   HttpError,
-  HttpMethod
+  HttpMethod,
+  HttpResponse,
+  RequestConfig,
 } from '../types'
 
 export class AxiosAdapter implements HttpAdapter {
@@ -34,7 +34,8 @@ export class AxiosAdapter implements HttpAdapter {
       const axiosConfig = this.transformRequestConfig(config)
       const response = await this.axiosInstance.request<T>(axiosConfig)
       return this.transformResponse<T>(response, config)
-    } catch (error: any) {
+    }
+ catch (error: any) {
       throw this.transformError(error, config)
     }
   }
@@ -49,7 +50,8 @@ export class AxiosAdapter implements HttpAdapter {
         source.cancel('Request cancelled')
         this.cancelTokenSources.delete(requestId)
       }
-    } else {
+    }
+ else {
       // 取消所有请求
       this.cancelTokenSources.forEach(source => source.cancel('Request cancelled'))
       this.cancelTokenSources.clear()
@@ -83,7 +85,7 @@ export class AxiosAdapter implements HttpAdapter {
       timeout: config.timeout,
       baseURL: config.baseURL,
       responseType: this.transformResponseType(config.responseType),
-      withCredentials: config.withCredentials
+      withCredentials: config.withCredentials,
     }
 
     // 创建取消令牌
@@ -98,7 +100,7 @@ export class AxiosAdapter implements HttpAdapter {
         const progress = {
           loaded: progressEvent.loaded,
           total: progressEvent.total || 0,
-          percentage: progressEvent.total ? Math.round((progressEvent.loaded * 100) / progressEvent.total) : 0
+          percentage: progressEvent.total ? Math.round((progressEvent.loaded * 100) / progressEvent.total) : 0,
         }
         config.onUploadProgress!(progress)
       }
@@ -110,17 +112,17 @@ export class AxiosAdapter implements HttpAdapter {
         const progress = {
           loaded: progressEvent.loaded,
           total: progressEvent.total || 0,
-          percentage: progressEvent.total ? Math.round((progressEvent.loaded * 100) / progressEvent.total) : 0
+          percentage: progressEvent.total ? Math.round((progressEvent.loaded * 100) / progressEvent.total) : 0,
         }
         config.onDownloadProgress!(progress)
       }
     }
 
     // 复制其他自定义配置
-    Object.keys(config).forEach(key => {
-      if (!axiosConfig.hasOwnProperty(key) && 
-          key !== 'onUploadProgress' && 
-          key !== 'onDownloadProgress') {
+    Object.keys(config).forEach((key) => {
+      if (!axiosConfig.hasOwnProperty(key)
+        && key !== 'onUploadProgress'
+        && key !== 'onDownloadProgress') {
         (axiosConfig as any)[key] = (config as any)[key]
       }
     })
@@ -158,7 +160,7 @@ export class AxiosAdapter implements HttpAdapter {
       statusText: response.statusText,
       headers: this.transformResponseHeaders(response.headers),
       config,
-      raw: response
+      raw: response,
     }
   }
 
@@ -167,13 +169,13 @@ export class AxiosAdapter implements HttpAdapter {
    */
   private transformResponseHeaders(headers: any): Record<string, string> {
     const result: Record<string, string> = {}
-    
+
     if (headers) {
-      Object.keys(headers).forEach(key => {
+      Object.keys(headers).forEach((key) => {
         result[key.toLowerCase()] = String(headers[key])
       })
     }
-    
+
     return result
   }
 
@@ -189,16 +191,19 @@ export class AxiosAdapter implements HttpAdapter {
       httpError.isCancelError = true
       httpError.code = 'CANCELLED'
       httpError.message = 'Request was cancelled'
-    } else if (error.response) {
+    }
+ else if (error.response) {
       // 服务器响应了错误状态码
       httpError.response = this.transformResponse(error.response, config)
       httpError.code = `HTTP_${error.response.status}`
-    } else if (error.request) {
+    }
+ else if (error.request) {
       // 请求已发出但没有收到响应
       httpError.isNetworkError = true
       httpError.code = 'NETWORK_ERROR'
       httpError.message = 'Network error occurred'
-    } else {
+    }
+ else {
       // 其他错误
       httpError.isNetworkError = true
     }
@@ -234,7 +239,8 @@ export function createAxiosAdapter(config?: AxiosRequestConfig): AxiosAdapter {
 export function isAxiosSupported(): boolean {
   try {
     return typeof axios !== 'undefined'
-  } catch {
+  }
+ catch {
     return false
   }
 }

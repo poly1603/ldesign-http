@@ -4,13 +4,13 @@
  */
 
 import type {
+  HttpClientInstance,
+  HttpError,
+  HttpPlugin,
+  HttpResponse,
+  RequestConfig,
   RequestInterceptor,
   ResponseInterceptor,
-  HttpClientInstance,
-  HttpPlugin,
-  RequestConfig,
-  HttpResponse,
-  HttpError
 } from '../types'
 
 /**
@@ -55,7 +55,7 @@ export function createAuthInterceptor(config: AuthInterceptorConfig): RequestInt
     getToken,
     tokenType = 'Bearer',
     headerName = 'Authorization',
-    urlPatterns = []
+    urlPatterns = [],
   } = config
 
   return {
@@ -73,15 +73,16 @@ export function createAuthInterceptor(config: AuthInterceptorConfig): RequestInt
         if (token) {
           requestConfig.headers = {
             ...requestConfig.headers,
-            [headerName]: `${tokenType} ${token}`
+            [headerName]: `${tokenType} ${token}`,
           }
         }
-      } catch (error) {
+      }
+ catch (error) {
         console.warn('Failed to get auth token:', error)
       }
 
       return requestConfig
-    }
+    },
   }
 }
 
@@ -100,24 +101,25 @@ export function createTokenRefreshInterceptor(config: AuthInterceptorConfig): Re
         try {
           // 刷新token
           const newToken = await refreshToken()
-          
+
           // 更新请求头
           originalRequest.headers = {
             ...originalRequest.headers,
-            [headerName]: `${tokenType} ${newToken}`
+            [headerName]: `${tokenType} ${newToken}`,
           }
 
           // 重新发送请求（这里需要客户端实例，实际使用时需要传入）
           // 这是一个简化版本，实际实现可能需要更复杂的逻辑
           return Promise.reject(error) // 暂时还是拒绝，让上层处理
-        } catch (refreshError) {
+        }
+ catch (refreshError) {
           console.error('Token refresh failed:', refreshError)
           return Promise.reject(error)
         }
       }
 
       return Promise.reject(error)
-    }
+    },
   }
 }
 
@@ -132,7 +134,7 @@ export function createLogInterceptor(config: LogInterceptorConfig = {}): {
     logRequests = true,
     logResponses = true,
     logErrors = true,
-    logger = console
+    logger = console,
   } = config
 
   const requestInterceptor: RequestInterceptor = {
@@ -141,7 +143,7 @@ export function createLogInterceptor(config: LogInterceptorConfig = {}): {
         logger.info(`🚀 HTTP Request: ${requestConfig.method?.toUpperCase()} ${requestConfig.url}`, {
           headers: requestConfig.headers,
           params: requestConfig.params,
-          data: requestConfig.data
+          data: requestConfig.data,
         })
       }
       return requestConfig
@@ -151,7 +153,7 @@ export function createLogInterceptor(config: LogInterceptorConfig = {}): {
         logger.error('❌ Request Error:', error)
       }
       return Promise.reject(error)
-    }
+    },
   }
 
   const responseInterceptor: ResponseInterceptor = {
@@ -161,7 +163,7 @@ export function createLogInterceptor(config: LogInterceptorConfig = {}): {
           status: response.status,
           statusText: response.statusText,
           headers: response.headers,
-          data: response.data
+          data: response.data,
         })
       }
       return response
@@ -172,16 +174,16 @@ export function createLogInterceptor(config: LogInterceptorConfig = {}): {
           message: error.message,
           status: error.response?.status,
           statusText: error.response?.statusText,
-          data: error.response?.data
+          data: error.response?.data,
         })
       }
       return Promise.reject(error)
-    }
+    },
   }
 
   return {
     request: requestInterceptor,
-    response: responseInterceptor
+    response: responseInterceptor,
   }
 }
 
@@ -195,7 +197,7 @@ export function createBaseURLInterceptor(baseURL: string): RequestInterceptor {
         requestConfig.baseURL = baseURL
       }
       return requestConfig
-    }
+    },
   }
 }
 
@@ -209,7 +211,7 @@ export function createTimeoutInterceptor(timeout: number): RequestInterceptor {
         requestConfig.timeout = timeout
       }
       return requestConfig
-    }
+    },
   }
 }
 
@@ -222,11 +224,11 @@ export function createContentTypeInterceptor(contentType: string = 'application/
       if (requestConfig.data && !requestConfig.headers?.['Content-Type'] && !requestConfig.headers?.['content-type']) {
         requestConfig.headers = {
           ...requestConfig.headers,
-          'Content-Type': contentType
+          'Content-Type': contentType,
         }
       }
       return requestConfig
-    }
+    },
   }
 }
 
@@ -234,17 +236,18 @@ export function createContentTypeInterceptor(contentType: string = 'application/
  * 创建错误处理拦截器
  */
 export function createErrorHandlerInterceptor(
-  errorHandler: (error: HttpError) => void | Promise<void>
+  errorHandler: (error: HttpError) => void | Promise<void>,
 ): ResponseInterceptor {
   return {
     onRejected: async (error: HttpError) => {
       try {
         await errorHandler(error)
-      } catch (handlerError) {
+      }
+ catch (handlerError) {
         console.error('Error in error handler:', handlerError)
       }
       return Promise.reject(error)
-    }
+    },
   }
 }
 
@@ -252,17 +255,18 @@ export function createErrorHandlerInterceptor(
  * 创建响应转换拦截器
  */
 export function createResponseTransformInterceptor<T, R>(
-  transformer: (data: T) => R
+  transformer: (data: T) => R,
 ): ResponseInterceptor {
   return {
     onFulfilled: <T>(response: HttpResponse<T>) => {
       try {
         response.data = transformer(response.data) as any
-      } catch (error) {
+      }
+ catch (error) {
         console.error('Error in response transformer:', error)
       }
       return response
-    }
+    },
   }
 }
 
@@ -275,11 +279,11 @@ export function createRequestIdInterceptor(headerName: string = 'X-Request-ID'):
       if (!requestConfig.headers?.[headerName]) {
         requestConfig.headers = {
           ...requestConfig.headers,
-          [headerName]: generateRequestId()
+          [headerName]: generateRequestId(),
         }
       }
       return requestConfig
-    }
+    },
   }
 }
 
@@ -295,18 +299,18 @@ export function createInterceptorsPlugin(interceptors: {
     install(client: HttpClientInstance) {
       // 添加请求拦截器
       if (interceptors.request) {
-        interceptors.request.forEach(interceptor => {
+        interceptors.request.forEach((interceptor) => {
           client.addRequestInterceptor(interceptor)
         })
       }
 
       // 添加响应拦截器
       if (interceptors.response) {
-        interceptors.response.forEach(interceptor => {
+        interceptors.response.forEach((interceptor) => {
           client.addResponseInterceptor(interceptor)
         })
       }
-    }
+    },
   }
 }
 

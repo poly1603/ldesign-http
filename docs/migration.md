@@ -11,13 +11,13 @@
 ```typescript
 // Axios
 import axios from 'axios'
+
+// @ldesign/http
+import { createHttpClient } from '@ldesign/http'
 const api = axios.create({
   baseURL: 'https://api.example.com',
   timeout: 10000
 })
-
-// @ldesign/http
-import { createHttpClient } from '@ldesign/http'
 const api = createHttpClient({
   baseURL: 'https://api.example.com',
   timeout: 10000
@@ -46,14 +46,14 @@ await api.delete('/users/1')
 // Axios
 const response = await api.get('/users', {
   params: { page: 1 },
-  headers: { 'Accept': 'application/json' },
+  headers: { Accept: 'application/json' },
   timeout: 5000
 })
 
 // @ldesign/http (完全相同)
 const response = await api.get('/users', {
   params: { page: 1 },
-  headers: { 'Accept': 'application/json' },
+  headers: { Accept: 'application/json' },
   timeout: 5000
 })
 ```
@@ -63,7 +63,7 @@ const response = await api.get('/users', {
 ```typescript
 // Axios
 api.interceptors.request.use(
-  config => {
+  (config) => {
     config.headers.Authorization = `Bearer ${token}`
     return config
   },
@@ -72,7 +72,7 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   response => response,
-  error => {
+  (error) => {
     if (error.response?.status === 401) {
       // 处理未授权
     }
@@ -82,7 +82,7 @@ api.interceptors.response.use(
 
 // @ldesign/http
 api.addRequestInterceptor({
-  onFulfilled: config => {
+  onFulfilled: (config) => {
     config.headers = {
       ...config.headers,
       Authorization: `Bearer ${token}`
@@ -94,7 +94,7 @@ api.addRequestInterceptor({
 
 api.addResponseInterceptor({
   onFulfilled: response => response,
-  onRejected: error => {
+  onRejected: (error) => {
     if (error.response?.status === 401) {
       // 处理未授权
     }
@@ -127,12 +127,15 @@ cancelToken.cancel('Operation canceled')
 // Axios
 try {
   const response = await api.get('/users')
-} catch (error) {
+}
+ catch (error) {
   if (axios.isCancel(error)) {
     console.log('Request canceled')
-  } else if (error.response) {
+  }
+ else if (error.response) {
     console.log('Error status:', error.response.status)
-  } else if (error.request) {
+  }
+ else if (error.request) {
     console.log('Network error')
   }
 }
@@ -140,12 +143,15 @@ try {
 // @ldesign/http
 try {
   const response = await api.get('/users')
-} catch (error: any) {
+}
+ catch (error: any) {
   if (error.isCancelError) {
     console.log('Request canceled')
-  } else if (error.response) {
+  }
+ else if (error.response) {
     console.log('Error status:', error.response.status)
-  } else if (error.isNetworkError) {
+  }
+ else if (error.isNetworkError) {
     console.log('Network error')
   }
 }
@@ -188,7 +194,8 @@ const response = await fetch('/api/users')
 if (!response.ok) {
   if (response.status === 404) {
     throw new Error('Users not found')
-  } else if (response.status >= 500) {
+  }
+ else if (response.status >= 500) {
     throw new Error('Server error')
   }
   throw new Error(`HTTP error! status: ${response.status}`)
@@ -197,10 +204,12 @@ if (!response.ok) {
 // @ldesign/http (自动错误处理)
 try {
   const response = await api.get('/users')
-} catch (error: any) {
+}
+ catch (error: any) {
   if (error.status === 404) {
     console.log('Users not found')
-  } else if (error.status >= 500) {
+  }
+ else if (error.status >= 500) {
     console.log('Server error')
   }
 }
@@ -274,7 +283,7 @@ const { loading, data, error } = useGet('/users')
    import axios from 'axios'
    // 或
    import { request } from 'other-lib'
-   
+
    // 新的导入
    import { createHttpClient } from '@ldesign/http'
    ```
@@ -309,7 +318,8 @@ const { loading, data, error } = useGet('/users')
    ```typescript
    try {
      const response = await api.get('/data')
-   } catch (error: any) {
+   }
+    catch (error: any) {
      // 使用新的错误属性
      if (error.isNetworkError) {
        // 网络错误处理
@@ -326,15 +336,15 @@ const { loading, data, error } = useGet('/users')
 import axios from 'axios'
 import VueAxios from 'vue-axios'
 
+// 新的方式 (@ldesign/http)
+import { createHttpPlugin } from '@ldesign/http'
+
 app.use(VueAxios, axios)
 
 // 组件中使用
-this.axios.get('/users').then(response => {
+this.axios.get('/users').then((response) => {
   this.users = response.data
 })
-
-// 新的方式 (@ldesign/http)
-import { createHttpPlugin } from '@ldesign/http'
 
 app.use(createHttpPlugin({
   baseURL: 'https://api.example.com'
@@ -348,37 +358,38 @@ const { data: users } = useGet('/users')
 
 ```typescript
 // 旧的方式
-import { ref, onMounted } from '@vue/composition-api'
+import { onMounted, ref } from '@vue/composition-api'
 import axios from 'axios'
-
-export default {
-  setup() {
-    const users = ref([])
-    const loading = ref(false)
-    
-    const fetchUsers = async () => {
-      loading.value = true
-      try {
-        const response = await axios.get('/users')
-        users.value = response.data
-      } finally {
-        loading.value = false
-      }
-    }
-    
-    onMounted(fetchUsers)
-    
-    return { users, loading, fetchUsers }
-  }
-}
 
 // 新的方式
 import { useGet } from '@ldesign/http'
 
 export default {
   setup() {
+    const users = ref([])
+    const loading = ref(false)
+
+    const fetchUsers = async () => {
+      loading.value = true
+      try {
+        const response = await axios.get('/users')
+        users.value = response.data
+      }
+ finally {
+        loading.value = false
+      }
+    }
+
+    onMounted(fetchUsers)
+
+    return { users, loading, fetchUsers }
+  }
+}
+
+export default {
+  setup() {
     const { data: users, loading, refresh: fetchUsers } = useGet('/users')
-    
+
     return { users, loading, fetchUsers }
   }
 }
@@ -442,7 +453,7 @@ const client = createQuickClient({
    ```typescript
    // 某些库可能直接返回数据
    const users = await oldLib.get('/users') // 直接是数组
-   
+
    // @ldesign/http 返回完整响应对象
    const response = await api.get('/users')
    const users = response.data // 需要访问 .data 属性
@@ -486,7 +497,7 @@ const client = createQuickClient({
    // 可以同时使用两个库进行对比测试
    const oldResponse = await oldLib.get('/users')
    const newResponse = await newLib.get('/users')
-   
+
    console.assert(
      JSON.stringify(oldResponse) === JSON.stringify(newResponse.data),
      'Response mismatch'
@@ -501,11 +512,12 @@ const client = createQuickClient({
        const response = await api.get('/users')
        expect(response.data).toBeDefined()
      })
-     
+
      it('should handle errors', async () => {
        try {
          await api.get('/nonexistent')
-       } catch (error: any) {
+       }
+    catch (error: any) {
          expect(error.status).toBe(404)
        }
      })

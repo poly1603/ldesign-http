@@ -16,7 +16,7 @@
 ### 基础使用
 
 ```typescript
-import { createHttpClient, createCachePlugin } from '@ldesign/http'
+import { createCachePlugin, createHttpClient } from '@ldesign/http'
 
 const client = createHttpClient({
   baseURL: 'https://api.example.com'
@@ -53,15 +53,15 @@ const client = createQuickClient({
 
 ```typescript
 interface CacheConfig {
-  enabled?: boolean                    // 是否启用缓存
-  ttl?: number                        // 默认TTL (毫秒)
-  maxSize?: number                    // 最大缓存条目数
+  enabled?: boolean // 是否启用缓存
+  ttl?: number // 默认TTL (毫秒)
+  maxSize?: number // 最大缓存条目数
   keyGenerator?: (config: RequestConfig) => string // 缓存键生成器
-  storage?: CacheStorage              // 存储适配器
-  exclude?: (string | RegExp)[]       // 排除的URL模式
-  include?: (string | RegExp)[]       // 包含的URL模式
-  methods?: HttpMethod[]              // 缓存的HTTP方法
-  headers?: string[]                  // 影响缓存键的请求头
+  storage?: CacheStorage // 存储适配器
+  exclude?: (string | RegExp)[] // 排除的URL模式
+  include?: (string | RegExp)[] // 包含的URL模式
+  methods?: HttpMethod[] // 缓存的HTTP方法
+  headers?: string[] // 影响缓存键的请求头
 }
 ```
 
@@ -71,8 +71,8 @@ interface CacheConfig {
 const cachePlugin = createCachePlugin({
   enabled: true,
   ttl: 10 * 60 * 1000, // 10分钟
-  maxSize: 100,        // 最多100个缓存项
-  
+  maxSize: 100, // 最多100个缓存项
+
   // 自定义缓存键生成
   keyGenerator: (config) => {
     const url = config.url || ''
@@ -80,24 +80,24 @@ const cachePlugin = createCachePlugin({
     const headers = JSON.stringify(config.headers || {})
     return `${config.method}:${url}:${params}:${headers}`
   },
-  
+
   // 只缓存特定URL
   include: [
     '/api/users',
     /^\/api\/posts\/\d+$/,
     '/api/config'
   ],
-  
+
   // 排除特定URL
   exclude: [
     '/api/auth',
     /^\/api\/upload/,
     '/api/realtime'
   ],
-  
+
   // 只缓存GET和HEAD请求
   methods: ['GET', 'HEAD'],
-  
+
   // 考虑这些请求头的缓存键
   headers: ['Authorization', 'Accept-Language']
 })
@@ -159,40 +159,41 @@ const cachePlugin = createCachePlugin({
 ```typescript
 class CustomCacheStorage implements CacheStorage {
   private cache = new Map<string, CacheItem>()
-  
+
   async get(key: string): Promise<CacheItem | null> {
     const item = this.cache.get(key)
-    if (!item) return null
-    
+    if (!item)
+return null
+
     // 检查是否过期
     if (Date.now() > item.timestamp + item.ttl) {
       this.cache.delete(key)
       return null
     }
-    
+
     return item
   }
-  
+
   async set(key: string, value: CacheItem): Promise<void> {
     this.cache.set(key, value)
   }
-  
+
   async delete(key: string): Promise<boolean> {
     return this.cache.delete(key)
   }
-  
+
   async clear(): Promise<void> {
     this.cache.clear()
   }
-  
+
   async has(key: string): Promise<boolean> {
     return this.cache.has(key)
   }
-  
+
   async keys(): Promise<string[]> {
     return Array.from(this.cache.keys())
   }
-  
+
   async size(): Promise<number> {
     return this.cache.size
   }
@@ -230,20 +231,22 @@ const response = await client.get('/users', {
 const cachePlugin = createCachePlugin({
   enabled: true,
   ttl: 5 * 60 * 1000,
-  
+
   // 动态决定是否缓存
   shouldCache: (config, response) => {
     // 只缓存成功的响应
-    if (response.status !== 200) return false
-    
+    if (response.status !== 200)
+return false
+
     // 不缓存空数据
     if (!response.data || (Array.isArray(response.data) && response.data.length === 0)) {
       return false
     }
-    
+
     // 不缓存错误响应
-    if (response.data.error) return false
-    
+    if (response.data.error)
+return false
+
     return true
   }
 })
@@ -320,23 +323,8 @@ client.on('cache-delete', (event) => {
 ### 组合式函数缓存
 
 ```vue
-<template>
-  <div>
-    <div v-if="loading">加载中...</div>
-    <div v-else>
-      <ul>
-        <li v-for="user in users" :key="user.id">
-          {{ user.name }}
-        </li>
-      </ul>
-      <button @click="refresh">刷新</button>
-      <button @click="clearCache">清除缓存</button>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { useGet, useCache } from '@ldesign/http'
+import { useCache, useGet } from '@ldesign/http'
 
 // 带缓存的请求
 const { data: users, loading, refresh } = useGet('/users', {
@@ -349,13 +337,34 @@ const { data: users, loading, refresh } = useGet('/users', {
 // 缓存管理
 const { clearCache } = useCache()
 </script>
+
+<template>
+  <div>
+    <div v-if="loading">
+      加载中...
+    </div>
+    <div v-else>
+      <ul>
+        <li v-for="user in users" :key="user.id">
+          {{ user.name }}
+        </li>
+      </ul>
+      <button @click="refresh">
+        刷新
+      </button>
+      <button @click="clearCache">
+        清除缓存
+      </button>
+    </div>
+  </div>
+</template>
 ```
 
 ### 缓存状态管理
 
 ```typescript
 // composables/useCache.ts
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useHttp } from '@ldesign/http'
 
 export function useCache() {
@@ -366,14 +375,14 @@ export function useCache() {
     totalRequests: 0,
     cacheHits: 0
   })
-  
+
   const updateStats = async () => {
     const plugin = http.getPlugin('cache')
     if (plugin) {
       cacheStats.value = await plugin.getStats()
     }
   }
-  
+
   const clearCache = async () => {
     const plugin = http.getPlugin('cache')
     if (plugin) {
@@ -381,7 +390,7 @@ export function useCache() {
       await updateStats()
     }
   }
-  
+
   const clearExpired = async () => {
     const plugin = http.getPlugin('cache')
     if (plugin) {
@@ -389,7 +398,7 @@ export function useCache() {
       await updateStats()
     }
   }
-  
+
   return {
     cacheStats: computed(() => cacheStats.value),
     updateStats,
@@ -405,15 +414,15 @@ export function useCache() {
 
 ```typescript
 // 预热关键数据
-const preloadCache = async () => {
+async function preloadCache() {
   const criticalEndpoints = [
     '/api/user/profile',
     '/api/config/app',
     '/api/menu/navigation'
   ]
-  
+
   await Promise.all(
-    criticalEndpoints.map(url => 
+    criticalEndpoints.map(url =>
       client.get(url, {
         cache: { ttl: 30 * 60 * 1000 } // 30分钟
       })
@@ -431,7 +440,7 @@ preloadCache()
 // 跨标签页缓存同步
 class SyncedCacheStorage implements CacheStorage {
   private storage = createLocalStorageCache()
-  
+
   constructor() {
     // 监听其他标签页的缓存变化
     window.addEventListener('storage', (event) => {
@@ -440,12 +449,12 @@ class SyncedCacheStorage implements CacheStorage {
       }
     })
   }
-  
+
   private handleCacheChange(event: StorageEvent) {
     // 处理缓存同步逻辑
     console.log('缓存已在其他标签页更新:', event.key)
   }
-  
+
   // 实现 CacheStorage 接口...
 }
 ```
@@ -455,7 +464,7 @@ class SyncedCacheStorage implements CacheStorage {
 ```typescript
 const cachePlugin = createCachePlugin({
   enabled: true,
-  
+
   // 智能失效策略
   invalidateOn: {
     // POST/PUT/DELETE 请求后失效相关缓存
@@ -469,14 +478,14 @@ const cachePlugin = createCachePlugin({
         invalidates: ['/api/posts', '/api/dashboard/stats']
       }
     ],
-    
+
     // 基于响应头失效
     headers: ['Cache-Control', 'ETag', 'Last-Modified'],
-    
+
     // 定时失效
     schedule: {
       '0 0 * * *': ['/api/daily-stats'], // 每天午夜失效
-      '0 */6 * * *': ['/api/config']     // 每6小时失效
+      '0 */6 * * *': ['/api/config'] // 每6小时失效
     }
   }
 })
@@ -491,7 +500,7 @@ import { compress, decompress } from 'lz-string'
 
 class CompressedCacheStorage implements CacheStorage {
   private storage = createLocalStorageCache()
-  
+
   async set(key: string, value: CacheItem): Promise<void> {
     const compressed = {
       ...value,
@@ -499,17 +508,18 @@ class CompressedCacheStorage implements CacheStorage {
     }
     await this.storage.set(key, compressed)
   }
-  
+
   async get(key: string): Promise<CacheItem | null> {
     const item = await this.storage.get(key)
-    if (!item) return null
-    
+    if (!item)
+return null
+
     return {
       ...item,
       data: JSON.parse(decompress(item.data))
     }
   }
-  
+
   // 其他方法...
 }
 ```
@@ -518,24 +528,25 @@ class CompressedCacheStorage implements CacheStorage {
 
 ```typescript
 class TieredCacheStorage implements CacheStorage {
-  private l1Cache = createMemoryCache()      // 一级缓存：内存
+  private l1Cache = createMemoryCache() // 一级缓存：内存
   private l2Cache = createLocalStorageCache() // 二级缓存：localStorage
-  
+
   async get(key: string): Promise<CacheItem | null> {
     // 先查一级缓存
     let item = await this.l1Cache.get(key)
-    if (item) return item
-    
+    if (item)
+return item
+
     // 再查二级缓存
     item = await this.l2Cache.get(key)
     if (item) {
       // 提升到一级缓存
       await this.l1Cache.set(key, item)
     }
-    
+
     return item
   }
-  
+
   async set(key: string, value: CacheItem): Promise<void> {
     // 同时写入两级缓存
     await Promise.all([
@@ -543,7 +554,7 @@ class TieredCacheStorage implements CacheStorage {
       this.l2Cache.set(key, value)
     ])
   }
-  
+
   // 其他方法...
 }
 ```
@@ -556,13 +567,13 @@ class TieredCacheStorage implements CacheStorage {
 // ✅ 根据数据特性设置TTL
 const cachePlugin = createCachePlugin({
   ttl: 5 * 60 * 1000, // 默认5分钟
-  
+
   // 不同类型数据使用不同TTL
   customTTL: {
-    '/api/config': 60 * 60 * 1000,      // 配置数据：1小时
-    '/api/users': 10 * 60 * 1000,       // 用户数据：10分钟
-    '/api/realtime': 30 * 1000,         // 实时数据：30秒
-    '/api/static': 24 * 60 * 60 * 1000  // 静态数据：24小时
+    '/api/config': 60 * 60 * 1000, // 配置数据：1小时
+    '/api/users': 10 * 60 * 1000, // 用户数据：10分钟
+    '/api/realtime': 30 * 1000, // 实时数据：30秒
+    '/api/static': 24 * 60 * 60 * 1000 // 静态数据：24小时
   }
 })
 ```
@@ -571,13 +582,13 @@ const cachePlugin = createCachePlugin({
 
 ```typescript
 // ✅ 包含影响响应的所有因素
-const keyGenerator = (config) => {
+function keyGenerator(config) {
   const parts = [
     config.method,
     config.url,
     JSON.stringify(config.params),
     config.headers?.['Accept-Language'], // 语言
-    config.headers?.['Authorization']?.slice(-8) // 用户标识
+    config.headers?.Authorization?.slice(-8) // 用户标识
   ]
   return parts.filter(Boolean).join(':')
 }
@@ -587,16 +598,16 @@ const keyGenerator = (config) => {
 
 ```typescript
 // ✅ 监控缓存性能
-const monitorCache = () => {
+function monitorCache() {
   setInterval(async () => {
     const stats = await cachePlugin.getStats()
-    
+
     console.log('缓存统计:', {
       hitRate: `${(stats.hitRate * 100).toFixed(2)}%`,
       size: stats.size,
       memory: `${(stats.memoryUsage / 1024 / 1024).toFixed(2)}MB`
     })
-    
+
     // 命中率过低时告警
     if (stats.hitRate < 0.3) {
       console.warn('缓存命中率过低，请检查缓存策略')

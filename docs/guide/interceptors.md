@@ -27,13 +27,13 @@ const interceptorId = client.addRequestInterceptor({
   onFulfilled: (config) => {
     // 在请求发送前执行
     console.log('发送请求:', config.url)
-    
+
     // 添加时间戳
     config.headers = {
       ...config.headers,
       'X-Timestamp': Date.now().toString()
     }
-    
+
     return config
   },
   onRejected: (error) => {
@@ -54,7 +54,7 @@ client.addRequestInterceptor({
     if (token) {
       config.headers = {
         ...config.headers,
-        'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`
       }
     }
     return config
@@ -75,12 +75,12 @@ client.addRequestInterceptor({
         'X-Admin-Request': 'true'
       }
     }
-    
+
     // 为上传请求设置超时
     if (config.url?.includes('/upload')) {
       config.timeout = 60000 // 60秒
     }
-    
+
     return config
   }
 })
@@ -96,7 +96,7 @@ const interceptorId = client.addResponseInterceptor({
   onFulfilled: (response) => {
     // 响应成功时执行
     console.log('收到响应:', response.status)
-    
+
     // 统一处理响应数据格式
     if (response.data && typeof response.data === 'object' && 'code' in response.data) {
       if (response.data.code !== 200) {
@@ -105,20 +105,20 @@ const interceptorId = client.addResponseInterceptor({
       // 返回实际数据
       response.data = response.data.data
     }
-    
+
     return response
   },
   onRejected: (error) => {
     // 响应错误时执行
     console.error('响应错误:', error.message)
-    
+
     // 统一错误处理
     if (error.response?.status === 401) {
       // 清除token并跳转登录
       localStorage.removeItem('authToken')
       window.location.href = '/login'
     }
-    
+
     return Promise.reject(error)
   }
 })
@@ -139,19 +139,22 @@ client.addResponseInterceptor({
 })
 
 function transformDates(obj: any): any {
-  if (obj === null || typeof obj !== 'object') return obj
-  
+  if (obj === null || typeof obj !== 'object')
+return obj
+
   if (Array.isArray(obj)) {
     return obj.map(transformDates)
   }
-  
+
   const result: any = {}
   for (const [key, value] of Object.entries(obj)) {
     if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
       result[key] = new Date(value)
-    } else if (typeof value === 'object') {
+    }
+ else if (typeof value === 'object') {
       result[key] = transformDates(value)
-    } else {
+    }
+ else {
       result[key] = value
     }
   }
@@ -215,13 +218,16 @@ const errorHandler = createErrorHandlerInterceptor((error) => {
     // 未授权
     store.dispatch('auth/logout')
     router.push('/login')
-  } else if (error.response?.status === 403) {
+  }
+ else if (error.response?.status === 403) {
     // 权限不足
     showMessage('权限不足', 'error')
-  } else if (error.response?.status >= 500) {
+  }
+ else if (error.response?.status >= 500) {
     // 服务器错误
     showMessage('服务器错误，请稍后重试', 'error')
-  } else if (error.isNetworkError) {
+  }
+ else if (error.isNetworkError) {
     // 网络错误
     showMessage('网络连接失败', 'error')
   }
@@ -237,11 +243,11 @@ client.addResponseInterceptor(errorHandler)
 ```typescript
 // 添加拦截器时会返回ID
 const requestInterceptorId = client.addRequestInterceptor({
-  onFulfilled: (config) => config
+  onFulfilled: config => config
 })
 
 const responseInterceptorId = client.addResponseInterceptor({
-  onFulfilled: (response) => response
+  onFulfilled: response => response
 })
 
 // 移除特定拦截器
@@ -286,7 +292,7 @@ client.addRequestInterceptor({
     if (config.url?.startsWith('/api/')) {
       config.headers = {
         ...config.headers,
-        'Authorization': `Bearer ${getToken()}`
+        Authorization: `Bearer ${getToken()}`
       }
     }
     return config
@@ -304,7 +310,7 @@ client.addRequestInterceptor({
     const token = await getTokenAsync()
     config.headers = {
       ...config.headers,
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`
     }
     return config
   }
@@ -328,7 +334,7 @@ const interceptorChain = [
   // 1. 添加认证
   {
     onFulfilled: (config) => {
-      config.headers = { ...config.headers, 'Authorization': getAuth() }
+      config.headers = { ...config.headers, Authorization: getAuth() }
       return config
     }
   },
@@ -349,7 +355,7 @@ const interceptorChain = [
 ]
 
 // 批量添加
-interceptorChain.forEach(interceptor => {
+interceptorChain.forEach((interceptor) => {
   client.addRequestInterceptor(interceptor)
 })
 ```
@@ -416,7 +422,7 @@ client.addRequestInterceptor({
 ```typescript
 // ✅ 在拦截器中处理错误
 client.addRequestInterceptor({
-  onFulfilled: (config) => config,
+  onFulfilled: config => config,
   onRejected: (error) => {
     console.error('请求配置错误:', error)
     return Promise.reject(error)

@@ -24,13 +24,13 @@ const client = createHttpClient({
 
 // 创建重试插件
 const retryPlugin = createRetryPlugin({
-  retries: 3,                 // 最大重试次数
-  retryDelay: 1000,          // 重试延迟 (毫秒)
+  retries: 3, // 最大重试次数
+  retryDelay: 1000, // 重试延迟 (毫秒)
   retryCondition: (error) => {
     // 只重试网络错误和5xx错误
-    return error.isNetworkError || 
-           error.isTimeoutError || 
-           (error.status >= 500 && error.status < 600)
+    return error.isNetworkError
+      || error.isTimeoutError
+      || (error.status >= 500 && error.status < 600)
   }
 })
 
@@ -41,7 +41,8 @@ retryPlugin.install(client)
 try {
   const response = await client.get('/unreliable-endpoint')
   console.log('请求成功:', response.data)
-} catch (error) {
+}
+ catch (error) {
   console.log('重试后仍然失败:', error.message)
 }
 ```
@@ -53,7 +54,7 @@ import { createQuickClient } from '@ldesign/http'
 
 const client = createQuickClient({
   baseURL: 'https://api.example.com',
-  enableRetry: true,          // 启用重试
+  enableRetry: true, // 启用重试
   retryOptions: {
     retries: 5,
     strategy: 'exponential'
@@ -67,14 +68,14 @@ const client = createQuickClient({
 
 ```typescript
 interface RetryConfig {
-  retries?: number                    // 最大重试次数 (默认: 3)
-  retryDelay?: number                // 基础重试延迟 (默认: 1000ms)
-  strategy?: RetryStrategy           // 重试策略 (默认: 'fixed')
-  maxDelay?: number                  // 最大延迟时间 (默认: 30000ms)
-  jitter?: number                    // 延迟抖动因子 (默认: 0.1)
-  retryCondition?: (error: HttpError) => boolean  // 重试条件
-  onRetry?: (error: HttpError, retryCount: number) => void  // 重试回调
-  onRetryFailed?: (error: HttpError, retryCount: number) => void  // 重试失败回调
+  retries?: number // 最大重试次数 (默认: 3)
+  retryDelay?: number // 基础重试延迟 (默认: 1000ms)
+  strategy?: RetryStrategy // 重试策略 (默认: 'fixed')
+  maxDelay?: number // 最大延迟时间 (默认: 30000ms)
+  jitter?: number // 延迟抖动因子 (默认: 0.1)
+  retryCondition?: (error: HttpError) => boolean // 重试条件
+  onRetry?: (error: HttpError, retryCount: number) => void // 重试回调
+  onRetryFailed?: (error: HttpError, retryCount: number) => void // 重试失败回调
 }
 
 type RetryStrategy = 'fixed' | 'exponential' | 'linear' | 'custom'
@@ -84,37 +85,37 @@ type RetryStrategy = 'fixed' | 'exponential' | 'linear' | 'custom'
 
 ```typescript
 const retryPlugin = createRetryPlugin({
-  retries: 5,                // 最多重试5次
-  retryDelay: 1000,         // 基础延迟1秒
-  strategy: 'exponential',   // 指数退避策略
-  maxDelay: 30000,          // 最大延迟30秒
-  jitter: 0.2,              // 20%的随机抖动
-  
+  retries: 5, // 最多重试5次
+  retryDelay: 1000, // 基础延迟1秒
+  strategy: 'exponential', // 指数退避策略
+  maxDelay: 30000, // 最大延迟30秒
+  jitter: 0.2, // 20%的随机抖动
+
   // 自定义重试条件
   retryCondition: (error) => {
     // 不重试客户端错误 (4xx)
     if (error.status >= 400 && error.status < 500) {
       return false
     }
-    
+
     // 重试网络错误、超时错误和服务器错误
-    return error.isNetworkError || 
-           error.isTimeoutError || 
-           error.status >= 500
+    return error.isNetworkError
+      || error.isTimeoutError
+      || error.status >= 500
   },
-  
+
   // 重试回调
   onRetry: (error, retryCount) => {
     console.log(`第${retryCount}次重试: ${error.message}`)
-    
+
     // 可以在这里添加用户提示
     showNotification(`请求失败，正在重试 (${retryCount}/5)`, 'warning')
   },
-  
+
   // 重试失败回调
   onRetryFailed: (error, retryCount) => {
     console.log(`重试${retryCount}次后仍然失败: ${error.message}`)
-    
+
     // 记录错误日志
     logError('Retry failed', {
       error: error.message,
@@ -134,7 +135,7 @@ const retryPlugin = createRetryPlugin({
 ```typescript
 const retryPlugin = createRetryPlugin({
   strategy: 'fixed',
-  retryDelay: 2000  // 每次重试都等待2秒
+  retryDelay: 2000 // 每次重试都等待2秒
 })
 
 // 重试时间: 2s, 2s, 2s, 2s...
@@ -147,8 +148,8 @@ const retryPlugin = createRetryPlugin({
 ```typescript
 const retryPlugin = createRetryPlugin({
   strategy: 'exponential',
-  retryDelay: 1000,    // 基础延迟1秒
-  maxDelay: 30000      // 最大延迟30秒
+  retryDelay: 1000, // 基础延迟1秒
+  maxDelay: 30000 // 最大延迟30秒
 })
 
 // 重试时间: 1s, 2s, 4s, 8s, 16s, 30s, 30s...
@@ -161,7 +162,7 @@ const retryPlugin = createRetryPlugin({
 ```typescript
 const retryPlugin = createRetryPlugin({
   strategy: 'linear',
-  retryDelay: 1000     // 每次增加1秒
+  retryDelay: 1000 // 每次增加1秒
 })
 
 // 重试时间: 1s, 2s, 3s, 4s, 5s...
@@ -178,13 +179,15 @@ const retryPlugin = createRetryPlugin({
     // 根据错误类型使用不同的延迟策略
     if (error.status === 429) {
       // 限流错误使用更长的延迟
-      return Math.min(5000 * Math.pow(2, retryCount), 60000)
-    } else if (error.isNetworkError) {
+      return Math.min(5000 * 2 ** retryCount, 60000)
+    }
+ else if (error.isNetworkError) {
       // 网络错误使用固定延迟
       return 3000
-    } else {
+    }
+ else {
       // 其他错误使用指数退避
-      return Math.min(1000 * Math.pow(2, retryCount), 30000)
+      return Math.min(1000 * 2 ** retryCount, 30000)
     }
   }
 })
@@ -227,29 +230,29 @@ const smartRetryPlugin = createRetryPlugin({
     if (error.status === 401 || error.status === 403) {
       return false
     }
-    
+
     // 不重试客户端错误 (除了特定的几个)
     if (error.status >= 400 && error.status < 500) {
       const retryableClientErrors = [408, 429]
       return retryableClientErrors.includes(error.status)
     }
-    
+
     // 重试网络错误
     if (error.isNetworkError || error.isTimeoutError) {
       return true
     }
-    
+
     // 重试服务器错误
     if (error.status >= 500) {
       return true
     }
-    
+
     // 根据错误消息判断
-    if (error.message.includes('ECONNRESET') || 
-        error.message.includes('ETIMEDOUT')) {
+    if (error.message.includes('ECONNRESET')
+      || error.message.includes('ETIMEDOUT')) {
       return true
     }
-    
+
     return false
   }
 })
@@ -271,11 +274,11 @@ retryPlugin.install(client)
 const stats = retryPlugin.getStats()
 
 console.log('重试统计:', {
-  totalRequests: stats.totalRequests,      // 总请求数
-  retriedRequests: stats.retriedRequests,  // 重试的请求数
-  totalRetries: stats.totalRetries,        // 总重试次数
+  totalRequests: stats.totalRequests, // 总请求数
+  retriedRequests: stats.retriedRequests, // 重试的请求数
+  totalRetries: stats.totalRetries, // 总重试次数
   successAfterRetry: stats.successAfterRetry, // 重试后成功的请求数
-  retrySuccessRate: stats.retrySuccessRate    // 重试成功率
+  retrySuccessRate: stats.retrySuccessRate // 重试成功率
 })
 ```
 
@@ -317,42 +320,8 @@ client.on('retry-failed', (event) => {
 ### 重试状态显示
 
 ```vue
-<template>
-  <div class="retry-demo">
-    <button @click="makeRequest" :disabled="loading">
-      {{ loading ? '请求中...' : '发送请求' }}
-    </button>
-    
-    <div v-if="retryInfo.isRetrying" class="retry-status">
-      <div class="retry-message">
-        请求失败，正在重试... ({{ retryInfo.currentRetry }}/{{ retryInfo.maxRetries }})
-      </div>
-      <div class="retry-progress">
-        <div 
-          class="progress-bar" 
-          :style="{ width: `${(retryInfo.currentRetry / retryInfo.maxRetries) * 100}%` }"
-        ></div>
-      </div>
-      <div class="retry-countdown">
-        下次重试倒计时: {{ retryInfo.countdown }}s
-      </div>
-    </div>
-    
-    <div v-if="result" class="result">
-      <h3>请求结果:</h3>
-      <pre>{{ JSON.stringify(result, null, 2) }}</pre>
-    </div>
-    
-    <div v-if="error" class="error">
-      <h3>最终错误:</h3>
-      <p>{{ error.message }}</p>
-      <p>重试次数: {{ retryInfo.totalRetries }}</p>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useHttp } from '@ldesign/http'
 
 const http = useHttp()
@@ -375,9 +344,10 @@ http.on('retry', (event) => {
   retryInfo.isRetrying = true
   retryInfo.currentRetry = event.retryCount
   retryInfo.countdown = Math.ceil(event.nextDelay / 1000)
-  
+
   // 开始倒计时
-  if (countdownTimer) clearInterval(countdownTimer)
+  if (countdownTimer)
+clearInterval(countdownTimer)
   countdownTimer = setInterval(() => {
     retryInfo.countdown--
     if (retryInfo.countdown <= 0) {
@@ -389,34 +359,72 @@ http.on('retry', (event) => {
 http.on('retry-success', (event) => {
   retryInfo.isRetrying = false
   retryInfo.totalRetries = event.totalRetries
-  if (countdownTimer) clearInterval(countdownTimer)
+  if (countdownTimer)
+clearInterval(countdownTimer)
 })
 
 http.on('retry-failed', (event) => {
   retryInfo.isRetrying = false
   retryInfo.totalRetries = event.totalRetries
-  if (countdownTimer) clearInterval(countdownTimer)
+  if (countdownTimer)
+clearInterval(countdownTimer)
 })
 
-const makeRequest = async () => {
+async function makeRequest() {
   loading.value = true
   result.value = null
   error.value = null
   retryInfo.isRetrying = false
   retryInfo.currentRetry = 0
   retryInfo.totalRetries = 0
-  
+
   try {
     // 使用一个不稳定的API来演示重试
     const response = await http.get('https://httpbin.org/status/500')
     result.value = response.data
-  } catch (err: any) {
+  }
+ catch (err: any) {
     error.value = err
-  } finally {
+  }
+ finally {
     loading.value = false
   }
 }
 </script>
+
+<template>
+  <div class="retry-demo">
+    <button :disabled="loading" @click="makeRequest">
+      {{ loading ? '请求中...' : '发送请求' }}
+    </button>
+
+    <div v-if="retryInfo.isRetrying" class="retry-status">
+      <div class="retry-message">
+        请求失败，正在重试... ({{ retryInfo.currentRetry }}/{{ retryInfo.maxRetries }})
+      </div>
+      <div class="retry-progress">
+        <div
+          class="progress-bar"
+          :style="{ width: `${(retryInfo.currentRetry / retryInfo.maxRetries) * 100}%` }"
+        />
+      </div>
+      <div class="retry-countdown">
+        下次重试倒计时: {{ retryInfo.countdown }}s
+      </div>
+    </div>
+
+    <div v-if="result" class="result">
+      <h3>请求结果:</h3>
+      <pre>{{ JSON.stringify(result, null, 2) }}</pre>
+    </div>
+
+    <div v-if="error" class="error">
+      <h3>最终错误:</h3>
+      <p>{{ error.message }}</p>
+      <p>重试次数: {{ retryInfo.totalRetries }}</p>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .retry-demo {
@@ -487,7 +495,7 @@ pre {
 
 ```typescript
 // composables/useRetry.ts
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useHttp } from '@ldesign/http'
 
 export function useRetry() {
@@ -498,19 +506,20 @@ export function useRetry() {
     totalRetries: 0,
     successAfterRetry: 0
   })
-  
+
   const retrySuccessRate = computed(() => {
-    if (retryStats.value.retriedRequests === 0) return 0
+    if (retryStats.value.retriedRequests === 0)
+return 0
     return (retryStats.value.successAfterRetry / retryStats.value.retriedRequests) * 100
   })
-  
+
   const updateStats = () => {
     const plugin = http.getPlugin('retry')
     if (plugin) {
       retryStats.value = plugin.getStats()
     }
   }
-  
+
   const resetStats = () => {
     const plugin = http.getPlugin('retry')
     if (plugin) {
@@ -518,7 +527,7 @@ export function useRetry() {
       updateStats()
     }
   }
-  
+
   return {
     retryStats: computed(() => retryStats.value),
     retrySuccessRate,
@@ -540,12 +549,12 @@ const conditionalRetryPlugin = createRetryPlugin({
     if (error.response?.data?.retryable === false) {
       return false
     }
-    
+
     // 检查特定错误码
     if (error.response?.data?.errorCode === 'PERMANENT_FAILURE') {
       return false
     }
-    
+
     return error.status >= 500
   }
 })
@@ -560,24 +569,24 @@ class RateLimitedRetryPlugin {
   private windowStart = Date.now()
   private readonly maxRetriesPerWindow = 10
   private readonly windowSize = 60000 // 1分钟
-  
+
   createPlugin() {
     return createRetryPlugin({
       retryCondition: (error) => {
         const now = Date.now()
-        
+
         // 重置窗口
         if (now - this.windowStart > this.windowSize) {
           this.retryCount = 0
           this.windowStart = now
         }
-        
+
         // 检查是否超过限制
         if (this.retryCount >= this.maxRetriesPerWindow) {
           console.warn('重试次数超过限制，暂停重试')
           return false
         }
-        
+
         this.retryCount++
         return error.status >= 500
       }
@@ -596,20 +605,20 @@ const adaptiveRetryPlugin = createRetryPlugin({
     // 检查 Retry-After 头
     const retryAfter = error.response?.headers['retry-after']
     if (retryAfter) {
-      const delay = parseInt(retryAfter) * 1000
+      const delay = Number.parseInt(retryAfter) * 1000
       return Math.min(delay, 60000) // 最多等待1分钟
     }
-    
+
     // 检查 X-RateLimit-Reset 头
     const rateLimitReset = error.response?.headers['x-ratelimit-reset']
     if (rateLimitReset && error.status === 429) {
-      const resetTime = parseInt(rateLimitReset) * 1000
+      const resetTime = Number.parseInt(rateLimitReset) * 1000
       const delay = resetTime - Date.now()
       return Math.max(delay, 1000) // 至少等待1秒
     }
-    
+
     // 默认指数退避
-    return Math.min(1000 * Math.pow(2, retryCount), 30000)
+    return Math.min(1000 * 2 ** retryCount, 30000)
   }
 })
 ```
@@ -621,13 +630,13 @@ const adaptiveRetryPlugin = createRetryPlugin({
 ```typescript
 // ✅ 根据场景设置合适的重试次数
 const retryPlugin = createRetryPlugin({
-  retries: 3,  // 对于大多数场景，3次重试是合理的
-  
+  retries: 3, // 对于大多数场景，3次重试是合理的
+
   // 对于关键操作，可以增加重试次数
   retryCondition: (error) => {
     const isCriticalOperation = error.request?.url?.includes('/critical/')
     const maxRetries = isCriticalOperation ? 5 : 3
-    
+
     return error.retryCount < maxRetries && error.status >= 500
   }
 })
@@ -644,7 +653,7 @@ const safeRetryPlugin = createRetryPlugin({
     if (writeOperations.includes(error.request?.method?.toUpperCase())) {
       return false
     }
-    
+
     // 只重试读操作
     return error.request?.method?.toUpperCase() === 'GET' && error.status >= 500
   }
@@ -664,7 +673,7 @@ const monitoredRetryPlugin = createRetryPlugin({
       retryCount
     })
   },
-  
+
   onRetryFailed: (error, retryCount) => {
     // 记录重试失败
     metrics.increment('http.retry.failed', {

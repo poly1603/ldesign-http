@@ -26,7 +26,7 @@
    ```bash
    # 创建功能分支
    git checkout -b feature/your-feature-name
-   
+
    # 或者创建修复分支
    git checkout -b fix/issue-number
    ```
@@ -40,13 +40,13 @@
    ```bash
    # 进入http包目录
    cd packages/http
-   
+
    # 开发模式
    pnpm dev
-   
+
    # 运行测试
    pnpm test
-   
+
    # 构建
    pnpm build
    ```
@@ -143,7 +143,7 @@ describe('HttpClient', () => {
   it('should send GET request successfully', async () => {
     // 测试实现
   })
-  
+
   it('should handle network errors gracefully', async () => {
     // 错误处理测试
   })
@@ -189,11 +189,11 @@ export class CustomAdapter implements HttpAdapter {
   async request<T>(config: RequestConfig): Promise<HttpResponse<T>> {
     // 实现逻辑
   }
-  
+
   cancel(): void {
     // 取消逻辑
   }
-  
+
   getName(): string {
     return 'custom'
   }

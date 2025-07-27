@@ -11,17 +11,17 @@ global.Headers = vi.fn(() => ({
   get: vi.fn(),
   has: vi.fn(),
   delete: vi.fn(),
-  forEach: vi.fn()
+  forEach: vi.fn(),
 })) as any
 
 global.AbortController = vi.fn(() => ({
   signal: {},
-  abort: vi.fn()
+  abort: vi.fn(),
 })) as any
 
 global.URLSearchParams = vi.fn(() => ({
   append: vi.fn(),
-  toString: vi.fn(() => '')
+  toString: vi.fn(() => ''),
 })) as any
 
 // Mock localStorage
@@ -31,7 +31,7 @@ const localStorageMock = {
   removeItem: vi.fn(),
   clear: vi.fn(),
   key: vi.fn(),
-  length: 0
+  length: 0,
 }
 global.localStorage = localStorageMock as any
 
@@ -42,7 +42,7 @@ const sessionStorageMock = {
   removeItem: vi.fn(),
   clear: vi.fn(),
   key: vi.fn(),
-  length: 0
+  length: 0,
 }
 global.sessionStorage = sessionStorageMock as any
 
@@ -52,7 +52,7 @@ global.console = {
   warn: vi.fn(),
   error: vi.fn(),
   info: vi.fn(),
-  log: vi.fn()
+  log: vi.fn(),
 }
 
 // 测试工具函数
@@ -60,7 +60,7 @@ export function createMockResponse<T>(
   data: T,
   status: number = 200,
   statusText: string = 'OK',
-  headers: Record<string, string> = {}
+  headers: Record<string, string> = {},
 ): Response {
   return {
     ok: status >= 200 && status < 300,
@@ -76,7 +76,7 @@ export function createMockResponse<T>(
     bodyUsed: false,
     redirected: false,
     type: 'basic',
-    url: ''
+    url: '',
   } as any
 }
 
@@ -99,7 +99,7 @@ export function resetAllMocks(): void {
   localStorageMock.setItem.mockClear()
   localStorageMock.removeItem.mockClear()
   localStorageMock.clear.mockClear()
-  
+
   sessionStorageMock.getItem.mockClear()
   sessionStorageMock.setItem.mockClear()
   sessionStorageMock.removeItem.mockClear()

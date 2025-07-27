@@ -10,6 +10,22 @@
 })(this, (function (exports, require$$1, stream, require$$1$1, require$$3, require$$4, require$$0$1, require$$6, require$$8, require$$4$1, require$$0$2, zlib, events$1, vue) { 'use strict';
 
     /**
+     * HTTP请求系统核心类型定义
+     * 支持多种适配器：原生fetch、axios、alova
+     */
+    // HTTP方法枚举
+    var HttpMethod$1;
+    (function (HttpMethod) {
+        HttpMethod["GET"] = "GET";
+        HttpMethod["POST"] = "POST";
+        HttpMethod["PUT"] = "PUT";
+        HttpMethod["DELETE"] = "DELETE";
+        HttpMethod["PATCH"] = "PATCH";
+        HttpMethod["HEAD"] = "HEAD";
+        HttpMethod["OPTIONS"] = "OPTIONS";
+    })(HttpMethod$1 || (HttpMethod$1 = {}));
+
+    /**
      * HTTP客户端抽象基类
      * 提供统一的接口和通用功能实现
      */
@@ -68,26 +84,26 @@
             return {
                 timeout: 10000,
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
                 responseType: 'json',
                 withCredentials: false,
                 adapter: 'fetch',
                 interceptors: {
                     request: [],
-                    response: []
+                    response: [],
                 },
                 cache: {
                     enabled: false,
-                    ttl: 5 * 60 * 1000 // 5分钟
+                    ttl: 5 * 60 * 1000, // 5分钟
                 },
                 retry: {
                     retries: 0,
                     retryDelay: 1000,
                     retryCondition: (error) => {
                         return !error.response || (error.response.status >= 500 && error.response.status < 600);
-                    }
-                }
+                    },
+                },
             };
         }
         /**
@@ -95,7 +111,7 @@
          */
         initializeEventListeners() {
             const eventTypes = ['request', 'response', 'error', 'retry', 'cache-hit', 'cache-miss'];
-            eventTypes.forEach(type => {
+            eventTypes.forEach((type) => {
                 this.eventListeners.set(type, []);
             });
         }
@@ -108,26 +124,26 @@
                 ...userConfig,
                 headers: {
                     ...defaultConfig.headers,
-                    ...userConfig.headers
+                    ...userConfig.headers,
                 },
                 interceptors: {
                     request: [
                         ...(defaultConfig.interceptors?.request || []),
-                        ...(userConfig.interceptors?.request || [])
+                        ...(userConfig.interceptors?.request || []),
                     ],
                     response: [
                         ...(defaultConfig.interceptors?.response || []),
-                        ...(userConfig.interceptors?.response || [])
-                    ]
+                        ...(userConfig.interceptors?.response || []),
+                    ],
                 },
                 cache: {
                     ...defaultConfig.cache,
-                    ...userConfig.cache
+                    ...userConfig.cache,
                 },
                 retry: {
                     ...defaultConfig.retry,
-                    ...userConfig.retry
-                }
+                    ...userConfig.retry,
+                },
             };
         }
         /**
@@ -137,7 +153,7 @@
             return this.request({
                 ...config,
                 url,
-                method: HttpMethod.GET
+                method: HttpMethod$1.GET,
             });
         }
         /**
@@ -147,8 +163,8 @@
             return this.request({
                 ...config,
                 url,
-                method: HttpMethod.POST,
-                data
+                method: HttpMethod$1.POST,
+                data,
             });
         }
         /**
@@ -158,8 +174,8 @@
             return this.request({
                 ...config,
                 url,
-                method: HttpMethod.PUT,
-                data
+                method: HttpMethod$1.PUT,
+                data,
             });
         }
         /**
@@ -169,7 +185,7 @@
             return this.request({
                 ...config,
                 url,
-                method: HttpMethod.DELETE
+                method: HttpMethod$1.DELETE,
             });
         }
         /**
@@ -179,8 +195,8 @@
             return this.request({
                 ...config,
                 url,
-                method: HttpMethod.PATCH,
-                data
+                method: HttpMethod$1.PATCH,
+                data,
             });
         }
         /**
@@ -190,7 +206,7 @@
             return this.request({
                 ...config,
                 url,
-                method: HttpMethod.HEAD
+                method: HttpMethod$1.HEAD,
             });
         }
         /**
@@ -200,7 +216,7 @@
             return this.request({
                 ...config,
                 url,
-                method: HttpMethod.OPTIONS
+                method: HttpMethod$1.OPTIONS,
             });
         }
         /**
@@ -246,8 +262,8 @@
                 ...config,
                 headers: {
                     ...this.config.headers,
-                    ...config.headers
-                }
+                    ...config.headers,
+                },
             };
         }
         /**
@@ -304,12 +320,12 @@
             catch (error) {
                 const httpError = this.createHttpError(error, config);
                 const retryConfig = this.config.retry;
-                if (retryCount < retryConfig.retries &&
-                    retryConfig.retryCondition(httpError)) {
+                if (retryCount < retryConfig.retries
+                    && retryConfig.retryCondition(httpError)) {
                     this.emit('retry', { config, error: httpError, retryCount: retryCount + 1 });
                     const delay = retryConfig.retryDelayCalculator
                         ? retryConfig.retryDelayCalculator(retryCount + 1, httpError)
-                        : retryConfig.retryDelay * Math.pow(2, retryCount);
+                        : retryConfig.retryDelay * 2 ** retryCount;
                     await this.delay(delay);
                     return this.requestWithRetry(config, retryCount + 1);
                 }
@@ -326,7 +342,7 @@
          * 检查缓存
          */
         async checkCache(config) {
-            if (!this.config.cache?.enabled || config.method !== HttpMethod.GET) {
+            if (!this.config.cache?.enabled || config.method !== HttpMethod$1.GET) {
                 return null;
             }
             // 这里应该实现具体的缓存逻辑
@@ -337,9 +353,7 @@
          * 缓存响应
          */
         async cacheResponse(config, response) {
-            if (!this.config.cache?.enabled || config.method !== HttpMethod.GET) {
-                return;
-            }
+            if (!this.config.cache?.enabled || config.method !== HttpMethod$1.GET) ;
             // 这里应该实现具体的缓存逻辑
             // 后续在缓存模块中实现
         }
@@ -403,7 +417,7 @@
                 reason,
                 isCancelled,
                 cancel: cancel,
-                promise
+                promise,
             };
         }
         /**
@@ -441,7 +455,7 @@
          */
         emit(event, data) {
             const listeners = this.eventListeners.get(event) || [];
-            listeners.forEach(listener => {
+            listeners.forEach((listener) => {
                 try {
                     listener(data);
                 }
@@ -549,7 +563,7 @@
             const options = {
                 method: config.method || HttpMethod.GET,
                 headers: this.buildHeaders(config),
-                credentials: config.withCredentials ? 'include' : 'same-origin'
+                credentials: config.withCredentials ? 'include' : 'same-origin',
             };
             // 添加请求体
             if (config.data && this.shouldHaveBody(config.method)) {
@@ -579,11 +593,11 @@
                 return '';
             }
             // 如果是FormData、Blob、ArrayBuffer等，直接返回
-            if (data instanceof FormData ||
-                data instanceof Blob ||
-                data instanceof ArrayBuffer ||
-                data instanceof URLSearchParams ||
-                typeof data === 'string') {
+            if (data instanceof FormData
+                || data instanceof Blob
+                || data instanceof ArrayBuffer
+                || data instanceof URLSearchParams
+                || typeof data === 'string') {
                 return data;
             }
             // 如果是对象，转换为JSON
@@ -614,7 +628,7 @@
                 statusText: response.statusText,
                 headers,
                 config,
-                raw: response
+                raw: response,
             };
             // 检查响应状态
             if (!response.ok) {
@@ -718,16 +732,16 @@
          */
         combineURLs(baseURL, relativeURL) {
             return relativeURL
-                ? baseURL.replace(/\/+$/, '') + '/' + relativeURL.replace(/^\/+/, '')
+                ? `${baseURL.replace(/\/+$/, '')}/${relativeURL.replace(/^\/+/, '')}`
                 : baseURL;
         }
         /**
          * 检查请求方法是否应该有请求体
          */
         shouldHaveBody(method) {
-            return method !== HttpMethod.GET &&
-                method !== HttpMethod.HEAD &&
-                method !== HttpMethod.OPTIONS;
+            return method !== HttpMethod.GET
+                && method !== HttpMethod.HEAD
+                && method !== HttpMethod.OPTIONS;
         }
         /**
          * 生成请求ID
@@ -746,9 +760,9 @@
      * 检查是否支持Fetch API
      */
     function isFetchSupported$1() {
-        return typeof fetch !== 'undefined' &&
-            typeof AbortController !== 'undefined' &&
-            typeof Headers !== 'undefined';
+        return typeof fetch !== 'undefined'
+            && typeof AbortController !== 'undefined'
+            && typeof Headers !== 'undefined';
     }
 
     function bind$2(fn, thisArg) {
@@ -20504,7 +20518,7 @@
                 timeout: config.timeout,
                 baseURL: config.baseURL,
                 responseType: this.transformResponseType(config.responseType),
-                withCredentials: config.withCredentials
+                withCredentials: config.withCredentials,
             };
             // 创建取消令牌
             const requestId = this.generateRequestId();
@@ -20517,7 +20531,7 @@
                     const progress = {
                         loaded: progressEvent.loaded,
                         total: progressEvent.total || 0,
-                        percentage: progressEvent.total ? Math.round((progressEvent.loaded * 100) / progressEvent.total) : 0
+                        percentage: progressEvent.total ? Math.round((progressEvent.loaded * 100) / progressEvent.total) : 0,
                     };
                     config.onUploadProgress(progress);
                 };
@@ -20528,16 +20542,16 @@
                     const progress = {
                         loaded: progressEvent.loaded,
                         total: progressEvent.total || 0,
-                        percentage: progressEvent.total ? Math.round((progressEvent.loaded * 100) / progressEvent.total) : 0
+                        percentage: progressEvent.total ? Math.round((progressEvent.loaded * 100) / progressEvent.total) : 0,
                     };
                     config.onDownloadProgress(progress);
                 };
             }
             // 复制其他自定义配置
-            Object.keys(config).forEach(key => {
-                if (!axiosConfig.hasOwnProperty(key) &&
-                    key !== 'onUploadProgress' &&
-                    key !== 'onDownloadProgress') {
+            Object.keys(config).forEach((key) => {
+                if (!axiosConfig.hasOwnProperty(key)
+                    && key !== 'onUploadProgress'
+                    && key !== 'onDownloadProgress') {
                     axiosConfig[key] = config[key];
                 }
             });
@@ -20572,7 +20586,7 @@
                 statusText: response.statusText,
                 headers: this.transformResponseHeaders(response.headers),
                 config,
-                raw: response
+                raw: response,
             };
         }
         /**
@@ -20581,7 +20595,7 @@
         transformResponseHeaders(headers) {
             const result = {};
             if (headers) {
-                Object.keys(headers).forEach(key => {
+                Object.keys(headers).forEach((key) => {
                     result[key.toLowerCase()] = String(headers[key]);
                 });
             }
@@ -21756,7 +21770,7 @@
             this.alovaInstance = createAlova({
                 baseURL: '',
                 timeout: 10000,
-                ...alovaConfig
+                ...alovaConfig,
             });
         }
         /**
@@ -21814,7 +21828,7 @@
                         params: config.params,
                         headers: config.headers,
                         timeout: config.timeout,
-                        ...this.extractAlovaConfig(config)
+                        ...this.extractAlovaConfig(config),
                     });
                     break;
                 case HttpMethod.POST:
@@ -21822,7 +21836,7 @@
                         params: config.params,
                         headers: config.headers,
                         timeout: config.timeout,
-                        ...this.extractAlovaConfig(config)
+                        ...this.extractAlovaConfig(config),
                     });
                     break;
                 case HttpMethod.PUT:
@@ -21830,7 +21844,7 @@
                         params: config.params,
                         headers: config.headers,
                         timeout: config.timeout,
-                        ...this.extractAlovaConfig(config)
+                        ...this.extractAlovaConfig(config),
                     });
                     break;
                 case HttpMethod.DELETE:
@@ -21838,7 +21852,7 @@
                         params: config.params,
                         headers: config.headers,
                         timeout: config.timeout,
-                        ...this.extractAlovaConfig(config)
+                        ...this.extractAlovaConfig(config),
                     });
                     break;
                 case HttpMethod.PATCH:
@@ -21846,7 +21860,7 @@
                         params: config.params,
                         headers: config.headers,
                         timeout: config.timeout,
-                        ...this.extractAlovaConfig(config)
+                        ...this.extractAlovaConfig(config),
                     });
                     break;
                 case HttpMethod.HEAD:
@@ -21854,7 +21868,7 @@
                         params: config.params,
                         headers: config.headers,
                         timeout: config.timeout,
-                        ...this.extractAlovaConfig(config)
+                        ...this.extractAlovaConfig(config),
                     });
                     break;
                 case HttpMethod.OPTIONS:
@@ -21862,7 +21876,7 @@
                         params: config.params,
                         headers: config.headers,
                         timeout: config.timeout,
-                        ...this.extractAlovaConfig(config)
+                        ...this.extractAlovaConfig(config),
                     });
                     break;
                 default:
@@ -21907,7 +21921,7 @@
                     const progressData = {
                         loaded: progress.loaded,
                         total: progress.total || 0,
-                        percentage: progress.total ? Math.round((progress.loaded * 100) / progress.total) : 0
+                        percentage: progress.total ? Math.round((progress.loaded * 100) / progress.total) : 0,
                     };
                     config.onUploadProgress(progressData);
                 };
@@ -21917,15 +21931,14 @@
                     const progressData = {
                         loaded: progress.loaded,
                         total: progress.total || 0,
-                        percentage: progress.total ? Math.round((progress.loaded * 100) / progress.total) : 0
+                        percentage: progress.total ? Math.round((progress.loaded * 100) / progress.total) : 0,
                     };
                     config.onDownloadProgress(progressData);
                 };
             }
             // 复制其他自定义配置
-            Object.keys(config).forEach(key => {
-                if (!['url', 'method', 'headers', 'params', 'data', 'timeout', 'baseURL',
-                    'responseType', 'withCredentials', 'onUploadProgress', 'onDownloadProgress'].includes(key)) {
+            Object.keys(config).forEach((key) => {
+                if (!['url', 'method', 'headers', 'params', 'data', 'timeout', 'baseURL', 'responseType', 'withCredentials', 'onUploadProgress', 'onDownloadProgress'].includes(key)) {
                     alovaConfig[key] = config[key];
                 }
             });
@@ -21942,7 +21955,7 @@
                 statusText: response.statusText || 'OK',
                 headers: this.transformResponseHeaders(response.headers || {}),
                 config,
-                raw: response
+                raw: response,
             };
             return httpResponse;
         }
@@ -21960,7 +21973,7 @@
                 }
                 else if (typeof headers === 'object') {
                     // 普通对象
-                    Object.keys(headers).forEach(key => {
+                    Object.keys(headers).forEach((key) => {
                         result[key.toLowerCase()] = String(headers[key]);
                     });
                 }
@@ -22010,7 +22023,7 @@
          */
         combineURLs(baseURL, relativeURL) {
             return relativeURL
-                ? baseURL.replace(/\/+$/, '') + '/' + relativeURL.replace(/^\/+/, '')
+                ? `${baseURL.replace(/\/+$/, '')}/${relativeURL.replace(/^\/+/, '')}`
                 : baseURL;
         }
         /**
@@ -22145,7 +22158,7 @@
         getAdapterInfo() {
             return {
                 name: this.adapter.getName(),
-                isCustom: !!this.config.customAdapter
+                isCustom: !!this.config.customAdapter,
             };
         }
         /**
@@ -22188,7 +22201,7 @@
         static createWithAdapter(adapterType, config = {}) {
             return new HttpClient({
                 ...config,
-                adapter: adapterType
+                adapter: adapterType,
             });
         }
         /**
@@ -22197,7 +22210,7 @@
         static createWithCustomAdapter(adapter, config = {}) {
             return new HttpClient({
                 ...config,
-                customAdapter: adapter
+                customAdapter: adapter,
             });
         }
     }
@@ -22324,7 +22337,7 @@
         }
         async clear() {
             const keys = Object.keys(localStorage);
-            keys.forEach(key => {
+            keys.forEach((key) => {
                 if (key.startsWith(this.prefix)) {
                     localStorage.removeItem(key);
                 }
@@ -22375,7 +22388,7 @@
         }
         async clear() {
             const keys = Object.keys(sessionStorage);
-            keys.forEach(key => {
+            keys.forEach((key) => {
                 if (key.startsWith(this.prefix)) {
                     sessionStorage.removeItem(key);
                 }
@@ -22404,7 +22417,7 @@
                 ttl: 5 * 60 * 1000, // 5分钟
                 keyGenerator: this.defaultKeyGenerator,
                 storage: new MemoryCacheStorage(),
-                ...config
+                ...config,
             };
             this.storage = this.config.storage;
         }
@@ -22506,7 +22519,7 @@
                             }
                         }
                         return requestConfig;
-                    }
+                    },
                 });
                 // 添加响应拦截器设置缓存
                 client.addResponseInterceptor({
@@ -22523,15 +22536,15 @@
                             return Promise.resolve(error.response);
                         }
                         return Promise.reject(error);
-                    }
+                    },
                 });
                 client.cache = {
                     clear: () => cacheManager.clear(),
                     delete: (config) => cacheManager.delete(config),
                     updateConfig: (newConfig) => cacheManager.updateConfig(newConfig),
-                    getConfig: () => cacheManager.getConfig()
+                    getConfig: () => cacheManager.getConfig(),
                 };
-            }
+            },
         };
     }
     /**
@@ -22592,7 +22605,7 @@
                 retryDelayCalculator: this.createDelayCalculator(),
                 onRetry: () => { },
                 onRetryFailed: () => { },
-                ...config
+                ...config,
             };
             // 如果没有提供自定义延迟计算器，根据策略创建
             if (!config.retryDelayCalculator) {
@@ -22627,7 +22640,7 @@
                         delay = this.config.retryDelay * retryCount;
                         break;
                     case exports.RetryStrategy.EXPONENTIAL:
-                        delay = this.config.retryDelay * Math.pow(2, retryCount - 1);
+                        delay = this.config.retryDelay * 2 ** (retryCount - 1);
                         break;
                     default:
                         delay = this.config.retryDelay;
@@ -22714,9 +22727,9 @@
                 };
                 client.retry = {
                     updateConfig: (newConfig) => retryManager.updateConfig(newConfig),
-                    getConfig: () => retryManager.getConfig()
+                    getConfig: () => retryManager.getConfig(),
                 };
-            }
+            },
         };
     }
     /**
@@ -22726,7 +22739,7 @@
         return {
             retries,
             retryDelay: delay,
-            strategy: exports.RetryStrategy.FIXED
+            strategy: exports.RetryStrategy.FIXED,
         };
     }
     /**
@@ -22737,7 +22750,7 @@
             retries,
             retryDelay: initialDelay,
             strategy: exports.RetryStrategy.EXPONENTIAL,
-            maxDelay
+            maxDelay,
         };
     }
     /**
@@ -22747,7 +22760,7 @@
         return {
             retries,
             retryDelay: delay,
-            strategy: exports.RetryStrategy.LINEAR
+            strategy: exports.RetryStrategy.LINEAR,
         };
     }
     /**
@@ -22758,7 +22771,7 @@
             retries,
             strategy: exports.RetryStrategy.CUSTOM,
             retryDelayCalculator: delayCalculator,
-            retryCondition
+            retryCondition,
         };
     }
 
@@ -22770,7 +22783,7 @@
      * 创建认证拦截器
      */
     function createAuthInterceptor$1(config) {
-        const { getToken, tokenType = 'Bearer', headerName = 'Authorization', urlPatterns = [] } = config;
+        const { getToken, tokenType = 'Bearer', headerName = 'Authorization', urlPatterns = [], } = config;
         return {
             onFulfilled: async (requestConfig) => {
                 // 检查是否需要认证
@@ -22785,7 +22798,7 @@
                     if (token) {
                         requestConfig.headers = {
                             ...requestConfig.headers,
-                            [headerName]: `${tokenType} ${token}`
+                            [headerName]: `${tokenType} ${token}`,
                         };
                     }
                 }
@@ -22793,7 +22806,7 @@
                     console.warn('Failed to get auth token:', error);
                 }
                 return requestConfig;
-            }
+            },
         };
     }
     /**
@@ -22812,7 +22825,7 @@
                         // 更新请求头
                         originalRequest.headers = {
                             ...originalRequest.headers,
-                            [headerName]: `${tokenType} ${newToken}`
+                            [headerName]: `${tokenType} ${newToken}`,
                         };
                         // 重新发送请求（这里需要客户端实例，实际使用时需要传入）
                         // 这是一个简化版本，实际实现可能需要更复杂的逻辑
@@ -22824,21 +22837,21 @@
                     }
                 }
                 return Promise.reject(error);
-            }
+            },
         };
     }
     /**
      * 创建日志拦截器
      */
     function createLogInterceptor$1(config = {}) {
-        const { logRequests = true, logResponses = true, logErrors = true, logger = console } = config;
+        const { logRequests = true, logResponses = true, logErrors = true, logger = console, } = config;
         const requestInterceptor = {
             onFulfilled: (requestConfig) => {
                 if (logRequests) {
                     logger.info(`🚀 HTTP Request: ${requestConfig.method?.toUpperCase()} ${requestConfig.url}`, {
                         headers: requestConfig.headers,
                         params: requestConfig.params,
-                        data: requestConfig.data
+                        data: requestConfig.data,
                     });
                 }
                 return requestConfig;
@@ -22848,7 +22861,7 @@
                     logger.error('❌ Request Error:', error);
                 }
                 return Promise.reject(error);
-            }
+            },
         };
         const responseInterceptor = {
             onFulfilled: (response) => {
@@ -22857,7 +22870,7 @@
                         status: response.status,
                         statusText: response.statusText,
                         headers: response.headers,
-                        data: response.data
+                        data: response.data,
                     });
                 }
                 return response;
@@ -22868,15 +22881,15 @@
                         message: error.message,
                         status: error.response?.status,
                         statusText: error.response?.statusText,
-                        data: error.response?.data
+                        data: error.response?.data,
                     });
                 }
                 return Promise.reject(error);
-            }
+            },
         };
         return {
             request: requestInterceptor,
-            response: responseInterceptor
+            response: responseInterceptor,
         };
     }
     /**
@@ -22889,7 +22902,7 @@
                     requestConfig.baseURL = baseURL;
                 }
                 return requestConfig;
-            }
+            },
         };
     }
     /**
@@ -22902,7 +22915,7 @@
                     requestConfig.timeout = timeout;
                 }
                 return requestConfig;
-            }
+            },
         };
     }
     /**
@@ -22914,11 +22927,11 @@
                 if (requestConfig.data && !requestConfig.headers?.['Content-Type'] && !requestConfig.headers?.['content-type']) {
                     requestConfig.headers = {
                         ...requestConfig.headers,
-                        'Content-Type': contentType
+                        'Content-Type': contentType,
                     };
                 }
                 return requestConfig;
-            }
+            },
         };
     }
     /**
@@ -22934,7 +22947,7 @@
                     console.error('Error in error handler:', handlerError);
                 }
                 return Promise.reject(error);
-            }
+            },
         };
     }
     /**
@@ -22950,7 +22963,7 @@
                     console.error('Error in response transformer:', error);
                 }
                 return response;
-            }
+            },
         };
     }
     /**
@@ -22962,11 +22975,11 @@
                 if (!requestConfig.headers?.[headerName]) {
                     requestConfig.headers = {
                         ...requestConfig.headers,
-                        [headerName]: generateRequestId()
+                        [headerName]: generateRequestId(),
                     };
                 }
                 return requestConfig;
-            }
+            },
         };
     }
     /**
@@ -22978,17 +22991,17 @@
             install(client) {
                 // 添加请求拦截器
                 if (interceptors.request) {
-                    interceptors.request.forEach(interceptor => {
+                    interceptors.request.forEach((interceptor) => {
                         client.addRequestInterceptor(interceptor);
                     });
                 }
                 // 添加响应拦截器
                 if (interceptors.response) {
-                    interceptors.response.forEach(interceptor => {
+                    interceptors.response.forEach((interceptor) => {
                         client.addResponseInterceptor(interceptor);
                     });
                 }
-            }
+            },
         };
     }
     /**
@@ -23022,7 +23035,7 @@
                 app.provide(HTTP_CLIENT_KEY, httpClient);
                 // 全局属性
                 app.config.globalProperties.$http = httpClient;
-            }
+            },
         };
     }
     /**
@@ -23074,7 +23087,7 @@
                 ...requestConfig,
                 ...config,
                 url: requestUrl,
-                cancelToken
+                cancelToken,
             };
             lastConfig = mergedConfig;
             try {
@@ -23156,7 +23169,7 @@
             execute,
             cancel,
             reset,
-            refresh
+            refresh,
         };
     }
     /**
@@ -23220,7 +23233,7 @@
         emit: defaultClient.emit.bind(defaultClient),
         once: defaultClient.once.bind(defaultClient),
         // 获取客户端实例
-        getInstance: () => defaultClient
+        getInstance: () => defaultClient,
     };
     /**
      * 创建新的HTTP客户端实例
@@ -23232,18 +23245,18 @@
      * 快速创建带有常用配置的HTTP客户端
      */
     function createQuickClient(options) {
-        const { baseURL, timeout = 10000, adapter = 'fetch', enableCache = false, enableRetry = false, enableLog = false, authToken } = options;
+        const { baseURL, timeout = 10000, adapter = 'fetch', enableCache = false, enableRetry = false, enableLog = false, authToken, } = options;
         const config = {
             baseURL,
             timeout,
-            adapter
+            adapter,
         };
         const client = createHttpClient(config);
         // 启用缓存
         if (enableCache) {
             const cachePlugin = createCachePlugin({
                 enabled: true,
-                ttl: 5 * 60 * 1000 // 5分钟
+                ttl: 5 * 60 * 1000, // 5分钟
             });
             cachePlugin.install(client);
         }
@@ -23252,7 +23265,7 @@
             const retryPlugin = createRetryPlugin({
                 retries: 3,
                 retryDelay: 1000,
-                strategy: RetryStrategy.EXPONENTIAL
+                strategy: RetryStrategy.EXPONENTIAL,
             });
             retryPlugin.install(client);
         }
@@ -23261,7 +23274,7 @@
             const logInterceptors = createLogInterceptor({
                 logRequests: true,
                 logResponses: true,
-                logErrors: true
+                logErrors: true,
             });
             client.addRequestInterceptor(logInterceptors.request);
             client.addResponseInterceptor(logInterceptors.response);
@@ -23269,7 +23282,7 @@
         // 添加认证
         if (authToken) {
             const authInterceptor = createAuthInterceptor({
-                getToken: typeof authToken === 'string' ? () => authToken : authToken
+                getToken: typeof authToken === 'string' ? () => authToken : authToken,
             });
             client.addRequestInterceptor(authInterceptor);
         }

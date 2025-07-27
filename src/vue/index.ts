@@ -4,12 +4,12 @@
  */
 
 import {
+  type App,
+  type InjectionKey,
+  type Ref,
   inject,
   onUnmounted,
   ref,
-  type App,
-  type InjectionKey,
-  type Ref
 } from 'vue'
 import { createHttpClient } from '../core/HttpClientImpl'
 import type {
@@ -19,7 +19,7 @@ import type {
   HttpClientInstance,
   HttpError,
   HttpResponse,
-  RequestConfig
+  RequestConfig,
 } from '../types'
 
 // 注入键
@@ -77,7 +77,7 @@ export interface UseRequestResult<T = any> extends RequestState<T> {
  * Vue3 HTTP插件
  */
 export interface HttpPlugin {
-  install(app: App, options?: HttpClientConfig): void
+  install: (app: App, options?: HttpClientConfig) => void
 }
 
 /**
@@ -94,7 +94,7 @@ export function createHttpPlugin(config: HttpClientConfig = {}): HttpPlugin {
 
       // 全局属性
       app.config.globalProperties.$http = httpClient
-    }
+    },
   }
 }
 
@@ -114,7 +114,7 @@ export function useHttp(): HttpClientInstance {
  */
 export function useRequest<T = any>(
   url: string | (() => string),
-  options: UseRequestOptions<T> = {}
+  options: UseRequestOptions<T> = {},
 ): UseRequestResult<T> {
   const httpClient = useHttp()
 
@@ -169,7 +169,7 @@ export function useRequest<T = any>(
       ...requestConfig,
       ...config,
       url: requestUrl,
-      cancelToken
+      cancelToken,
     }
 
     lastConfig = mergedConfig
@@ -184,19 +184,22 @@ export function useRequest<T = any>(
       }
 
       return response
-    } catch (err: any) {
+    }
+ catch (err: any) {
       if (!cancelled.value) {
         const httpError = err as HttpError
         error.value = httpError
 
         if (httpError.isCancelError) {
           cancelled.value = true
-        } else {
+        }
+ else {
           onError?.(httpError)
         }
       }
       throw err
-    } finally {
+    }
+ finally {
       if (!cancelled.value) {
         loading.value = false
         finished.value = true
@@ -259,7 +262,7 @@ export function useRequest<T = any>(
     execute,
     cancel,
     reset,
-    refresh
+    refresh,
   }
 }
 
@@ -268,7 +271,7 @@ export function useRequest<T = any>(
  */
 export function useGet<T = any>(
   url: string | (() => string),
-  options: Omit<UseRequestOptions<T>, 'method'> = {}
+  options: Omit<UseRequestOptions<T>, 'method'> = {},
 ): UseRequestResult<T> {
   return useRequest<T>(url, { ...options, method: 'GET' })
 }
@@ -278,7 +281,7 @@ export function useGet<T = any>(
  */
 export function usePost<T = any>(
   url: string | (() => string),
-  options: Omit<UseRequestOptions<T>, 'method'> = {}
+  options: Omit<UseRequestOptions<T>, 'method'> = {},
 ): UseRequestResult<T> {
   return useRequest<T>(url, { ...options, method: 'POST', immediate: false })
 }
@@ -288,7 +291,7 @@ export function usePost<T = any>(
  */
 export function usePut<T = any>(
   url: string | (() => string),
-  options: Omit<UseRequestOptions<T>, 'method'> = {}
+  options: Omit<UseRequestOptions<T>, 'method'> = {},
 ): UseRequestResult<T> {
   return useRequest<T>(url, { ...options, method: 'PUT', immediate: false })
 }
@@ -298,13 +301,17 @@ export function usePut<T = any>(
  */
 export function useDelete<T = any>(
   url: string | (() => string),
-  options: Omit<UseRequestOptions<T>, 'method'> = {}
+  options: Omit<UseRequestOptions<T>, 'method'> = {},
 ): UseRequestResult<T> {
   return useRequest<T>(url, { ...options, method: 'DELETE', immediate: false })
 }
 
 // 导出类型
 export type {
-  ExtendedRequestConfig, HttpClientConfig,
-  HttpClientInstance, HttpError, HttpResponse, RequestConfig
+  ExtendedRequestConfig,
+HttpClientConfig,
+  HttpClientInstance,
+HttpError,
+HttpResponse,
+RequestConfig,
 }

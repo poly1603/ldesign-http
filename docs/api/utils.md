@@ -163,11 +163,13 @@ import { isHttpError } from '@ldesign/http'
 
 try {
   await client.get('/api/data')
-} catch (error) {
+}
+ catch (error) {
   if (isHttpError(error)) {
     console.log('HTTP错误:', error.status, error.message)
     console.log('响应数据:', error.response?.data)
-  } else {
+  }
+ else {
     console.log('其他错误:', error)
   }
 }
@@ -187,10 +189,12 @@ import { isCancel } from '@ldesign/http'
 
 try {
   await client.get('/api/data', { cancelToken })
-} catch (error) {
+}
+ catch (error) {
   if (isCancel(error)) {
     console.log('请求被取消')
-  } else {
+  }
+ else {
     console.log('其他错误:', error)
   }
 }
@@ -210,7 +214,8 @@ import { isNetworkError } from '@ldesign/http'
 
 try {
   await client.get('/api/data')
-} catch (error) {
+}
+ catch (error) {
   if (isNetworkError(error)) {
     console.log('网络连接失败')
   }
@@ -225,7 +230,7 @@ try {
 
 ```typescript
 function mergeConfig(
-  config1: RequestConfig, 
+  config1: RequestConfig,
   config2: RequestConfig
 ): RequestConfig
 ```
@@ -241,7 +246,7 @@ const baseConfig = {
 
 const requestConfig = {
   timeout: 5000,
-  headers: { 'Authorization': 'Bearer token' }
+  headers: { Authorization: 'Bearer token' }
 }
 
 const merged = mergeConfig(baseConfig, requestConfig)
@@ -294,10 +299,10 @@ function formatBytes(bytes: number, decimals?: number): string
 ```typescript
 import { formatBytes } from '@ldesign/http'
 
-console.log(formatBytes(1024))        // '1 KB'
-console.log(formatBytes(1048576))     // '1 MB'
-console.log(formatBytes(1073741824))  // '1 GB'
-console.log(formatBytes(1536, 2))     // '1.50 KB'
+console.log(formatBytes(1024)) // '1 KB'
+console.log(formatBytes(1048576)) // '1 MB'
+console.log(formatBytes(1073741824)) // '1 GB'
+console.log(formatBytes(1536, 2)) // '1.50 KB'
 ```
 
 ### formatDuration
@@ -312,9 +317,9 @@ function formatDuration(milliseconds: number): string
 ```typescript
 import { formatDuration } from '@ldesign/http'
 
-console.log(formatDuration(1000))     // '1s'
-console.log(formatDuration(60000))    // '1m'
-console.log(formatDuration(3661000))  // '1h 1m 1s'
+console.log(formatDuration(1000)) // '1s'
+console.log(formatDuration(60000)) // '1m'
+console.log(formatDuration(3661000)) // '1h 1m 1s'
 ```
 
 ### formatSpeed
@@ -329,8 +334,8 @@ function formatSpeed(bytesPerSecond: number): string
 ```typescript
 import { formatSpeed } from '@ldesign/http'
 
-console.log(formatSpeed(1024))      // '1 KB/s'
-console.log(formatSpeed(1048576))   // '1 MB/s'
+console.log(formatSpeed(1024)) // '1 KB/s'
+console.log(formatSpeed(1048576)) // '1 MB/s'
 ```
 
 ## 🔄 异步工具
@@ -356,9 +361,10 @@ for (let i = 0; i < 3; i++) {
   try {
     const response = await client.get('/api/data')
     break
-  } catch (error) {
+  }
+ catch (error) {
     if (i < 2) {
-      await delay(1000 * Math.pow(2, i)) // 指数退避
+      await delay(1000 * 2 ** i) // 指数退避
     }
   }
 }
@@ -382,7 +388,8 @@ try {
     fetch('/slow-api'),
     5000
   )
-} catch (error) {
+}
+ catch (error) {
   if (error.message === 'Timeout') {
     console.log('请求超时')
   }
@@ -418,7 +425,7 @@ const result = await retry(
     retries: 3,
     delay: 1000,
     factor: 2,
-    condition: (error) => error.status >= 500
+    condition: error => error.status >= 500
   }
 )
 ```
@@ -439,10 +446,10 @@ interface LoggerOptions {
 }
 
 interface Logger {
-  debug(message: string, ...args: any[]): void
-  info(message: string, ...args: any[]): void
-  warn(message: string, ...args: any[]): void
-  error(message: string, ...args: any[]): void
+  debug: (message: string, ...args: any[]) => void
+  info: (message: string, ...args: any[]) => void
+  warn: (message: string, ...args: any[]) => void
+  error: (message: string, ...args: any[]) => void
 }
 ```
 
@@ -490,12 +497,12 @@ debugRequest(config)
 ```typescript
 import {
   buildURL,
-  serialize,
+  createLogger,
   formatBytes,
   formatDuration,
-  retry,
   isHttpError,
-  createLogger
+  retry,
+  serialize
 } from '@ldesign/http'
 
 // 创建日志记录器
@@ -504,18 +511,18 @@ const logger = createLogger({ prefix: '[API]' })
 // 构建API客户端
 class ApiClient {
   private baseURL = 'https://api.example.com'
-  
+
   async request(endpoint: string, options: any = {}) {
     // 构建URL
     const url = buildURL(
       this.baseURL + endpoint,
       options.params
     )
-    
+
     logger.info('发送请求', { url, method: options.method || 'GET' })
-    
+
     const startTime = Date.now()
-    
+
     try {
       // 使用重试机制
       const response = await retry(
@@ -523,36 +530,38 @@ class ApiClient {
         {
           retries: 3,
           delay: 1000,
-          condition: (error) => isHttpError(error) && error.status >= 500
+          condition: error => isHttpError(error) && error.status >= 500
         }
       )
-      
+
       const duration = Date.now() - startTime
       const size = response.headers.get('content-length')
-      
+
       logger.info('请求成功', {
         status: response.status,
         duration: formatDuration(duration),
-        size: size ? formatBytes(parseInt(size)) : 'unknown'
+        size: size ? formatBytes(Number.parseInt(size)) : 'unknown'
       })
-      
+
       return response
-    } catch (error) {
+    }
+ catch (error) {
       const duration = Date.now() - startTime
-      
+
       if (isHttpError(error)) {
         logger.error('HTTP错误', {
           status: error.status,
           message: error.message,
           duration: formatDuration(duration)
         })
-      } else {
+      }
+ else {
         logger.error('请求失败', {
           message: error.message,
           duration: formatDuration(duration)
         })
       }
-      
+
       throw error
     }
   }

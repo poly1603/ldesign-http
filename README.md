@@ -57,8 +57,8 @@ const newUser = await http.post('/users', {
 ```typescript
 // main.ts
 import { createApp } from 'vue'
-import { createHttpPlugin } from '@ldesign/http'
 import App from './App.vue'
+import { createHttpPlugin } from '@ldesign/http'
 
 const app = createApp(App)
 
@@ -73,21 +73,6 @@ app.mount('#app')
 
 ```vue
 <!-- 在组件中使用 -->
-<template>
-  <div>
-    <div v-if="loading">加载中...</div>
-    <div v-else-if="error">错误: {{ error.message }}</div>
-    <div v-else>
-      <h1>用户列表</h1>
-      <ul>
-        <li v-for="user in data" :key="user.id">
-          {{ user.name }}
-        </li>
-      </ul>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { useGet } from '@ldesign/http'
 
@@ -100,6 +85,25 @@ interface User {
   email: string
 }
 </script>
+
+<template>
+  <div>
+    <div v-if="loading">
+      加载中...
+    </div>
+    <div v-else-if="error">
+      错误: {{ error.message }}
+    </div>
+    <div v-else>
+      <h1>用户列表</h1>
+      <ul>
+        <li v-for="user in data" :key="user.id">
+          {{ user.name }}
+        </li>
+      </ul>
+    </div>
+  </div>
+</template>
 ```
 
 ## 🎛️ 适配器
@@ -212,7 +216,7 @@ const retryConfig = createCustomRetryConfig(
   3, // 重试次数
   (retryCount, error) => {
     // 自定义延迟计算
-    return Math.min(1000 * Math.pow(2, retryCount), 10000)
+    return Math.min(1000 * 2 ** retryCount, 10000)
   },
   (error) => {
     // 自定义重试条件
@@ -226,7 +230,7 @@ const retryConfig = createCustomRetryConfig(
 ### 内存缓存
 
 ```typescript
-import { createHttpClient, createCachePlugin, createMemoryCache } from '@ldesign/http'
+import { createCachePlugin, createHttpClient, createMemoryCache } from '@ldesign/http'
 
 const client = createHttpClient()
 
@@ -351,13 +355,14 @@ const { data, loading, error, execute, cancel, refresh } = useRequest('/api/user
 })
 
 // 手动执行请求
-const handleSubmit = async () => {
+async function handleSubmit() {
   try {
     await execute({
       method: 'POST',
       data: { name: 'John' }
     })
-  } catch (err) {
+  }
+ catch (err) {
     console.error(err)
   }
 }
@@ -384,7 +389,7 @@ const { data, loading, error, execute } = usePost('/users', {
   immediate: false
 })
 
-const createUser = async (userData: any) => {
+async function createUser(userData: any) {
   await execute({ data: userData })
 }
 ```
@@ -420,7 +425,7 @@ await nextPage()
 
 ```typescript
 // 上传文件with进度监控
-const uploadFile = async (file: File) => {
+async function uploadFile(file: File) {
   const formData = new FormData()
   formData.append('file', file)
 
@@ -434,7 +439,7 @@ const uploadFile = async (file: File) => {
 }
 
 // 下载文件with进度监控
-const downloadFile = async (url: string) => {
+async function downloadFile(url: string) {
   const response = await client.get(url, {
     responseType: 'blob',
     onDownloadProgress: (progress) => {
@@ -464,7 +469,8 @@ setTimeout(() => {
 
 try {
   const response = await request
-} catch (error) {
+}
+ catch (error) {
   if (error.isCancelError) {
     console.log('请求被取消:', error.message)
   }
@@ -478,18 +484,23 @@ import type { HttpError } from '@ldesign/http'
 
 try {
   const response = await client.get('/api/data')
-} catch (error: HttpError) {
+}
+ catch (error: HttpError) {
   if (error.isNetworkError) {
     console.error('网络错误')
-  } else if (error.isTimeoutError) {
+  }
+ else if (error.isTimeoutError) {
     console.error('请求超时')
-  } else if (error.isCancelError) {
+  }
+ else if (error.isCancelError) {
     console.error('请求被取消')
-  } else if (error.response) {
+  }
+ else if (error.response) {
     // 服务器响应错误
     console.error(`HTTP错误: ${error.response.status}`)
     console.error('错误数据:', error.response.data)
-  } else {
+  }
+ else {
     console.error('未知错误:', error.message)
   }
 }
@@ -549,7 +560,7 @@ const client = createQuickClient({
 ### 自定义适配器
 
 ```typescript
-import type { HttpAdapter, RequestConfig, HttpResponse } from '@ldesign/http'
+import type { HttpAdapter, HttpResponse, RequestConfig } from '@ldesign/http'
 
 class CustomAdapter implements HttpAdapter {
   async request<T>(config: RequestConfig): Promise<HttpResponse<T>> {
@@ -612,32 +623,32 @@ const loggingMiddleware: Middleware = {
 ```typescript
 interface HttpClientInstance {
   // HTTP 方法
-  get<T>(url: string, config?: RequestConfig): Promise<HttpResponse<T>>
-  post<T>(url: string, data?: any, config?: RequestConfig): Promise<HttpResponse<T>>
-  put<T>(url: string, data?: any, config?: RequestConfig): Promise<HttpResponse<T>>
-  delete<T>(url: string, config?: RequestConfig): Promise<HttpResponse<T>>
-  patch<T>(url: string, data?: any, config?: RequestConfig): Promise<HttpResponse<T>>
-  head<T>(url: string, config?: RequestConfig): Promise<HttpResponse<T>>
-  options<T>(url: string, config?: RequestConfig): Promise<HttpResponse<T>>
-  request<T>(config: ExtendedRequestConfig): Promise<HttpResponse<T>>
+  get: <T>(url: string, config?: RequestConfig) => Promise<HttpResponse<T>>
+  post: <T>(url: string, data?: any, config?: RequestConfig) => Promise<HttpResponse<T>>
+  put: <T>(url: string, data?: any, config?: RequestConfig) => Promise<HttpResponse<T>>
+  delete: <T>(url: string, config?: RequestConfig) => Promise<HttpResponse<T>>
+  patch: <T>(url: string, data?: any, config?: RequestConfig) => Promise<HttpResponse<T>>
+  head: <T>(url: string, config?: RequestConfig) => Promise<HttpResponse<T>>
+  options: <T>(url: string, config?: RequestConfig) => Promise<HttpResponse<T>>
+  request: <T>(config: ExtendedRequestConfig) => Promise<HttpResponse<T>>
 
   // 拦截器
-  addRequestInterceptor(interceptor: RequestInterceptor): number
-  addResponseInterceptor(interceptor: ResponseInterceptor): number
-  removeInterceptor(type: 'request' | 'response', id: number): void
+  addRequestInterceptor: (interceptor: RequestInterceptor) => number
+  addResponseInterceptor: (interceptor: ResponseInterceptor) => number
+  removeInterceptor: (type: 'request' | 'response', id: number) => void
 
   // 配置
-  getDefaults(): HttpClientConfig
-  setDefaults(config: Partial<HttpClientConfig>): void
+  getDefaults: () => HttpClientConfig
+  setDefaults: (config: Partial<HttpClientConfig>) => void
 
   // 取消令牌
-  createCancelToken(): CancelToken
+  createCancelToken: () => CancelToken
 
   // 事件
-  on(event: EventType, listener: EventListener): void
-  off(event: EventType, listener: EventListener): void
-  emit(event: EventType, data: any): void
-  once(event: EventType, listener: EventListener): void
+  on: (event: EventType, listener: EventListener) => void
+  off: (event: EventType, listener: EventListener) => void
+  emit: (event: EventType, data: any) => void
+  once: (event: EventType, listener: EventListener) => void
 }
 ```
 
@@ -680,10 +691,12 @@ const errorHandler = createErrorHandlerInterceptor((error) => {
   if (error.response?.status === 401) {
     // 跳转登录
     router.push('/login')
-  } else if (error.response?.status >= 500) {
+  }
+ else if (error.response?.status >= 500) {
     // 服务器错误提示
     ElMessage.error('服务器错误，请稍后重试')
-  } else if (error.isNetworkError) {
+  }
+ else if (error.isNetworkError) {
     // 网络错误提示
     ElMessage.error('网络连接失败，请检查网络')
   }
@@ -722,7 +735,8 @@ const transformInterceptor = createResponseTransformInterceptor((data: any) => {
   if (data && typeof data === 'object' && 'code' in data) {
     if (data.code === 200) {
       return data.data // 返回实际数据
-    } else {
+    }
+ else {
       throw new Error(data.message || '请求失败')
     }
   }
@@ -760,10 +774,10 @@ export const httpConfig = {
 ```typescript
 // Axios
 import axios from 'axios'
-const response = await axios.get('/users')
 
 // @ldesign/http
 import { createAxiosHttpClient } from '@ldesign/http'
+const response = await axios.get('/users')
 const client = createAxiosHttpClient()
 const response = await client.get('/users')
 ```
@@ -772,11 +786,11 @@ const response = await client.get('/users')
 
 ```typescript
 // 原生 Fetch
-const response = await fetch('/users')
-const data = await response.json()
-
 // @ldesign/http
 import { createFetchHttpClient } from '@ldesign/http'
+
+const response = await fetch('/users')
+const data = await response.json()
 const client = createFetchHttpClient()
 const response = await client.get('/users')
 const data = response.data

@@ -12,17 +12,17 @@ interface HttpError extends Error {
   message: string
   name: string
   stack?: string
-  
+
   // HTTP 特有属性
   response?: HttpResponse
   request?: RequestConfig
-  
+
   // 错误类型标识
   isNetworkError: boolean
   isTimeoutError: boolean
   isCancelError: boolean
   isValidationError: boolean
-  
+
   // 状态码快捷访问
   status?: number
   statusText?: string
@@ -45,17 +45,22 @@ interface HttpError extends Error {
 try {
   const response = await client.get('/api/data')
   console.log(response.data)
-} catch (error: any) {
+}
+ catch (error: any) {
   // 检查错误类型
   if (error.isNetworkError) {
     console.log('网络连接失败')
-  } else if (error.isTimeoutError) {
+  }
+ else if (error.isTimeoutError) {
     console.log('请求超时')
-  } else if (error.isCancelError) {
+  }
+ else if (error.isCancelError) {
     console.log('请求被取消')
-  } else if (error.response) {
+  }
+ else if (error.response) {
     console.log('服务器错误:', error.response.status)
-  } else {
+  }
+ else {
     console.log('未知错误:', error.message)
   }
 }
@@ -66,18 +71,19 @@ try {
 ```typescript
 try {
   await client.post('/api/users', userData)
-} catch (error: HttpError) {
+}
+ catch (error: HttpError) {
   console.log('错误详情:')
   console.log('- 消息:', error.message)
   console.log('- 类型:', error.name)
   console.log('- 状态码:', error.status)
   console.log('- 状态文本:', error.statusText)
-  
+
   if (error.response) {
     console.log('- 响应数据:', error.response.data)
     console.log('- 响应头:', error.response.headers)
   }
-  
+
   if (error.request) {
     console.log('- 请求URL:', error.request.url)
     console.log('- 请求方法:', error.request.method)
@@ -94,7 +100,8 @@ async function handleApiCall() {
   try {
     const response = await client.get('/api/protected')
     return response.data
-  } catch (error: HttpError) {
+  }
+ catch (error: HttpError) {
     switch (error.status) {
       case 400:
         throw new Error('请求参数错误')
@@ -131,14 +138,16 @@ async function handleApiCall() {
 ```typescript
 function handleHttpError(error: HttpError) {
   const status = error.status || 0
-  
+
   if (status >= 400 && status < 500) {
     // 客户端错误
     handleClientError(error)
-  } else if (status >= 500) {
+  }
+ else if (status >= 500) {
     // 服务器错误
     handleServerError(error)
-  } else {
+  }
+ else {
     // 其他错误
     handleOtherError(error)
   }
@@ -179,13 +188,16 @@ const globalErrorHandler = createErrorHandlerInterceptor((error: HttpError) => {
   // 全局错误处理逻辑
   if (error.isNetworkError) {
     showNotification('网络连接失败，请检查网络设置', 'error')
-  } else if (error.isTimeoutError) {
+  }
+ else if (error.isTimeoutError) {
     showNotification('请求超时，请稍后重试', 'warning')
-  } else if (error.status === 401) {
+  }
+ else if (error.status === 401) {
     // 全局认证处理
     store.dispatch('auth/logout')
     router.push('/login')
-  } else if (error.status >= 500) {
+  }
+ else if (error.status >= 500) {
     showNotification('服务器错误，请稍后重试', 'error')
   }
 })
@@ -199,60 +211,63 @@ client.addResponseInterceptor(globalErrorHandler)
 class GlobalErrorHandler {
   private notificationService: NotificationService
   private authService: AuthService
-  
+
   constructor(notificationService: NotificationService, authService: AuthService) {
     this.notificationService = notificationService
     this.authService = authService
   }
-  
+
   handle(error: HttpError): void {
     // 记录错误
     this.logError(error)
-    
+
     // 根据错误类型处理
     if (this.isAuthError(error)) {
       this.handleAuthError(error)
-    } else if (this.isValidationError(error)) {
+    }
+ else if (this.isValidationError(error)) {
       this.handleValidationError(error)
-    } else if (this.isNetworkError(error)) {
+    }
+ else if (this.isNetworkError(error)) {
       this.handleNetworkError(error)
-    } else {
+    }
+ else {
       this.handleGenericError(error)
     }
   }
-  
+
   private isAuthError(error: HttpError): boolean {
     return error.status === 401 || error.status === 403
   }
-  
+
   private isValidationError(error: HttpError): boolean {
     return error.status === 422 || error.isValidationError
   }
-  
+
   private isNetworkError(error: HttpError): boolean {
     return error.isNetworkError || error.isTimeoutError
   }
-  
+
   private handleAuthError(error: HttpError): void {
     this.authService.logout()
     this.notificationService.error('登录已过期，请重新登录')
   }
-  
+
   private handleValidationError(error: HttpError): void {
     const errors = error.response?.data?.errors || {}
     Object.entries(errors).forEach(([field, messages]) => {
       this.notificationService.warning(`${field}: ${messages}`)
     })
   }
-  
+
   private handleNetworkError(error: HttpError): void {
     this.notificationService.error('网络连接失败，请检查网络设置')
   }
-  
+
   private handleGenericError(error: HttpError): void {
     this.notificationService.error(error.message || '请求失败')
   }
-  
+
   private logError(error: HttpError): void {
     console.error('HTTP Error:', {
       message: error.message,
@@ -287,9 +302,9 @@ const retryPlugin = createRetryPlugin({
   retryDelay: 1000,
   retryCondition: (error: HttpError) => {
     // 只重试网络错误和5xx错误
-    return error.isNetworkError || 
-           error.isTimeoutError || 
-           (error.status >= 500 && error.status < 600)
+    return error.isNetworkError
+      || error.isTimeoutError
+      || (error.status >= 500 && error.status < 600)
   },
   onRetry: (error: HttpError, retryCount: number) => {
     console.log(`第${retryCount}次重试:`, error.message)
@@ -308,42 +323,44 @@ async function requestWithRetry<T>(
   delay: number = 1000
 ): Promise<T> {
   let lastError: Error
-  
+
   for (let i = 0; i <= maxRetries; i++) {
     try {
       return await requestFn()
-    } catch (error: any) {
+    }
+ catch (error: any) {
       lastError = error
-      
+
       // 最后一次重试失败
       if (i === maxRetries) {
         break
       }
-      
+
       // 检查是否应该重试
       if (!shouldRetry(error)) {
         break
       }
-      
+
       // 等待后重试
-      await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)))
+      await new Promise(resolve => setTimeout(resolve, delay * 2 ** i))
     }
   }
-  
+
   throw lastError
 }
 
 function shouldRetry(error: HttpError): boolean {
-  return error.isNetworkError || 
-         error.isTimeoutError || 
-         (error.status >= 500 && error.status < 600)
+  return error.isNetworkError
+    || error.isTimeoutError
+    || (error.status >= 500 && error.status < 600)
 }
 
 // 使用示例
 try {
   const data = await requestWithRetry(() => client.get('/api/data'))
   console.log(data)
-} catch (error) {
+}
+ catch (error) {
   console.error('重试后仍然失败:', error)
 }
 ```
@@ -369,19 +386,19 @@ function getUserFriendlyMessage(error: HttpError): string {
   if (error.isNetworkError) {
     return '网络连接失败，请检查网络设置'
   }
-  
+
   if (error.isTimeoutError) {
     return '请求超时，请稍后重试'
   }
-  
+
   if (error.isCancelError) {
     return '请求已取消'
   }
-  
+
   if (error.status && errorMessages[error.status]) {
     return errorMessages[error.status]
   }
-  
+
   return error.message || '请求失败，请稍后重试'
 }
 ```
@@ -401,7 +418,7 @@ interface ErrorNotification {
 
 export function useErrorNotification() {
   const notifications = ref<ErrorNotification[]>([])
-  
+
   const showError = (error: HttpError) => {
     const message = getUserFriendlyMessage(error)
     const notification: ErrorNotification = {
@@ -410,22 +427,22 @@ export function useErrorNotification() {
       type: 'error',
       duration: 5000
     }
-    
+
     notifications.value.push(notification)
-    
+
     // 自动移除
     setTimeout(() => {
       removeNotification(notification.id)
     }, notification.duration)
   }
-  
+
   const removeNotification = (id: string) => {
     const index = notifications.value.findIndex(n => n.id === id)
     if (index > -1) {
       notifications.value.splice(index, 1)
     }
   }
-  
+
   return {
     notifications,
     showError,
@@ -445,16 +462,17 @@ describe('错误处理', () => {
     // 模拟网络错误
     const mockError = new Error('Network Error')
     mockError.isNetworkError = true
-    
+
     jest.spyOn(client, 'get').mockRejectedValue(mockError)
-    
+
     try {
       await client.get('/api/data')
-    } catch (error) {
+    }
+ catch (error) {
       expect(error.isNetworkError).toBe(true)
     }
   })
-  
+
   it('应该正确处理HTTP错误', async () => {
     const mockError = {
       response: {
@@ -462,12 +480,13 @@ describe('错误处理', () => {
         data: { message: 'Not Found' }
       }
     }
-    
+
     jest.spyOn(client, 'get').mockRejectedValue(mockError)
-    
+
     try {
       await client.get('/api/nonexistent')
-    } catch (error) {
+    }
+ catch (error) {
       expect(error.response.status).toBe(404)
     }
   })
@@ -488,7 +507,8 @@ class UserService {
     try {
       const response = await client.get(`/users/${id}`)
       return response.data
-    } catch (error: HttpError) {
+    }
+ catch (error: HttpError) {
       // 服务层错误处理
       if (error.status === 404) {
         throw new Error('用户不存在')
@@ -510,11 +530,11 @@ class HttpErrorBoundary extends React.Component {
       this.handleHttpError(error)
     }
   }
-  
+
   handleHttpError(error: HttpError) {
     // 记录错误
     console.error('HTTP Error caught by boundary:', error)
-    
+
     // 显示错误页面或通知
     this.setState({ hasError: true, error })
   }
@@ -530,7 +550,8 @@ function createRecoverableRequest<T>(requestFn: () => Promise<T>) {
     async execute(): Promise<T> {
       try {
         return await requestFn()
-      } catch (error: HttpError) {
+      }
+ catch (error: HttpError) {
         // 提供恢复选项
         if (error.isNetworkError) {
           throw new RecoverableError('网络错误', () => this.execute())

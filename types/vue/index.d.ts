@@ -57,7 +57,7 @@ interface UseRequestResult<T = any> extends RequestState<T> {
  * Vue3 HTTP插件
  */
 interface HttpPlugin {
-    install(app: App, options?: HttpClientConfig): void;
+    install: (app: App, options?: HttpClientConfig) => void;
 }
 /**
  * 创建HTTP插件

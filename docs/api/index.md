@@ -370,21 +370,21 @@ const http: {
   head: <T>(url: string, config?: RequestConfig) => Promise<HttpResponse<T>>
   options: <T>(url: string, config?: RequestConfig) => Promise<HttpResponse<T>>
   request: <T>(config: ExtendedRequestConfig) => Promise<HttpResponse<T>>
-  
+
   addRequestInterceptor: (interceptor: RequestInterceptor) => number
   addResponseInterceptor: (interceptor: ResponseInterceptor) => number
   removeInterceptor: (type: 'request' | 'response', id: number) => void
-  
+
   getDefaults: () => HttpClientConfig
   setDefaults: (config: Partial<HttpClientConfig>) => void
-  
+
   createCancelToken: () => CancelToken
-  
+
   on: (event: EventType, listener: EventListener) => void
   off: (event: EventType, listener: EventListener) => void
   emit: (event: EventType, data: any) => void
   once: (event: EventType, listener: EventListener) => void
-  
+
   getInstance: () => HttpClient
 }
 ```

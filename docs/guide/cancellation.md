@@ -38,10 +38,12 @@ cancelToken.cancel('用户取消了请求')
 try {
   const response = await requestPromise
   console.log(response.data)
-} catch (error: any) {
+}
+ catch (error: any) {
   if (error.isCancelError) {
     console.log('请求被取消:', error.message)
-  } else {
+  }
+ else {
     console.error('请求失败:', error)
   }
 }
@@ -68,7 +70,7 @@ const response = await client.get('/slow-endpoint', {
 const cancelToken = client.createCancelToken()
 
 // 根据条件取消
-const checkAndCancel = () => {
+function checkAndCancel() {
   if (shouldCancelRequest()) {
     cancelToken.cancel('条件满足，取消请求')
   }
@@ -80,7 +82,8 @@ const interval = setInterval(checkAndCancel, 1000)
 try {
   const response = await client.get('/api/data', { cancelToken })
   clearInterval(interval)
-} catch (error: any) {
+}
+ catch (error: any) {
   clearInterval(interval)
   if (error.isCancelError) {
     console.log('请求被取消')
@@ -106,7 +109,8 @@ controller.abort()
 
 try {
   const response = await requestPromise
-} catch (error: any) {
+}
+ catch (error: any) {
   if (error.name === 'AbortError') {
     console.log('请求被中止')
   }
@@ -145,7 +149,8 @@ try {
   const response = await client.get('/slow-endpoint', {
     timeout: 5000 // 5秒超时
   })
-} catch (error: any) {
+}
+ catch (error: any) {
   if (error.isTimeoutError) {
     console.log('请求超时')
   }
@@ -157,18 +162,18 @@ try {
 ```typescript
 function createTimeoutCancelToken(timeout: number) {
   const cancelToken = client.createCancelToken()
-  
+
   const timeoutId = setTimeout(() => {
     cancelToken.cancel(`请求超时 (${timeout}ms)`)
   }, timeout)
-  
+
   // 清理定时器
   const originalCancel = cancelToken.cancel
   cancelToken.cancel = (reason?: string) => {
     clearTimeout(timeoutId)
     originalCancel.call(cancelToken, reason)
   }
-  
+
   return cancelToken
 }
 
@@ -184,30 +189,31 @@ const response = await client.get('/api/data', { cancelToken })
 ```typescript
 class RequestManager {
   private cancelTokens: Map<string, CancelToken> = new Map()
-  
+
   async request<T>(id: string, config: RequestConfig): Promise<HttpResponse<T>> {
     // 取消之前的同类请求
     this.cancel(id)
-    
+
     // 创建新的取消令牌
     const cancelToken = client.createCancelToken()
     this.cancelTokens.set(id, cancelToken)
-    
+
     try {
       const response = await client.request<T>({
         ...config,
         cancelToken
       })
-      
+
       // 请求成功，移除令牌
       this.cancelTokens.delete(id)
       return response
-    } catch (error) {
+    }
+ catch (error) {
       this.cancelTokens.delete(id)
       throw error
     }
   }
-  
+
   cancel(id: string, reason?: string): void {
     const cancelToken = this.cancelTokens.get(id)
     if (cancelToken) {
@@ -215,7 +221,7 @@ class RequestManager {
       this.cancelTokens.delete(id)
     }
   }
-  
+
   cancelAll(reason?: string): void {
     this.cancelTokens.forEach((cancelToken, id) => {
       cancelToken.cancel(reason || '批量取消所有请求')
@@ -243,37 +249,38 @@ requestManager.cancelAll('页面卸载')
 ```typescript
 class GroupedRequestManager {
   private groups: Map<string, Set<CancelToken>> = new Map()
-  
+
   addToGroup(groupId: string, cancelToken: CancelToken): void {
     if (!this.groups.has(groupId)) {
       this.groups.set(groupId, new Set())
     }
     this.groups.get(groupId)!.add(cancelToken)
   }
-  
+
   cancelGroup(groupId: string, reason?: string): void {
     const group = this.groups.get(groupId)
     if (group) {
-      group.forEach(cancelToken => {
+      group.forEach((cancelToken) => {
         cancelToken.cancel(reason || `取消分组: ${groupId}`)
       })
       this.groups.delete(groupId)
     }
   }
-  
+
   async requestInGroup<T>(
-    groupId: string, 
+    groupId: string,
     config: RequestConfig
   ): Promise<HttpResponse<T>> {
     const cancelToken = client.createCancelToken()
     this.addToGroup(groupId, cancelToken)
-    
+
     try {
       return await client.request<T>({
         ...config,
         cancelToken
       })
-    } finally {
+    }
+ finally {
       // 请求完成后从分组中移除
       const group = this.groups.get(groupId)
       if (group) {
@@ -303,14 +310,6 @@ groupManager.cancelGroup('dashboard', '切换页面')
 ### 组件卸载自动取消
 
 ```vue
-<template>
-  <div>
-    <div v-if="loading">加载中...</div>
-    <div v-else-if="error">{{ error.message }}</div>
-    <div v-else>{{ data }}</div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { onUnmounted } from 'vue'
 import { useRequest } from '@ldesign/http'
@@ -319,7 +318,7 @@ import { useRequest } from '@ldesign/http'
 const { data, loading, error, cancel } = useRequest('/api/data')
 
 // 手动取消
-const handleCancel = () => {
+function handleCancel() {
   cancel('用户手动取消')
 }
 
@@ -328,22 +327,25 @@ onUnmounted(() => {
   console.log('组件卸载，请求已自动取消')
 })
 </script>
+
+<template>
+  <div>
+    <div v-if="loading">
+      加载中...
+    </div>
+    <div v-else-if="error">
+      {{ error.message }}
+    </div>
+    <div v-else>
+      {{ data }}
+    </div>
+  </div>
+</template>
 ```
 
 ### 手动控制取消
 
 ```vue
-<template>
-  <div>
-    <button @click="fetchData" :disabled="loading">
-      {{ loading ? '加载中...' : '获取数据' }}
-    </button>
-    <button @click="cancelRequest" :disabled="!loading">
-      取消请求
-    </button>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { useRequest } from '@ldesign/http'
 
@@ -357,6 +359,17 @@ const {
   immediate: false // 不立即执行
 })
 </script>
+
+<template>
+  <div>
+    <button :disabled="loading" @click="fetchData">
+      {{ loading ? '加载中...' : '获取数据' }}
+    </button>
+    <button :disabled="!loading" @click="cancelRequest">
+      取消请求
+    </button>
+  </div>
+</template>
 ```
 
 ### 路由切换取消
@@ -401,7 +414,8 @@ cancelToken.onCancel((reason) => {
 // 发送请求
 try {
   const response = await client.get('/api/data', { cancelToken })
-} catch (error: any) {
+}
+ catch (error: any) {
   if (error.isCancelError) {
     console.log('请求被取消:', error.message)
   }
@@ -438,25 +452,26 @@ function cleanup() {
 describe('请求取消', () => {
   it('应该能够取消请求', async () => {
     const cancelToken = client.createCancelToken()
-    
+
     // 立即取消
     cancelToken.cancel('测试取消')
-    
+
     try {
       await client.get('/api/data', { cancelToken })
       fail('请求应该被取消')
-    } catch (error: any) {
+    }
+ catch (error: any) {
       expect(error.isCancelError).toBe(true)
       expect(error.message).toBe('测试取消')
     }
   })
-  
+
   it('应该在组件卸载时取消请求', async () => {
     const { unmount } = mount(TestComponent)
-    
+
     // 模拟组件卸载
     unmount()
-    
+
     // 验证请求被取消
     expect(mockCancel).toHaveBeenCalled()
   })
@@ -471,22 +486,23 @@ describe('请求取消', () => {
 // ✅ 好的做法：及时清理取消令牌
 class ApiService {
   private cancelTokens: Set<CancelToken> = new Set()
-  
+
   async request<T>(config: RequestConfig): Promise<T> {
     const cancelToken = client.createCancelToken()
     this.cancelTokens.add(cancelToken)
-    
+
     try {
       const response = await client.request<T>({
         ...config,
         cancelToken
       })
       return response.data
-    } finally {
+    }
+ finally {
       this.cancelTokens.delete(cancelToken)
     }
   }
-  
+
   destroy(): void {
     this.cancelTokens.forEach(token => token.cancel('服务销毁'))
     this.cancelTokens.clear()
@@ -509,7 +525,7 @@ const orderRequestManager = new GroupedRequestManager()
 
 ```typescript
 // ✅ 提供取消反馈
-const handleCancel = () => {
+function handleCancel() {
   cancelToken.cancel('用户取消')
   showMessage('操作已取消', 'info')
 }
@@ -517,17 +533,18 @@ const handleCancel = () => {
 // ✅ 防止重复请求
 let currentRequest: Promise<any> | null = null
 
-const fetchData = async () => {
+async function fetchData() {
   if (currentRequest) {
     // 取消之前的请求
     cancelPreviousRequest()
   }
-  
+
   currentRequest = client.get('/api/data')
   try {
     const response = await currentRequest
     return response.data
-  } finally {
+  }
+ finally {
     currentRequest = null
   }
 }
