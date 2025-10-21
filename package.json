@@ -168,7 +168,8 @@
     "preversion": "pnpm run lint:check && pnpm run type-check && pnpm run test:run",
     "security-check": "node scripts/security-check.js",
     "validate-build": "node scripts/validate-build.js",
-    "ci": "pnpm run lint:check && pnpm run type-check && pnpm run test:run && pnpm run build && pnpm run validate-build && pnpm run security-check"
+    "ci": "pnpm run lint:check && pnpm run type-check && pnpm run test:run && pnpm run build && pnpm run validate-build && pnpm run security-check",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "alova": "^3.3.4",
@@ -189,16 +190,17 @@
     "@vitest/coverage-v8": "^3.2.4",
     "@vitest/ui": "^3.2.4",
     "@vue/test-utils": "^2.4.4",
-    "eslint": "^9.0.0",
+    "eslint": "^9.18.0",
     "jsdom": "^24.0.0",
     "rollup": "^4.9.6",
     "rollup-plugin-dts": "^6.1.0",
     "size-limit": "^11.0.0",
-    "typescript": "^5.6.0",
+    "typescript": "^5.7.3",
     "vite": "^5.0.12",
     "vitest": "^3.2.4",
     "vue": "^3.4.15",
-    "vue-tsc": "^3.0.5"
+    "vue-tsc": "^3.0.5",
+    "@antfu/eslint-config": "^6.0.0"
   },
   "engines": {
     "node": ">=18.0.0",
