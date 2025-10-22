@@ -532,11 +532,11 @@ export type RequestDataByMethod<TMethod extends HttpMethod, TData = unknown> =
  */
 export type ResponseDataByType<TResponseType extends RequestConfig['responseType'], TData = unknown> =
   TResponseType extends 'json' ? TData :
-    TResponseType extends 'text' ? string :
-      TResponseType extends 'blob' ? Blob :
-        TResponseType extends 'arrayBuffer' ? ArrayBuffer :
-          TResponseType extends 'stream' ? ReadableStream :
-            TData
+  TResponseType extends 'text' ? string :
+  TResponseType extends 'blob' ? Blob :
+  TResponseType extends 'arrayBuffer' ? ArrayBuffer :
+  TResponseType extends 'stream' ? ReadableStream :
+  TData
 
 /**
  * 工具类型：提取 Promise 的类型
@@ -626,3 +626,75 @@ export type {
   UploadProgress,
   UploadResult,
 } from '../utils/upload'
+
+// 导出品牌类型
+export type {
+  Brand,
+  Url,
+  RequestId,
+  CacheKey,
+  StatusCode,
+  Timeout,
+  TTL,
+  Token,
+  ApiKey,
+  HttpMethodType,
+  ContentTypeValue,
+  ResponseTypeValue,
+} from './brand'
+
+export {
+  brand,
+  unbrand,
+  createUrl,
+  createRequestId,
+  createCacheKey,
+  createStatusCode,
+  createTimeout,
+  createTTL,
+  createToken,
+  createApiKey,
+  HttpMethod,
+  ContentType as BrandContentType,
+  ResponseType as BrandResponseType,
+} from './brand'
+
+// 导出安全类型
+export type {
+  UnknownObject,
+  UnknownArray,
+  UnknownRecord,
+  JsonValue,
+  JsonObject,
+  JsonArray,
+  Serializable,
+  SafeResponseData,
+  SafeRequestData,
+  SafeFunction,
+  AsyncFunction,
+  Callback,
+  ErrorCallback,
+  MaybeCallback,
+  TypeGuard,
+  Validator,
+  Transformer,
+  FilterPredicate,
+  MapFunction,
+  ReduceFunction,
+  Nullable,
+  Maybe,
+  Optional,
+  ArrayElement,
+  PromiseValue,
+  DeepReadonly,
+  DeepPartial,
+  DeepRequired,
+  ValueOf,
+  ExcludeUndefined,
+  ExcludeNull,
+  ExcludeNullish,
+  Callable,
+  Constructor,
+  AbstractConstructor,
+  Class,
+} from './safe'

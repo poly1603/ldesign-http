@@ -87,9 +87,9 @@ export class RequestMonitor {
       slowRequestThreshold: 3000,
       samplingRate: 1.0, // 默认100%采样
       enableSampling: false, // 默认不启用采样
-      onSlowRequest: () => {},
-      onError: () => {},
-      onMetricsUpdate: () => {},
+      onSlowRequest: () => { },
+      onError: () => { },
+      onMetricsUpdate: () => { },
       ...config,
     }
   }
@@ -256,7 +256,7 @@ export class RequestMonitor {
    */
   private calculateStats(): PerformanceStats {
     const total = this.metrics.length
-    
+
     // 早期返回优化
     if (total === 0) {
       return {
@@ -277,7 +277,7 @@ export class RequestMonitor {
         cacheHitRate: 0,
       }
     }
-    
+
     let successful = 0
     let failed = 0
     let cached = 0
@@ -288,7 +288,7 @@ export class RequestMonitor {
     // 使用 Object.create(null) 创建更快的普通对象
     const requestsByMethod: Record<string, number> = Object.create(null)
     const requestsByStatus: Record<number, number> = Object.create(null)
-    
+
     // 预分配数组大小
     const durations: number[] = Array.from({ length: total }, () => 0)
     const slowThreshold = this.config?.slowRequestThreshold
@@ -464,3 +464,8 @@ export function createRequestMonitor(config?: MonitorConfig): RequestMonitor {
  * 默认监控器实例
  */
 export const defaultMonitor = createRequestMonitor()
+
+/**
+ * 导出紧凑型监控器（内存优化版）
+ */
+export { CompactRequestMonitor, createCompactMonitor } from './monitor-compact'

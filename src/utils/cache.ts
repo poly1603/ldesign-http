@@ -90,7 +90,7 @@ export class MemoryCacheStorage implements CacheStorage {
       timestamp: Date.now(),
       ttl,
     })
-    
+
     // 更新访问顺序
     this.accessOrder.set(key, Date.now())
   }
@@ -110,7 +110,7 @@ export class MemoryCacheStorage implements CacheStorage {
    */
   private startCleanup(): void {
     if (this.isDestroyed) return
-    
+
     this.cleanupTimer = setInterval(() => {
       if (!this.isDestroyed) {
         this.cleanupExpired()
@@ -128,7 +128,7 @@ export class MemoryCacheStorage implements CacheStorage {
    */
   private cleanupExpired(): void {
     if (this.isDestroyed) return
-    
+
     const now = Date.now()
     const keysToDelete: string[] = []
 
@@ -196,12 +196,12 @@ export class MemoryCacheStorage implements CacheStorage {
    */
   destroy(): void {
     this.isDestroyed = true
-    
+
     if (this.cleanupTimer) {
       clearInterval(this.cleanupTimer)
       this.cleanupTimer = undefined
     }
-    
+
     this.cache.clear()
     this.accessOrder.clear()
   }
@@ -290,7 +290,10 @@ export class LocalStorageCacheStorage implements CacheStorage {
 export class CacheManager {
   protected config: Required<CacheConfig>
   protected storage: CacheStorage
-  private keyCache = new Map<string, string>() // 缓存生成的键，避免重复计算
+  // 优化：使用 WeakMap 自动清理，Map 用于简单键
+  private keyWeakCache = new WeakMap<RequestConfig, string>()
+  private keySimpleCache = new Map<string, string>() // 简单请求缓存
+  private maxSimpleCacheSize = 500 // 限制简单缓存大小
   protected stats: CacheStats = {
     hits: 0,
     misses: 0,
@@ -402,32 +405,55 @@ export class CacheManager {
   }
 
   /**
-   * 获取缓存的键（性能优化版本）
+   * 获取缓存的键（优化版 - 两级缓存策略）
    */
   protected getCachedKey(config: RequestConfig): string {
-    // 优化：使用更快的配置标识符生成方式，避免 JSON.stringify
+    // 第一层：尝试从 WeakMap 获取（对象引用作为键，自动清理）
+    const weakCached = this.keyWeakCache.get(config)
+    if (weakCached) {
+      return weakCached
+    }
+
+    // 第二层：构建简单键用于查询
     const method = config.method || 'GET'
     const url = config.url || ''
-    const paramsStr = config.params ? this.fastStringify(config.params) : ''
-    const dataStr = config.data ? this.fastStringify(config.data) : ''
-    const configId = `${method}:${url}:${paramsStr}:${dataStr}`
 
-    if (this.keyCache.has(configId)) {
-      return this.keyCache.get(configId)!
-    }
+    // 对于简单请求（无 params 和 data），使用更快的键
+    if (!config.params && !config.data) {
+      const simpleKey = `${method}:${url}`
 
-    const key = this.config?.keyGenerator(config)
-
-    // 限制缓存大小，避免内存泄漏
-    if (this.keyCache.size > 1000) {
-      const firstKey = this.keyCache.keys().next().value
-      if (firstKey !== undefined) {
-        this.keyCache.delete(firstKey)
+      const simpleCached = this.keySimpleCache.get(simpleKey)
+      if (simpleCached) {
+        // 也缓存到 WeakMap
+        this.keyWeakCache.set(config, simpleCached)
+        return simpleCached
       }
+
+      // 生成完整键
+      const fullKey = this.config?.keyGenerator(config)
+
+      // 缓存到两个地方
+      this.keyWeakCache.set(config, fullKey)
+
+      // 简单键缓存（限制大小）
+      if (this.keySimpleCache.size < this.maxSimpleCacheSize) {
+        this.keySimpleCache.set(simpleKey, fullKey)
+      } else {
+        // LRU 淘汰：删除最早的项
+        const firstKey = this.keySimpleCache.keys().next().value
+        if (firstKey !== undefined) {
+          this.keySimpleCache.delete(firstKey)
+        }
+        this.keySimpleCache.set(simpleKey, fullKey)
+      }
+
+      return fullKey
     }
 
-    this.keyCache.set(configId, key)
-    return key
+    // 复杂请求：直接生成键并缓存到 WeakMap
+    const fullKey = this.config?.keyGenerator(config)
+    this.keyWeakCache.set(config, fullKey)
+    return fullKey
   }
 
   /**
@@ -827,8 +853,8 @@ export function createEnhancedCacheManager(
 /**
  * 创建内存缓存存储
  */
-export function createMemoryStorage(): MemoryCacheStorage {
-  return new MemoryCacheStorage()
+export function createMemoryStorage(maxSize?: number): MemoryCacheStorage {
+  return new MemoryCacheStorage(maxSize)
 }
 
 /**
@@ -837,6 +863,18 @@ export function createMemoryStorage(): MemoryCacheStorage {
 export function createLocalStorage(prefix?: string): LocalStorageCacheStorage {
   return new LocalStorageCacheStorage(prefix)
 }
+
+/**
+ * 创建优化的内存缓存存储（推荐）
+ * 
+ * 相比普通 MemoryCacheStorage，优化版本提供：
+ * - 自动压缩大对象
+ * - 严格的内存限制
+ * - 更好的 LRU 淘汰策略
+ * - 详细的统计信息
+ */
+export { createOptimizedMemoryStorage, OptimizedMemoryStorage } from './cache-optimized'
+export type { OptimizedCacheConfig } from './cache-optimized'
 
 /**
  * 简单哈希函数

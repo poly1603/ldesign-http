@@ -6,16 +6,18 @@ import type { ErrorInterceptor, InterceptorManager } from '../types'
 interface InterceptorItem<T> {
   fulfilled: T
   rejected?: ErrorInterceptor
+  isAsync?: boolean  // 标记是否为异步拦截器
 }
 
 /**
- * 拦截器管理器实现（优化版）
+ * 拦截器管理器实现（优化版 v2）
  *
  * 优化点：
  * 1. 使用紧凑数组替代稀疏数组，减少内存占用
  * 2. 使用 Map 存储 ID 映射，提高查找效率
  * 3. 删除时真正移除元素，避免内存泄漏
  * 4. 优化遍历性能，无需检查 null 值
+ * 5. 区分同步/异步拦截器，提升执行效率
  */
 export class InterceptorManagerImpl<T> implements InterceptorManager<T> {
   // 使用紧凑数组存储拦截器
@@ -24,6 +26,11 @@ export class InterceptorManagerImpl<T> implements InterceptorManager<T> {
   private idMap = new Map<number, number>()
   // 下一个可用的 ID
   private nextId = 0
+
+  // 分类缓存（同步/异步）
+  private syncInterceptors: Array<InterceptorItem<T>> = []
+  private asyncInterceptors: Array<InterceptorItem<T>> = []
+  private categoryCacheDirty = true
 
   /**
    * 添加拦截器
@@ -35,12 +42,20 @@ export class InterceptorManagerImpl<T> implements InterceptorManager<T> {
     const id = this.nextId++
     const index = this.interceptors.length
 
+    // 检测是否为异步函数
+    const isAsync = this.isAsyncFunction(fulfilled)
+
     this.interceptors.push({
       fulfilled,
       rejected,
+      isAsync,
     })
 
     this.idMap.set(id, index)
+
+    // 标记分类缓存需要更新
+    this.categoryCacheDirty = true
+
     return id
   }
 
@@ -64,6 +79,9 @@ export class InterceptorManagerImpl<T> implements InterceptorManager<T> {
         this.idMap.set(mappedId, mappedIndex - 1)
       }
     }
+
+    // 标记分类缓存需要更新
+    this.categoryCacheDirty = true
   }
 
   /**
@@ -72,6 +90,77 @@ export class InterceptorManagerImpl<T> implements InterceptorManager<T> {
   clear(): void {
     this.interceptors = []
     this.idMap.clear()
+    this.syncInterceptors = []
+    this.asyncInterceptors = []
+    this.categoryCacheDirty = false
+  }
+
+  /**
+   * 检测函数是否为异步
+   */
+  private isAsyncFunction(fn: any): boolean {
+    // 检查是否为 AsyncFunction
+    if (fn?.constructor?.name === 'AsyncFunction') {
+      return true
+    }
+
+    // 检查返回值是否为 Promise（通过检查函数toString）
+    const fnStr = fn.toString()
+    return fnStr.includes('async ') || fnStr.includes('Promise')
+  }
+
+  /**
+   * 更新分类缓存
+   */
+  private updateCategoryCache(): void {
+    if (!this.categoryCacheDirty) {
+      return
+    }
+
+    this.syncInterceptors = []
+    this.asyncInterceptors = []
+
+    for (const interceptor of this.interceptors) {
+      if (interceptor.isAsync) {
+        this.asyncInterceptors.push(interceptor)
+      } else {
+        this.syncInterceptors.push(interceptor)
+      }
+    }
+
+    this.categoryCacheDirty = false
+  }
+
+  /**
+   * 获取同步拦截器
+   */
+  getSyncInterceptors(): Array<InterceptorItem<T>> {
+    this.updateCategoryCache()
+    return this.syncInterceptors
+  }
+
+  /**
+   * 获取异步拦截器
+   */
+  getAsyncInterceptors(): Array<InterceptorItem<T>> {
+    this.updateCategoryCache()
+    return this.asyncInterceptors
+  }
+
+  /**
+   * 检查是否有同步拦截器
+   */
+  hasSyncInterceptors(): boolean {
+    this.updateCategoryCache()
+    return this.syncInterceptors.length > 0
+  }
+
+  /**
+   * 检查是否有异步拦截器
+   */
+  hasAsyncInterceptors(): boolean {
+    this.updateCategoryCache()
+    return this.asyncInterceptors.length > 0
   }
 
   /**

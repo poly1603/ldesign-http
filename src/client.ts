@@ -122,22 +122,31 @@ export class HttpClientImpl implements HttpClient {
   }
 
   /**
-   * 发送请求（优化版）
+   * 发送请求（优化版 - 带快速路径）
    */
   async request<T = unknown>(config: RequestConfig): Promise<ResponseData<T>> {
     this.checkDestroyed()
 
+    // 快速路径：简单请求直接处理（跳过大部分中间件）
+    if (this.canUseFastPath(config)) {
+      return this.fastRequest<T>(config)
+    }
+
     // 合并配置（只在需要时进行深度合并）
     const mergedConfig = this.optimizedMergeConfig(config)
 
-    // 生成请求ID
-    const requestId = generateId()
+    // 条件性生成请求ID（只在需要监控时）
+    const needsTracking = this.monitor.isEnabled()
+    const requestId = needsTracking ? generateId() : ''
 
-    // 开始监控
-    this.monitor.startRequest(requestId, mergedConfig)
+    // 开始监控（只在启用时）
+    if (needsTracking) {
+      this.monitor.startRequest(requestId, mergedConfig)
+    }
 
-    // 判断优先级
-    const priority = determinePriority(mergedConfig)
+    // 判断优先级（只在配置了优先级时）
+    const hasPriority = mergedConfig.priority !== undefined
+    const priority = hasPriority ? determinePriority(mergedConfig) : undefined
 
     // 使用优先级队列执行请求
     if (priority !== undefined && this.priorityQueue) {
@@ -146,11 +155,15 @@ export class HttpClientImpl implements HttpClient {
         async () => {
           try {
             const response = await this.executeRequestWithRetry<T>(mergedConfig, requestId)
-            this.monitor.endRequest(requestId, mergedConfig, response)
+            if (needsTracking) {
+              this.monitor.endRequest(requestId, mergedConfig, response)
+            }
             return response
           }
           catch (error) {
-            this.monitor.endRequest(requestId, mergedConfig, undefined, error as Error)
+            if (needsTracking) {
+              this.monitor.endRequest(requestId, mergedConfig, undefined, error as Error)
+            }
             throw error
           }
         },
@@ -161,13 +174,95 @@ export class HttpClientImpl implements HttpClient {
     // 普通执行
     try {
       const response = await this.executeRequestWithRetry<T>(mergedConfig, requestId)
-      this.monitor.endRequest(requestId, mergedConfig, response)
+      if (needsTracking) {
+        this.monitor.endRequest(requestId, mergedConfig, response)
+      }
       return response
     }
     catch (error) {
-      this.monitor.endRequest(requestId, mergedConfig, undefined, error as Error)
+      if (needsTracking) {
+        this.monitor.endRequest(requestId, mergedConfig, undefined, error as Error)
+      }
       throw error
     }
+  }
+
+  /**
+   * 检查是否可以使用快速路径
+   * 
+   * 快速路径条件：
+   * - 没有拦截器
+   * - 没有缓存
+   * - 没有重试
+   * - 没有优先级
+   * - 监控已禁用
+   */
+  private canUseFastPath(config: RequestConfig): boolean {
+    // 有拦截器则不能使用快速路径
+    if (this.hasInterceptors()) {
+      return false
+    }
+
+    // 有优先级则不能使用快速路径
+    if (config.priority !== undefined) {
+      return false
+    }
+
+    // 启用了缓存则不能使用快速路径
+    if (this.config.cache?.enabled && this.cacheManager) {
+      return false
+    }
+
+    // 启用了重试则不能使用快速路径
+    if (config.retry && (config.retry as RetryConfig).retries) {
+      return false
+    }
+
+    // 监控启用则不能使用快速路径
+    if (this.monitor && this.monitor.isEnabled()) {
+      return false
+    }
+
+    return true
+  }
+
+  /**
+   * 快速路径请求（跳过所有中间件）
+   */
+  private async fastRequest<T = unknown>(config: RequestConfig): Promise<ResponseData<T>> {
+    // 快速合并配置（浅合并）
+    const fullConfig: RequestConfig = {
+      ...this.config,
+      ...config,
+      // 只在都有 headers 时才合并
+      headers: config.headers
+        ? { ...this.config.headers, ...config.headers }
+        : this.config.headers,
+    }
+
+    // 直接调用适配器
+    return this.adapter.request<T>(fullConfig)
+  }
+
+  /**
+   * 检查是否有拦截器
+   */
+  private hasInterceptors(): boolean {
+    const requestInterceptors = (
+      this.interceptors.request as InterceptorManagerImpl<RequestInterceptor>
+    ).getInterceptors()
+    const responseInterceptors = (
+      this.interceptors.response as InterceptorManagerImpl<ResponseInterceptor>
+    ).getInterceptors()
+    const errorInterceptors = (
+      this.interceptors.error as InterceptorManagerImpl<ErrorInterceptor>
+    ).getInterceptors()
+
+    return (
+      requestInterceptors.length > 0
+      || responseInterceptors.length > 0
+      || errorInterceptors.length > 0
+    )
   }
 
   /**
@@ -218,7 +313,7 @@ export class HttpClientImpl implements HttpClient {
     config: RequestConfig,
   ): Promise<ResponseData<T>> {
     let processedConfig: RequestConfig | null = null
-    
+
     try {
       // 执行请求拦截器
       processedConfig = await this.processRequestInterceptors(config)
@@ -446,18 +541,33 @@ export class HttpClientImpl implements HttpClient {
   }
 
   /**
-   * 处理请求拦截器
+   * 处理请求拦截器（优化版 - 区分同步/异步）
    */
   private async processRequestInterceptors(
     config: RequestConfig,
   ): Promise<RequestConfig> {
     let processedConfig = config
 
-    const interceptors = (
-      this.interceptors.request as InterceptorManagerImpl<RequestInterceptor>
-    ).getInterceptors()
+    const manager = this.interceptors.request as InterceptorManagerImpl<RequestInterceptor>
 
-    for (const interceptor of interceptors) {
+    // 先执行同步拦截器（无需 await，更快）
+    const syncInterceptors = manager.getSyncInterceptors()
+    for (const interceptor of syncInterceptors) {
+      try {
+        // 同步执行，不使用 await
+        processedConfig = interceptor.fulfilled(processedConfig) as RequestConfig
+      }
+      catch (error) {
+        if (interceptor.rejected) {
+          throw await interceptor.rejected(error as HttpError)
+        }
+        throw error
+      }
+    }
+
+    // 再执行异步拦截器
+    const asyncInterceptors = manager.getAsyncInterceptors()
+    for (const interceptor of asyncInterceptors) {
       try {
         processedConfig = await interceptor.fulfilled(processedConfig)
       }
@@ -473,18 +583,32 @@ export class HttpClientImpl implements HttpClient {
   }
 
   /**
-   * 处理响应拦截器
+   * 处理响应拦截器（优化版 - 区分同步/异步）
    */
   private async processResponseInterceptors<T>(
     response: ResponseData<T>,
   ): Promise<ResponseData<T>> {
     let processedResponse = response as ResponseData<unknown>
 
-    const interceptors = (
-      this.interceptors.response as InterceptorManagerImpl<ResponseInterceptor>
-    ).getInterceptors()
+    const manager = this.interceptors.response as InterceptorManagerImpl<ResponseInterceptor>
 
-    for (const interceptor of interceptors) {
+    // 先执行同步拦截器
+    const syncInterceptors = manager.getSyncInterceptors()
+    for (const interceptor of syncInterceptors) {
+      try {
+        processedResponse = interceptor.fulfilled(processedResponse) as ResponseData<unknown>
+      }
+      catch (error) {
+        if (interceptor.rejected) {
+          throw await interceptor.rejected(error as HttpError)
+        }
+        throw error
+      }
+    }
+
+    // 再执行异步拦截器
+    const asyncInterceptors = manager.getAsyncInterceptors()
+    for (const interceptor of asyncInterceptors) {
       try {
         processedResponse = await interceptor.fulfilled(processedResponse)
       }
@@ -500,16 +624,27 @@ export class HttpClientImpl implements HttpClient {
   }
 
   /**
-   * 处理错误拦截器
+   * 处理错误拦截器（优化版 - 区分同步/异步）
    */
   private async processErrorInterceptors(error: HttpError): Promise<HttpError> {
     let processedError = error
 
-    const interceptors = (
-      this.interceptors.error as InterceptorManagerImpl<ErrorInterceptor>
-    ).getInterceptors()
+    const manager = this.interceptors.error as InterceptorManagerImpl<ErrorInterceptor>
 
-    for (const interceptor of interceptors) {
+    // 先执行同步拦截器
+    const syncInterceptors = manager.getSyncInterceptors()
+    for (const interceptor of syncInterceptors) {
+      try {
+        processedError = interceptor.fulfilled(processedError) as HttpError
+      }
+      catch (err) {
+        processedError = err as HttpError
+      }
+    }
+
+    // 再执行异步拦截器
+    const asyncInterceptors = manager.getAsyncInterceptors()
+    for (const interceptor of asyncInterceptors) {
       try {
         processedError = await interceptor.fulfilled(processedError)
       }
@@ -600,13 +735,13 @@ export class HttpClientImpl implements HttpClient {
       ...(config || {}),
       onUploadProgress: config.onProgress
         ? (progressEvent: { loaded: number, total?: number }) => {
-            const progress = progressCalculator.calculate(
-              progressEvent.loaded,
-              progressEvent.total || 0,
-              file,
-            )
-            config.onProgress?.(progress)
-          }
+          const progress = progressCalculator.calculate(
+            progressEvent.loaded,
+            progressEvent.total || 0,
+            file,
+          )
+          config.onProgress?.(progress)
+        }
         : undefined,
     }
 
@@ -662,12 +797,12 @@ export class HttpClientImpl implements HttpClient {
       ...(config || {}),
       onUploadProgress: config.onProgress
         ? (progressEvent: { loaded: number, total?: number }) => {
-            const progress = progressCalculator.calculate(
-              progressEvent.loaded,
-              progressEvent.total || 0,
-            )
-            config.onProgress?.(progress)
-          }
+          const progress = progressCalculator.calculate(
+            progressEvent.loaded,
+            progressEvent.total || 0,
+          )
+          config.onProgress?.(progress)
+        }
         : undefined,
     }
 
@@ -702,13 +837,13 @@ export class HttpClientImpl implements HttpClient {
       ...(config || {}),
       onDownloadProgress: config.onProgress
         ? (progressEvent: { loaded: number, total?: number }) => {
-            const progress = progressCalculator.calculate(
-              progressEvent.loaded,
-              progressEvent.total || 0,
-              config.filename,
-            )
-            config.onProgress?.(progress)
-          }
+          const progress = progressCalculator.calculate(
+            progressEvent.loaded,
+            progressEvent.total || 0,
+            config.filename,
+          )
+          config.onProgress?.(progress)
+        }
         : undefined,
     }
 
@@ -860,13 +995,13 @@ export class HttpClientImpl implements HttpClient {
     this.interceptors.request.clear()
     this.interceptors.response.clear()
     this.interceptors.error.clear()
-    
+
     // 清理缓存管理器的定时器
     const cacheManager = this.cacheManager as unknown as { destroy?: () => void }
     if (cacheManager && typeof cacheManager.destroy === 'function') {
       cacheManager.destroy()
     }
-    
+
     // 解除循环引用（使用 null! 避免在 destroy 后使用的编译错误）
     this.adapter = null!
     this.retryManager = null!

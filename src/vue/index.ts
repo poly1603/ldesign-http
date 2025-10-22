@@ -35,6 +35,14 @@ export {
 // 表单管理 hook
 export { useForm } from './useForm'
 
+// 无限滚动 hook (新增)
+export { useInfiniteScroll } from './useInfiniteScroll'
+export type { InfiniteScrollOptions, UseInfiniteScrollReturn } from './useInfiniteScroll'
+
+// 分页 hook (新增)
+export { usePagination } from './usePagination'
+export type { PaginationOptions, UsePaginationReturn } from './usePagination'
+
 /**
  * ===================
  * REST API Composables
@@ -50,9 +58,6 @@ export {
   provideHttpClient,
   useHttp as useInjectedHttp,
 } from './useHttp'
-
-// 分页 hook
-export { usePagination } from './useHttp'
 
 // 独立 HTTP 客户端 (推荐: 最简单的使用方式,无需配置)
 export { useHttp } from './useHttpStandalone'

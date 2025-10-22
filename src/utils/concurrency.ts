@@ -108,7 +108,7 @@ export class ConcurrencyManager {
   }
 
   /**
-   * 执行任务
+   * 执行任务（优化版）
    */
   private async executeTask<T = unknown>(task: RequestTask<T>): Promise<void> {
     this.activeRequests.add(task.id)
@@ -122,12 +122,56 @@ export class ConcurrencyManager {
     }
     finally {
       this.activeRequests.delete(task.id)
-      this.processQueue()
+      // 使用批量调度替代立即处理
+      this.scheduleNextBatch()
     }
   }
 
   /**
-   * 处理队列中的下一个任务（优化版）
+   * 批量调度标志
+   */
+  private pendingSchedule = false
+
+  /**
+   * 调度下一批任务（优化版 - 使用微任务批处理）
+   */
+  private scheduleNextBatch(): void {
+    // 如果已经有待处理的调度，跳过
+    if (this.pendingSchedule) {
+      return
+    }
+
+    this.pendingSchedule = true
+
+    // 使用微任务批处理，在当前事件循环结束时处理
+    queueMicrotask(() => {
+      this.pendingSchedule = false
+      this.processBatch()
+    })
+  }
+
+  /**
+   * 批量处理队列（优化版）
+   */
+  private processBatch(): void {
+    // 计算可用的并发槽位
+    const available = this.config?.maxConcurrent - this.activeRequests.size
+
+    if (available <= 0 || this.requestQueue.length === 0) {
+      return
+    }
+
+    // 批量取出任务
+    const batch = this.requestQueue.splice(0, available)
+
+    // 并行启动所有任务
+    for (const task of batch) {
+      void this.executeTask(task)
+    }
+  }
+
+  /**
+   * 处理队列中的下一个任务（保留用于向后兼容）
    */
   private processQueue(): void {
     // 防止重复处理

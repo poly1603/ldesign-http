@@ -1,177 +1,38 @@
-import type { HttpAdapter } from '../types'
-import { AlovaAdapter } from './alova'
-import { AxiosAdapter } from './axios'
-import { FetchAdapter } from './fetch'
+/**
+ * 适配器导出模块
+ * 
+ * 为了优化包体积，适配器类不再直接导入，而是通过工厂动态加载
+ * 如果需要直接使用适配器类，请使用动态导入：
+ * 
+ * @example
+ * ```typescript
+ * // 推荐：使用工厂（自动优化）
+ * import { createAdapter } from '@ldesign/http/adapters'
+ * const adapter = await createAdapter('fetch')
+ * 
+ * // 或者：直接导入（会增加包体积）
+ * import { FetchAdapter } from '@ldesign/http/adapters/fetch'
+ * const adapter = new FetchAdapter()
+ * ```
+ */
 
+import type { HttpAdapter } from '../types'
+
+// 导出基类和类型
+export { BaseAdapter } from './base'
+export type { HttpAdapter } from '../types'
+
+// 导出工厂函数（推荐使用，支持动态导入）
+export {
+  AdapterFactory,
+  createAdapter,
+  createAdapterSync,
+  isAdapterAvailable,
+  preloadAdapters,
+} from './factory'
+
+// 为了向后兼容，保留直接导出（但会增加包体积）
+// 使用者可以选择性导入
 export { AlovaAdapter } from './alova'
 export { AxiosAdapter } from './axios'
-export { BaseAdapter } from './base'
 export { FetchAdapter } from './fetch'
-
-/**
- * 适配器工厂（优化版）
- */
-export class AdapterFactory {
-  private static adapters = new Map<string, () => HttpAdapter>([
-    ['fetch', () => new FetchAdapter()],
-    ['axios', () => new AxiosAdapter()],
-    ['alova', () => new AlovaAdapter()],
-  ])
-
-  // 缓存已创建的适配器实例
-  private static adapterCache = new Map<string, HttpAdapter>()
-
-  // 缓存可用性检查结果
-  private static availabilityCache = new Map<string, boolean>()
-
-  /**
-   * 注册适配器
-   */
-  static register(name: string, factory: () => HttpAdapter): void {
-    this.adapters.set(name, factory)
-  }
-
-  /**
-   * 创建适配器（带缓存）
-   */
-  static create(name: string): HttpAdapter {
-    // 检查缓存
-    if (this.adapterCache.has(name)) {
-      return this.adapterCache.get(name)!
-    }
-
-    const factory = this.adapters.get(name)
-    if (!factory) {
-      throw new Error(`Unknown adapter: ${name}`)
-    }
-
-    const adapter = factory()
-
-    // 验证适配器是否可用
-    if (!adapter.isSupported()) {
-      throw new Error(
-        `Adapter '${name}' is not supported in current environment`,
-      )
-    }
-
-    // 缓存适配器实例
-    this.adapterCache.set(name, adapter)
-    return adapter
-  }
-
-  /**
-   * 获取可用的适配器（带缓存）
-   */
-  static getAvailable(): string[] {
-    const available: string[] = []
-
-    this.adapters.forEach((factory, name) => {
-      // 检查缓存
-      if (this.availabilityCache.has(name)) {
-        if (this.availabilityCache.get(name)) {
-          available.push(name)
-        }
-        return
-      }
-
-      try {
-        const adapter = factory()
-        const isSupported = adapter.isSupported()
-
-        // 缓存可用性结果
-        this.availabilityCache.set(name, isSupported)
-
-        if (isSupported) {
-          available.push(name)
-        }
-      }
-      catch {
-        // 缓存不可用结果
-        this.availabilityCache.set(name, false)
-      }
-    })
-
-    return available
-  }
-
-  /**
-   * 获取默认适配器
-   */
-  static getDefault(): HttpAdapter {
-    const available = this.getAvailable()
-
-    if (available.length === 0) {
-      throw new Error('No available HTTP adapter found')
-    }
-
-    // 优先级：fetch > axios > alova
-    const priority = ['fetch', 'axios', 'alova']
-
-    for (const name of priority) {
-      if (available.includes(name)) {
-        return this.create(name)
-      }
-    }
-
-    // 如果没有找到优先的适配器，使用第一个可用的
-    return this.create(available[0]!)
-  }
-
-  /**
-   * 获取所有注册的适配器名称
-   */
-  static getRegistered(): string[] {
-    return Array.from(this.adapters.keys())
-  }
-
-  /**
-   * 清理缓存（用于测试或重置）
-   */
-  static clearCache(): void {
-    this.adapterCache.clear()
-    this.availabilityCache.clear()
-  }
-
-  /**
-   * 预热适配器（提前检查可用性）
-   */
-  static warmup(): void {
-    this.getAvailable() // 触发可用性检查和缓存
-  }
-}
-
-/**
- * 创建 HTTP 适配器
- */
-export function createAdapter(adapter?: string | HttpAdapter): HttpAdapter {
-  if (!adapter) {
-    return AdapterFactory.getDefault()
-  }
-
-  if (typeof adapter === 'string') {
-    return AdapterFactory.create(adapter)
-  }
-
-  if (
-    typeof adapter === 'object'
-    && 'request' in adapter
-    && 'isSupported' in adapter
-  ) {
-    return adapter
-  }
-
-  throw new Error('Invalid adapter configuration')
-}
-
-/**
- * 检查适配器是否可用
- */
-export function isAdapterAvailable(name: string): boolean {
-  try {
-    const adapter = AdapterFactory.create(name)
-    return adapter.isSupported()
-  }
-  catch {
-    return false
-  }
-}

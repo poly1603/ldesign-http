@@ -83,6 +83,16 @@
       "import": "./es/interceptors/*.js",
       "require": "./lib/interceptors/*.cjs"
     },
+    "./presets": {
+      "types": "./es/presets/index.d.ts",
+      "import": "./es/presets/index.js",
+      "require": "./lib/presets/index.cjs"
+    },
+    "./presets/*": {
+      "types": "./es/presets/*.d.ts",
+      "import": "./es/presets/*.js",
+      "require": "./lib/presets/*.cjs"
+    },
     "./tests/*": {
       "types": "./es/tests/*.d.ts",
       "import": "./es/tests/*.js",
@@ -133,8 +143,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "ldesign-builder build -f esm,cjs,umd",
-    "build:watch": "ldesign-builder build --watch",
+    "build": "ldesign-builder build -f esm,cjs,umd,dts",
     "dev": "rollup -c -w",
     "type-check": "vue-tsc --noEmit",
     "lint": "eslint . --fix",
