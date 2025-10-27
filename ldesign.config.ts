@@ -1,20 +1,34 @@
 import { defineConfig } from '@ldesign/builder'
 
 export default defineConfig({
-  libraryType: 'typescript',
+  input: 'src/index.ts',
+
   output: {
-    format: ['esm', 'cjs', 'umd']
+    format: ['esm', 'cjs', 'umd'],
+    esm: {
+      dir: 'es',
+      preserveStructure: true,
+    },
+    cjs: {
+      dir: 'lib',
+      preserveStructure: true,
+    },
+    umd: {
+      dir: 'dist',
+      name: 'LDesignHttp',
+    },
   },
-  typescript: {
-    tsconfig: './tsconfig.json',
-    declaration: true,
-    declarationDir: '',
-    // 强制覆盖 tsconfig 中的设置以启用 DTS 生成
-    compilerOptions: {
-      noEmit: false,
-      declaration: true,
-      declarationMap: true,
-      allowImportingTsExtensions: false
-    }
-  }
+
+  dts: true,
+  sourcemap: true,
+  minify: false,
+  clean: true,
+
+  external: [
+    'vue',
+    'react',
+    'react-dom',
+    /^@ldesign\//,
+    /^lodash/,
+  ],
 })
