@@ -1,0 +1,82 @@
+{
+  "name": "@ldesign/http-vue",
+  "version": "0.1.0",
+  "description": "Vue 3 adapter for @ldesign/http-core",
+  "keywords": [
+    "vue3",
+    "http",
+    "composables",
+    "typescript"
+  ],
+  "author": "ldesign",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./es/index.d.ts",
+      "import": "./es/index.js",
+      "require": "./lib/index.cjs"
+    },
+    "./composables": {
+      "types": "./es/composables/index.d.ts",
+      "import": "./es/composables/index.js",
+      "require": "./lib/composables/index.cjs"
+    },
+    "./composables/*": {
+      "types": "./es/composables/*.d.ts",
+      "import": "./es/composables/*.js",
+      "require": "./lib/composables/*.cjs"
+    },
+    "./plugin": {
+      "types": "./es/plugin/index.d.ts",
+      "import": "./es/plugin/index.js",
+      "require": "./lib/plugin/index.cjs"
+    },
+    "./plugin/*": {
+      "types": "./es/plugin/*.d.ts",
+      "import": "./es/plugin/*.js",
+      "require": "./lib/plugin/*.cjs"
+    }
+  },
+  "main": "./lib/index.cjs",
+  "module": "./es/index.js",
+  "types": "./es/index.d.ts",
+  "unpkg": "./dist/index.min.js",
+  "jsdelivr": "./dist/index.min.js",
+  "files": [
+    "README.md",
+    "LICENSE",
+    "package.json",
+    "es",
+    "lib",
+    "dist"
+  ],
+  "scripts": {
+    "build": "ldesign-builder build -f esm,cjs,dts",
+    "dev": "ldesign-builder build -f esm,cjs,dts --watch",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint . --fix",
+    "lint:check": "eslint .",
+    "type-check": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@ldesign/http-core": "workspace:*"
+  },
+  "peerDependencies": {
+    "vue": "^3.3.0",
+    "@ldesign/http-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@ldesign/builder": "workspace:../../../../../../tools/builder",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.4",
+    "eslint": "^9.18.0",
+    "vue": "^3.5.18",
+    "vue-tsc": "^3.0.5",
+    "@vitejs/plugin-vue": "^5.0.3"
+  }
+}

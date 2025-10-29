@@ -10,12 +10,12 @@ import { HTTP_CLIENT_KEY, HTTP_CONFIG_KEY } from './useHttp'
  * Vue 3 HTTP 插件
  */
 export const HttpPlugin: Plugin = {
-  install(app: App, options: unknown = {}) {
+  async install(app: App, options: unknown = {}) {
     const httpOptions = options as HttpPluginOptions
     // 创建或使用提供的 HTTP 客户端
     const client: HttpClient
       = httpOptions.client
-        || new HttpClientImpl(httpOptions.globalConfig || {}, createAdapter())
+        || new HttpClientImpl(httpOptions.globalConfig || {}, await createAdapter())
 
     // 提供 HTTP 客户端到应用上下文
     app.provide(HTTP_CLIENT_KEY, client)
@@ -58,13 +58,13 @@ export const HttpProvider = {
       required: false,
     },
   },
-  setup(
+  async setup(
     props: { client?: HttpClient, config?: RequestConfig },
     { slots }: any,
   ) {
     // 使用提供的客户端或创建新的客户端
     const client
-      = props.client || new HttpClientImpl(props.config || {}, createAdapter())
+      = props.client || new HttpClientImpl(props.config || {}, await createAdapter())
 
     // 提供客户端到子组件
     provide(HTTP_CLIENT_KEY, client)

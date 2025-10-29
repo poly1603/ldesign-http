@@ -7,8 +7,12 @@ import { HttpClientImpl } from '../client'
  * HTTP客户端组合式函数
  */
 export function useHttp(config?: HttpClientConfig) {
-  const adapter = createAdapter(config?.adapter)
-  const client = new HttpClientImpl(config || {}, adapter)
+  // 使用临时适配器，实际请求时才创建
+  const clientPromise = (async () => {
+    const adapter = await createAdapter(config?.adapter)
+    return new HttpClientImpl(config || {}, adapter)
+  })()
+  
   const loading = ref(false)
   const error = ref<Error | null>(null)
   const data = ref<unknown>(null)
@@ -34,6 +38,7 @@ export function useHttp(config?: HttpClientConfig) {
     try {
       loading.value = true
       error.value = null
+      const client = await clientPromise
       const response = await client.get<T>(url, config)
       data.value = response.data
       return response.data
@@ -56,6 +61,7 @@ export function useHttp(config?: HttpClientConfig) {
     try {
       loading.value = true
       error.value = null
+      const client = await clientPromise
       const response = await client.post<T>(url, postData, config)
       data.value = response.data
       return response.data
@@ -78,6 +84,7 @@ export function useHttp(config?: HttpClientConfig) {
     try {
       loading.value = true
       error.value = null
+      const client = await clientPromise
       const response = await client.put<T>(url, putData, config)
       data.value = response.data
       return response.data
@@ -96,6 +103,7 @@ export function useHttp(config?: HttpClientConfig) {
     try {
       loading.value = true
       error.value = null
+      const client = await clientPromise
       const response = await client.delete<T>(url, config)
       data.value = response.data
       return response.data
@@ -124,7 +132,7 @@ export function useHttp(config?: HttpClientConfig) {
     clearError,
     reset,
 
-    // 客户端实例
-    client,
+    // 客户端实例 (Promise)
+    client: clientPromise,
   }
 }

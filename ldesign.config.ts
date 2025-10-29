@@ -4,7 +4,7 @@ export default defineConfig({
   input: 'src/index.ts',
 
   output: {
-    format: ['esm', 'cjs', 'umd'],
+    format: ['esm', 'cjs'],
     esm: {
       dir: 'es',
       preserveStructure: true,
@@ -14,8 +14,7 @@ export default defineConfig({
       preserveStructure: true,
     },
     umd: {
-      dir: 'dist',
-      name: 'LDesignHttp',
+      enabled: false,
     },
   },
 
@@ -27,8 +26,8 @@ export default defineConfig({
   external: [
     'vue',
     'react',
-    'react-dom',
+    'axios',
+    'alova',
     /^@ldesign\//,
-    /^lodash/,
   ],
 })

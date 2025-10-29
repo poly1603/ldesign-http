@@ -1,0 +1,63 @@
+{
+  "name": "@ldesign/http-vue",
+  "version": "0.1.0",
+  "description": "HTTP Vue 3 集成库 - 提供 Vue 3 组合式函数和插件",
+  "keywords": [
+    "http",
+    "vue",
+    "vue3",
+    "composables",
+    "ldesign"
+  ],
+  "author": "ldesign",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./es/index.d.ts",
+      "import": "./es/index.js",
+      "require": "./lib/index.cjs"
+    }
+  },
+  "main": "./lib/index.cjs",
+  "module": "./es/index.js",
+  "types": "./es/index.d.ts",
+  "unpkg": "./dist/index.min.js",
+  "jsdelivr": "./dist/index.min.js",
+  "files": [
+    "README.md",
+    "LICENSE",
+    "package.json",
+    "es",
+    "lib",
+    "dist"
+  ],
+  "scripts": {
+    "build": "ldesign-builder build",
+    "build:watch": "ldesign-builder build --watch",
+    "build:clean": "ldesign-builder clean && ldesign-builder build",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint . --fix",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "clean": "rimraf es lib dist"
+  },
+  "dependencies": {
+    "@ldesign/http-core": "workspace:*",
+    "@ldesign/http-adapters": "workspace:*"
+  },
+  "peerDependencies": {
+    "vue": "^3.3.0"
+  },
+  "devDependencies": {
+    "@ldesign/builder": "workspace:*",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.18.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

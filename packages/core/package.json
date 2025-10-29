@@ -1,0 +1,129 @@
+{
+  "name": "@ldesign/http-core",
+  "version": "0.1.0",
+  "description": "Framework-agnostic HTTP client with adapters, interceptors, caching, and more",
+  "keywords": [
+    "http",
+    "client",
+    "fetch",
+    "axios",
+    "alova",
+    "typescript",
+    "framework-agnostic"
+  ],
+  "author": "ldesign",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./es/index.d.ts",
+      "import": "./es/index.js",
+      "require": "./lib/index.cjs"
+    },
+    "./adapters": {
+      "types": "./es/adapters/index.d.ts",
+      "import": "./es/adapters/index.js",
+      "require": "./lib/adapters/index.cjs"
+    },
+    "./adapters/*": {
+      "types": "./es/adapters/*.d.ts",
+      "import": "./es/adapters/*.js",
+      "require": "./lib/adapters/*.cjs"
+    },
+    "./cache": {
+      "types": "./es/cache/index.d.ts",
+      "import": "./es/cache/index.js",
+      "require": "./lib/cache/index.cjs"
+    },
+    "./cache/*": {
+      "types": "./es/cache/*.d.ts",
+      "import": "./es/cache/*.js",
+      "require": "./lib/cache/*.cjs"
+    },
+    "./interceptors": {
+      "types": "./es/interceptors/index.d.ts",
+      "import": "./es/interceptors/index.js",
+      "require": "./lib/interceptors/index.cjs"
+    },
+    "./interceptors/*": {
+      "types": "./es/interceptors/*.d.ts",
+      "import": "./es/interceptors/*.js",
+      "require": "./lib/interceptors/*.cjs"
+    },
+    "./middleware": {
+      "types": "./es/middleware/index.d.ts",
+      "import": "./es/middleware/index.js",
+      "require": "./lib/middleware/index.cjs"
+    },
+    "./middleware/*": {
+      "types": "./es/middleware/*.d.ts",
+      "import": "./es/middleware/*.js",
+      "require": "./lib/middleware/*.cjs"
+    },
+    "./retry": {
+      "types": "./es/retry/index.d.ts",
+      "import": "./es/retry/index.js",
+      "require": "./lib/retry/index.cjs"
+    },
+    "./retry/*": {
+      "types": "./es/retry/*.d.ts",
+      "import": "./es/retry/*.js",
+      "require": "./lib/retry/*.cjs"
+    },
+    "./types": {
+      "types": "./es/types/index.d.ts",
+      "import": "./es/types/index.js",
+      "require": "./lib/types/index.cjs"
+    },
+    "./types/*": {
+      "types": "./es/types/*.d.ts",
+      "import": "./es/types/*.js",
+      "require": "./lib/types/*.cjs"
+    },
+    "./utils": {
+      "types": "./es/utils/index.d.ts",
+      "import": "./es/utils/index.js",
+      "require": "./lib/utils/index.cjs"
+    },
+    "./utils/*": {
+      "types": "./es/utils/*.d.ts",
+      "import": "./es/utils/*.js",
+      "require": "./lib/utils/*.cjs"
+    }
+  },
+  "main": "./lib/index.cjs",
+  "module": "./es/index.js",
+  "types": "./es/index.d.ts",
+  "unpkg": "./dist/index.min.js",
+  "jsdelivr": "./dist/index.min.js",
+  "files": [
+    "README.md",
+    "LICENSE",
+    "package.json",
+    "es",
+    "lib",
+    "dist"
+  ],
+  "scripts": {
+    "build": "ldesign-builder build -f esm,cjs,dts",
+    "dev": "ldesign-builder build -f esm,cjs,dts --watch",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint . --fix",
+    "lint:check": "eslint .",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "peerDependencies": {},
+  "devDependencies": {
+    "@ldesign/builder": "workspace:../../../../../../tools/builder",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.4",
+    "eslint": "^9.18.0",
+    "axios": "^1.12.2",
+    "alova": "^3.3.4"
+  }
+}

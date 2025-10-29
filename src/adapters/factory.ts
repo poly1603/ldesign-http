@@ -66,7 +66,7 @@ export class AdapterFactory {
     try {
       // 动态加载适配器
       const result = await loader()
-      const adapter = 'default' in result ? result.default! : result
+      const adapter: HttpAdapter = 'default' in result ? result.default! : result
 
       // 验证适配器是否可用
       if (!adapter.isSupported()) {

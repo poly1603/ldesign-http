@@ -6,7 +6,7 @@
 
 // 浏览器兼容的 process.env 访问
 const isBrowser = typeof window !== 'undefined'
-const env = isBrowser ? (import.meta.env || {}) : (globalThis.process?.env || {})
+const env = isBrowser ? ((import.meta as any).env || {}) : (globalThis.process?.env || {})
 
 export enum LogLevel {
   DEBUG = 0,

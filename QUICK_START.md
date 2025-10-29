@@ -1,479 +1,395 @@
-# @ldesign/http 快速开始指南
+# 🚀 快速开始 - @ldesign/http 子包
 
-## 安装
+5 分钟快速上手 HTTP 子包系统。
+
+## 📦 安装依赖
 
 ```bash
-# 使用 pnpm（推荐）
-pnpm add @ldesign/http
+# 进入 packages/http 目录
+cd packages/http
 
-# 使用 npm
-npm install @ldesign/http
-
-# 使用 yarn
-yarn add @ldesign/http
+# 安装所有依赖
+pnpm install
 ```
 
-## 基础使用
+## 🔨 构建子包
 
-### 1. 创建客户端
+### 方式 1: 构建单个子包
 
-```typescript
-import { createHttpClient } from '@ldesign/http'
+```bash
+# 进入子包目录
+cd packages/http-core
 
-// 异步创建（推荐）
-const client = await createHttpClient({
-  baseURL: 'https://api.example.com',
-  timeout: 10000
-})
+# 构建
+pnpm build
+
+# 输出:
+# ✅ es/ - ESM 格式
+# ✅ lib/ - CJS 格式
+# ✅ dist/ - UMD 格式
 ```
 
-### 2. 发送请求
+### 方式 2: 批量构建所有子包
+
+```bash
+# 在 packages/http 目录下
+node scripts/build-all.js
+
+# 输出:
+# 🚀 开始构建所有子包...
+# 📦 正在构建 @ldesign/http-core...
+# ✅ @ldesign/http-core 构建成功!
+# ...
+# 📊 构建总结: ✅ 成功: 8 个
+```
+
+### 方式 3: 使用 pnpm workspace
+
+```bash
+# 构建所有子包
+pnpm -r --filter "./packages/**" build
+
+# 清理所有子包
+pnpm -r --filter "./packages/**" clean
+
+# 运行所有测试
+pnpm -r --filter "./packages/**" test
+```
+
+## 🎨 运行演示示例
+
+### 单个演示
+
+```bash
+# 1. 构建子包
+cd packages/http-core
+pnpm build
+
+# 2. 进入演示目录
+cd example
+
+# 3. 启动开发服务器
+pnpm dev
+
+# 浏览器自动打开 http://localhost:3000
+```
+
+### 并行开发
+
+在不同终端窗口中运行：
+
+```bash
+# 终端 1 - 监听核心包变化
+cd packages/http-core
+pnpm build:watch
+
+# 终端 2 - 监听适配器包变化
+cd packages/http-adapters
+pnpm build:watch
+
+# 终端 3 - 运行演示
+cd packages/http-core/example
+pnpm dev
+```
+
+## 📝 基础使用示例
+
+### 1. HTTP Core 基础用法
 
 ```typescript
-// GET 请求
-const response = await client.get('/users')
+// main.ts
+import { createHttpClient } from '@ldesign/http-core'
+import type { HttpClient } from '@ldesign/http-core'
+
+// 创建客户端（需要提供适配器）
+const client: HttpClient = createHttpClient(
+  {
+    baseURL: 'https://jsonplaceholder.typicode.com',
+    timeout: 10000,
+  },
+  adapter // 需要从 @ldesign/http-adapters 引入
+)
+
+// 发送请求
+const response = await client.get('/users/1')
 console.log(response.data)
+```
+
+### 2. 使用 Fetch 适配器
+
+```typescript
+// main.ts
+import { createHttpClient } from '@ldesign/http-core'
+import { FetchAdapter } from '@ldesign/http-adapters'
+
+const client = createHttpClient(
+  { baseURL: 'https://api.example.com' },
+  new FetchAdapter()
+)
+
+// GET 请求
+const users = await client.get('/users')
 
 // POST 请求
 const newUser = await client.post('/users', {
   name: 'John Doe',
-  email: 'john@example.com'
+  email: 'john@example.com',
 })
 
 // PUT 请求
-await client.put('/users/1', { name: 'Jane Doe' })
+const updated = await client.put('/users/1', {
+  name: 'Jane Doe',
+})
 
 // DELETE 请求
 await client.delete('/users/1')
 ```
 
-### 3. 类型安全
-
-```typescript
-interface User {
-  id: number
-  name: string
-  email: string
-}
-
-// 类型化请求
-const response = await client.get<User[]>('/users')
-// response.data 自动推断为 User[]
-
-const user = await client.post<User>('/users', {
-  name: 'John',
-  email: 'john@example.com'
-})
-// user.data 自动推断为 User
-```
-
-## 使用预设配置（推荐）
-
-预设配置提供开箱即用的最佳实践配置：
-
-```typescript
-import { createHttpClient, presets } from '@ldesign/http'
-
-// REST API 应用
-const client = await createHttpClient(presets.restful)
-
-// GraphQL 应用
-const client = await createHttpClient(presets.graphql)
-
-// 移动应用（低功耗模式）
-const client = await createHttpClient(presets.lowPower)
-
-// 实时应用
-const client = await createHttpClient(presets.realtime)
-
-// 自动选择（根据环境）
-const client = await createHttpClient(autoPreset())
-```
-
-### 基于预设自定义
-
-```typescript
-import { presets, mergePreset } from '@ldesign/http'
-
-const client = await createHttpClient(
-  mergePreset('restful', {
-    baseURL: 'https://api.example.com',
-    timeout: 15000
-  })
-)
-
-// 或者简单扩展
-const client = await createHttpClient({
-  ...presets.restful,
-  baseURL: 'https://api.example.com'
-})
-```
-
-## 高级功能
-
-### 1. 智能缓存
-
-```typescript
-const client = await createHttpClient({
-  cache: {
-    enabled: true,
-    ttl: 5 * 60 * 1000  // 5分钟
-  }
-})
-
-// 第一次请求会缓存
-await client.get('/users')
-
-// 第二次请求直接从缓存返回
-await client.get('/users')  // 超快！
-```
-
-### 2. 自动重试
-
-```typescript
-const client = await createHttpClient({
-  retry: {
-    retries: 3,
-    retryDelay: 1000,
-    retryCondition: (error) => {
-      // 只重试网络错误和 5xx 错误
-      return error.isNetworkError || (error.status >= 500)
-    }
-  }
-})
-```
-
-### 3. 请求拦截器
-
-```typescript
-// 添加认证 token
-client.addRequestInterceptor((config) => {
-  const token = localStorage.getItem('token')
-  if (token) {
-    config.headers = config.headers || {}
-    config.headers['Authorization'] = `Bearer ${token}`
-  }
-  return config
-})
-
-// 处理响应错误
-client.addResponseInterceptor(
-  (response) => response,
-  (error) => {
-    if (error.status === 401) {
-      // 跳转到登录页
-      window.location.href = '/login'
-    }
-    return Promise.reject(error)
-  }
-)
-```
-
-### 4. 并发控制
-
-```typescript
-const client = await createHttpClient({
-  concurrency: {
-    maxConcurrent: 10,     // 最大并发数
-    deduplication: true    // 自动去重相同请求
-  }
-})
-
-// 同时发送多个相同请求，只会执行一次
-const [r1, r2, r3] = await Promise.all([
-  client.get('/users'),
-  client.get('/users'),  // 自动去重
-  client.get('/users'),  // 自动去重
-])
-```
-
-## Vue 3 集成
-
-### 1. 安装插件
-
-```typescript
-// main.ts
-import { createApp } from 'vue'
-import { createHttpPlugin, presets } from '@ldesign/http'
-import App from './App.vue'
-
-const app = createApp(App)
-
-app.use(createHttpPlugin({
-  ...presets.restful,
-  baseURL: 'https://api.example.com'
-}))
-
-app.mount('#app')
-```
-
-### 2. 在组件中使用
+### 3. Vue 3 集成
 
 ```vue
+<script setup lang="ts">
+// App.vue
+import { createHttpPlugin } from '@ldesign/http-vue'
+import { FetchAdapter } from '@ldesign/http-adapters'
+import { useHttp } from '@ldesign/http-vue'
+
+// 在 main.ts 中安装插件
+// app.use(createHttpPlugin({
+//   baseURL: 'https://api.example.com',
+//   adapter: new FetchAdapter()
+// }))
+
+// 在组件中使用
+const { data, loading, error, execute } = useHttp<User[]>('/users')
+</script>
+
 <template>
   <div>
-    <button @click="fetchUsers">获取用户</button>
     <div v-if="loading">加载中...</div>
-    <div v-else-if="error">错误: {{ error.message }}</div>
-    <ul v-else>
-      <li v-for="user in users" :key="user.id">
+    <div v-else-if="error">错误: {{ error }}</div>
+    <div v-else>
+      <div v-for="user in data" :key="user.id">
         {{ user.name }}
-      </li>
-    </ul>
+      </div>
+    </div>
+    <button @click="execute">刷新</button>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref, inject } from 'vue'
-
-interface User {
-  id: number
-  name: string
-  email: string
-}
-
-const $http = inject('http')
-const users = ref<User[]>([])
-const loading = ref(false)
-const error = ref<Error | null>(null)
-
-const fetchUsers = async () => {
-  loading.value = true
-  error.value = null
-  
-  try {
-    const response = await $http.get<User[]>('/users')
-    users.value = response.data
-  } catch (err) {
-    error.value = err
-  } finally {
-    loading.value = false
-  }
-}
-</script>
 ```
 
-### 3. 使用组合式函数
+## 🛠️ 开发任务
 
-```typescript
-import { useHttp } from '@ldesign/http/vue'
+### 添加新功能到现有子包
 
-const { data, loading, error, execute } = useHttp<User[]>('/users')
+```bash
+# 1. 进入子包目录
+cd packages/http-core
 
-// 自动执行
-await execute()
+# 2. 创建新文件
+# src/new-feature.ts
 
-// 手动刷新
-await execute()
+# 3. 在 src/index.ts 中导出
+echo "export * from './new-feature'" >> src/index.ts
+
+# 4. 构建
+pnpm build
+
+# 5. 测试
+pnpm test
 ```
 
-## 优化技巧
+### 创建新的子包
 
-### 1. 使用核心模块（最小体积）
+```bash
+# 1. 复制现有子包作为模板
+cp -r packages/http-utils packages/http-new-feature
 
-```typescript
-// 只使用核心功能（推荐，体积最小）
-import { createHttpClient } from '@ldesign/http/core'
+# 2. 修改 package.json
+# - name: "@ldesign/http-new-feature"
+# - description: "新功能描述"
 
-const client = await createHttpClient({
-  baseURL: 'https://api.example.com'
-})
+# 3. 实现功能
+# packages/http-new-feature/src/index.ts
+
+# 4. 构建和测试
+cd packages/http-new-feature
+pnpm build
+pnpm test
 ```
 
-### 2. 预加载适配器
+## 📊 查看构建产物
 
-```typescript
-// 在应用启动时预加载
-import { preloadAdapters } from '@ldesign/http'
+```bash
+# 构建
+cd packages/http-core
+pnpm build
 
-await preloadAdapters(['fetch'])
+# 分析打包大小
+pnpm build:analyze
 
-// 之后可以同步创建
-import { createHttpClientSync } from '@ldesign/http'
-const client = createHttpClientSync()
+# 输出:
+# 📊 分析打包产物大小...
+# 
+# 📁 es/
+# ==================================================
+#   index.js                                    12.34 KB
+#   types/base.js                                5.67 KB
+#   ...
 ```
 
-### 3. 按需导入高级功能
+## 🧪 运行测试
 
-```typescript
-// 只在需要时导入
-import { createHttpClient } from '@ldesign/http/core'
-import { withCache } from '@ldesign/http/features/cache'
-import { withRetry } from '@ldesign/http/features/retry'
+```bash
+# 单次运行
+pnpm test:run
+
+# 监听模式
+pnpm test:watch
+
+# 生成覆盖率报告
+pnpm test:coverage
+
+# 查看覆盖率报告
+open coverage/index.html
 ```
 
-## 常见场景
+## 🔍 代码质量检查
 
-### 文件上传
+```bash
+# TypeScript 类型检查
+pnpm type-check
 
-```typescript
-const file = document.querySelector('input[type="file"]').files[0]
+# ESLint 检查
+pnpm lint:check
 
-const result = await client.upload('/upload', file, {
-  onProgress: (progress) => {
-    console.log(`上传进度: ${progress.percentage}%`)
-  }
-})
+# ESLint 自动修复
+pnpm lint
+
+# Prettier 格式化
+pnpm format
 ```
 
-### 文件下载
+## 📚 查看文档
 
-```typescript
-const result = await client.download('/files/document.pdf', {
-  filename: 'document.pdf',
-  onProgress: (progress) => {
-    console.log(`下载进度: ${progress.percentage}%`)
-  }
-})
+### 在线查看演示
+
+```bash
+cd packages/http-core/example
+pnpm dev
+# 打开 http://localhost:3000
 ```
 
-### 请求取消
+### 生成 API 文档
 
-```typescript
-const controller = new AbortController()
-
-const request = client.get('/api/data', {
-  signal: controller.signal
-})
-
-// 取消请求
-controller.abort()
+```bash
+# 如果配置了 VitePress
+pnpm docs:dev
+pnpm docs:build
 ```
 
-### 错误处理
+## 🎯 常用命令速查
 
-```typescript
-import { 
-  isHttpError, 
-  isNetworkError, 
-  isTimeoutError 
-} from '@ldesign/http'
+| 命令 | 说明 |
+|------|------|
+| `pnpm build` | 构建当前包 |
+| `pnpm build:watch` | 监听模式构建 |
+| `pnpm build:clean` | 清理并构建 |
+| `pnpm build:analyze` | 分析打包产物 |
+| `pnpm test` | 运行测试（监听模式） |
+| `pnpm test:run` | 运行测试（单次） |
+| `pnpm test:coverage` | 生成覆盖率报告 |
+| `pnpm lint` | 代码检查并修复 |
+| `pnpm lint:check` | 仅检查不修复 |
+| `pnpm type-check` | TypeScript 类型检查 |
+| `pnpm clean` | 清理构建产物 |
 
-try {
-  await client.get('/users')
-} catch (error) {
-  if (isHttpError(error)) {
-    console.log('HTTP 错误:', error.status)
-  } else if (isNetworkError(error)) {
-    console.log('网络错误')
-  } else if (isTimeoutError(error)) {
-    console.log('请求超时')
-  }
-}
+## 📦 发布检查清单
+
+在发布前，确保完成以下检查：
+
+```bash
+# 1. 清理并构建
+pnpm clean
+pnpm build
+
+# 2. 运行所有测试
+pnpm test:run
+
+# 3. 类型检查
+pnpm type-check
+
+# 4. 代码检查
+pnpm lint:check
+
+# 5. 分析打包产物
+pnpm build:analyze
+
+# 6. 检查包内容
+npm pack --dry-run
 ```
 
-## 最佳实践
+## 🐛 常见问题
 
-### 1. 使用预设配置
+### Q1: 构建失败怎么办？
 
-```typescript
-import { presets } from '@ldesign/http'
+```bash
+# 1. 清理缓存
+pnpm clean
+rm -rf node_modules
+pnpm install
 
-// ✅ 推荐：使用预设
-const client = await createHttpClient(presets.restful)
+# 2. 检查 TypeScript 错误
+pnpm type-check
 
-// ❌ 不推荐：手动配置所有选项
-const client = await createHttpClient({
-  timeout: 10000,
-  cache: { enabled: true, ttl: 300000 },
-  retry: { retries: 3, retryDelay: 1000 },
-  // ...
-})
+# 3. 查看详细错误
+ldesign-builder build --verbose
 ```
 
-### 2. 类型安全
+### Q2: 演示示例启动失败？
 
-```typescript
-// ✅ 推荐：定义接口
-interface User {
-  id: number
-  name: string
-}
+```bash
+# 1. 确保已构建子包
+cd packages/http-core
+pnpm build
 
-const response = await client.get<User[]>('/users')
+# 2. 安装演示依赖
+cd example
+pnpm install
 
-// ❌ 不推荐：不指定类型
-const response = await client.get('/users')
+# 3. 启动开发服务器
+pnpm dev
 ```
 
-### 3. 错误处理
+### Q3: 如何调试构建过程？
 
-```typescript
-// ✅ 推荐：使用类型守卫
-import { isHttpError } from '@ldesign/http'
+```bash
+# 使用 verbose 模式
+ldesign-builder build --verbose
 
-try {
-  await client.get('/users')
-} catch (error) {
-  if (isHttpError(error)) {
-    // TypeScript 知道 error 有 status 属性
-    console.log(error.status)
-  }
-}
-
-// ❌ 不推荐：直接访问属性
-catch (error: any) {
-  console.log(error.status)  // 不安全
-}
+# 检查生成的文件
+ls -lh es/
+ls -lh lib/
+ls -lh dist/
 ```
 
-### 4. 使用核心模块
+## 🔗 相关资源
 
-```typescript
-// ✅ 推荐：只使用核心功能（体积更小）
-import { createHttpClient } from '@ldesign/http/core'
+- [完整文档](./README.md)
+- [开发指南](./DEVELOPMENT.md)
+- [迁移指南](./MIGRATION_GUIDE.md)
+- [子包总览](./packages/README.md)
+- [优化报告](./packages/OPTIMIZATION_REPORT.md)
 
-// ❌ 不推荐：导入所有功能（体积更大）
-import { createHttpClient } from '@ldesign/http'
-```
+## 💡 下一步
 
-## 性能优化
+1. 📖 阅读 [开发指南](./DEVELOPMENT.md) 了解详细开发流程
+2. 🎯 查看 [子包总览](./packages/README.md) 了解各包功能
+3. 🚀 运行演示示例了解实际用法
+4. 🔧 开始开发你的第一个功能
 
-### 包体积优化
+---
 
-```typescript
-// 方案1：使用核心模块（最小 ~25KB）
-import { createHttpClient } from '@ldesign/http/core'
+祝你开发愉快！🎉
 
-// 方案2：按需导入（~30-40KB）
-import { createHttpClient } from '@ldesign/http/core'
-import { withCache } from '@ldesign/http/features/cache'
-
-// 方案3：完整导入（~60KB）
-import { createHttpClient } from '@ldesign/http'
-```
-
-### 运行时优化
-
-```typescript
-// 1. 预加载适配器
-await preloadAdapters(['fetch'])
-
-// 2. 使用预设配置
-const client = await createHttpClient(presets.restful)
-
-// 3. 启用缓存
-const client = await createHttpClient({
-  cache: { enabled: true }
-})
-
-// 4. 启用请求去重
-const client = await createHttpClient({
-  concurrency: { deduplication: true }
-})
-```
-
-## 下一步
-
-- 查看[完整文档](./README.md)
-- 查看[API 参考](./docs/api)
-- 查看[示例项目](./examples)
-- 查看[性能优化指南](./OPTIMIZATION_SUMMARY.md)
-
-## 获取帮助
-
-- [GitHub Issues](https://github.com/ldesign/http/issues)
-- [讨论区](https://github.com/ldesign/http/discussions)
-- [更新日志](./CHANGELOG.md)
-
-
+如有问题，请查阅文档或提交 Issue。

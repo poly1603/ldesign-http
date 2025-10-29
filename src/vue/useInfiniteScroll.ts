@@ -161,7 +161,7 @@ export function useInfiniteScroll<T = any>(
   const nextPageParam = ref<any>(initialPage)
   const hasMoreData = ref(true)
 
-  const { execute } = useHttpStandalone()
+  const { get: execute } = useHttpStandalone()
 
   // 扁平化的数据
   const data = computed(() => {
@@ -207,12 +207,12 @@ export function useInfiniteScroll<T = any>(
         Object.assign(params, page)
       }
 
-      const response = await execute(urlValue, {
+      const response = await execute<any>(urlValue, {
         ...requestConfig,
         params,
       })
 
-      let pageData = response.data
+      let pageData = response
       if (transform) {
         pageData = transform(pageData)
       }

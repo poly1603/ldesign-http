@@ -1,0 +1,80 @@
+{
+  "name": "@ldesign/http-svelte",
+  "version": "0.1.0",
+  "description": "Svelte adapter for @ldesign/http-core",
+  "keywords": [
+    "svelte",
+    "http",
+    "stores",
+    "typescript"
+  ],
+  "author": "ldesign",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./es/index.d.ts",
+      "import": "./es/index.js",
+      "require": "./lib/index.cjs"
+    },
+    "./stores": {
+      "types": "./es/stores/index.d.ts",
+      "import": "./es/stores/index.js",
+      "require": "./lib/stores/index.cjs"
+    },
+    "./stores/*": {
+      "types": "./es/stores/*.d.ts",
+      "import": "./es/stores/*.js",
+      "require": "./lib/stores/*.cjs"
+    },
+    "./actions": {
+      "types": "./es/actions/index.d.ts",
+      "import": "./es/actions/index.js",
+      "require": "./lib/actions/index.cjs"
+    },
+    "./actions/*": {
+      "types": "./es/actions/*.d.ts",
+      "import": "./es/actions/*.js",
+      "require": "./lib/actions/*.cjs"
+    }
+  },
+  "main": "./lib/index.cjs",
+  "module": "./es/index.js",
+  "types": "./es/index.d.ts",
+  "unpkg": "./dist/index.min.js",
+  "jsdelivr": "./dist/index.min.js",
+  "files": [
+    "README.md",
+    "LICENSE",
+    "package.json",
+    "es",
+    "lib",
+    "dist"
+  ],
+  "scripts": {
+    "build": "ldesign-builder build -f esm,cjs,dts",
+    "dev": "ldesign-builder build -f esm,cjs,dts --watch",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint . --fix",
+    "lint:check": "eslint .",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ldesign/http-core": "workspace:*"
+  },
+  "peerDependencies": {
+    "svelte": "^4.0.0",
+    "@ldesign/http-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@ldesign/builder": "workspace:../../../../../../tools/builder",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.4",
+    "eslint": "^9.18.0",
+    "svelte": "^4.2.0"
+  }
+}

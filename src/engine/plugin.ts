@@ -85,8 +85,8 @@ export function createHttpEnginePlugin(
             // 创建或使用提供的 HTTP 客户端
             const httpClient
               = providedClient
-                || (() => {
-                  const adapter = createAdapter(clientConfig.adapter)
+                || await (async () => {
+                  const adapter = await createAdapter(clientConfig.adapter)
                   return new HttpClientImpl(
                     {
                       ...clientConfig,
@@ -158,8 +158,8 @@ export function createHttpEnginePlugin(
             // 创建或使用提供的 HTTP 客户端
             const httpClient
               = providedClient
-                || (() => {
-                  const adapter = createAdapter(clientConfig.adapter)
+                || await (async () => {
+                  const adapter = await createAdapter(clientConfig.adapter)
                   return new HttpClientImpl(
                     {
                       ...clientConfig,

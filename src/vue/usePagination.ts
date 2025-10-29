@@ -209,7 +209,7 @@ export function usePagination<T = any>(
   const pageSize = ref(initialPageSize)
   const total = ref(0)
 
-  const { execute } = useHttpStandalone()
+  const { get: execute } = useHttpStandalone()
 
   // 计算总页数
   const totalPages = computed(() => {
@@ -247,13 +247,13 @@ export function usePagination<T = any>(
         [pageSizeParamName]: pageSize.value,
       }
 
-      const response = await execute(urlValue, {
+      const response = await execute<any>(urlValue, {
         ...requestConfig,
         params,
       })
 
       // 提取数据
-      let pageData = response.data
+      let pageData = response
 
       // 提取嵌套的数据和总数
       if (typeof pageData === 'object' && pageData !== null) {
@@ -360,15 +360,13 @@ export function usePagination<T = any>(
   }
 
   return {
-    data: computed(() => data.value),
-    pages: ref([]) as Ref<T[]>, // 暂不使用 pages，保持 API 一致性
+    data,
     loading,
     error,
-    hasMore: computed(() => hasMore.value),
-    isFetchingMore: ref(false),
-    currentPage: page,
+    page,
+    pageSize,
+    total,
     totalPages,
-    total: computed(() => total.value),
     hasPrev,
     hasNext,
     next,
@@ -377,6 +375,6 @@ export function usePagination<T = any>(
     refresh,
     reset,
     setPageSize,
-  } as UsePaginationReturn<T>
+  }
 }
 
