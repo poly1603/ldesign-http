@@ -1,9 +1,8 @@
 /**
  * @ldesign/http-vue
  * 
- * Vue 3 adapter for @ldesign/http-core
+ * HTTP Vue 3 集成库 - 提供 Vue 3 组合式函数和插件
  */
 
-export * from './composables'
-export * from './plugin'
-export { version } from './version'
+// TODO: 实现具体功能
+export const version = '0.1.0'

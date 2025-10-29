@@ -43,8 +43,7 @@
     "clean": "rimraf es lib dist"
   },
   "dependencies": {
-    "@ldesign/http-core": "workspace:*",
-    "@ldesign/http-adapters": "workspace:*"
+    "@ldesign/http-core": "workspace:*"
   },
   "peerDependencies": {
     "vue": "^3.3.0"

@@ -1,274 +1,453 @@
-# 迁移指南 - @ldesign/http 子包拆分
+# HTTP 包迁移指南
 
-本指南帮助你从旧的 `@ldesign/http` 单体包迁移到新的子包结构。
+## 📋 概述
 
-## 🎯 为什么要拆分？
+本指南帮助你从旧版本的 `@ldesign/http` 迁移到重构后的新版本。
 
-1. **按需加载** - 只安装需要的功能，减小包体积
-2. **独立开发** - 每个子包可以独立开发、测试和发布
-3. **清晰的职责** - 每个包专注于特定功能
-4. **更好的维护性** - 模块化结构便于维护和升级
-5. **灵活的集成** - 可以选择性地集成所需功能
+**重构版本**: v0.2.0  
+**重构日期**: 2025-10-29
 
-## 📦 包对应关系
+---
 
-| 旧包路径 | 新子包 | 说明 |
-|---------|--------|------|
-| `@ldesign/http` | `@ldesign/http-core` | 核心客户端 |
-| `@ldesign/http/adapters` | `@ldesign/http-adapters` | 适配器 |
-| `@ldesign/http/interceptors` | `@ldesign/http-interceptors` | 拦截器 |
-| `@ldesign/http/features` | `@ldesign/http-features` | 高级特性 |
-| `@ldesign/http/utils` | `@ldesign/http-utils` | 工具函数 |
-| `@ldesign/http/vue` | `@ldesign/http-vue` | Vue 集成 |
-| `@ldesign/http/devtools` | `@ldesign/http-devtools` | 开发工具 |
-| `@ldesign/http/presets` | `@ldesign/http-presets` | 预设配置 |
+## 🎯 主要变更
 
-## 🔄 迁移步骤
+### 1. 包结构重组
 
-### 1. 更新依赖
-
-#### 旧方式
-```json
-{
-  "dependencies": {
-    "@ldesign/http": "^0.1.0"
-  }
-}
+#### 旧结构 (v0.1.x)
+```
+@ldesign/http
+├── @ldesign/http-core
+├── @ldesign/http-adapters
+├── @ldesign/http-interceptors
+├── @ldesign/http-features
+├── @ldesign/http-utils
+├── @ldesign/http-vue
+└── ... (8+ 个重复包)
 ```
 
-#### 新方式
+#### 新结构 (v0.2.0)
+```
+@ldesign/http
+├── @ldesign/http-core      # 核心包 (框架无关)
+├── @ldesign/http-react     # React 适配器
+├── @ldesign/http-vue       # Vue 适配器
+├── @ldesign/http-solid     # Solid 适配器
+└── @ldesign/http-svelte    # Svelte 适配器
+```
+
+---
+
+## 📦 安装变更
+
+### 旧版本安装
+
+```bash
+# 旧版本需要安装多个包
+pnpm add @ldesign/http-core
+pnpm add @ldesign/http-adapters
+pnpm add @ldesign/http-interceptors
+pnpm add @ldesign/http-vue  # 如果使用 Vue
+```
+
+### 新版本安装
+
+```bash
+# 新版本只需安装核心包
+pnpm add @ldesign/http-core
+
+# 如果使用框架适配器
+pnpm add @ldesign/http-vue    # Vue
+pnpm add @ldesign/http-react  # React
+pnpm add @ldesign/http-solid  # Solid
+pnpm add @ldesign/http-svelte # Svelte
+```
+
+---
+
+## 🔄 导入路径变更
+
+### 1. 核心功能导入
+
+#### ❌ 旧版本
+```typescript
+// 从多个包导入
+import { HttpClient } from '@ldesign/http-core'
+import { FetchAdapter } from '@ldesign/http-adapters'
+import { InterceptorManager } from '@ldesign/http-interceptors'
+import { CacheManager } from '@ldesign/http-features'
+```
+
+#### ✅ 新版本
+```typescript
+// 从单一核心包导入
+import { 
+  HttpClient,
+  FetchAdapter,
+  InterceptorManager,
+  CacheManager
+} from '@ldesign/http-core'
+```
+
+### 2. 适配器导入
+
+#### ❌ 旧版本
+```typescript
+import { FetchAdapter } from '@ldesign/http-adapters'
+import { AxiosAdapter } from '@ldesign/http-adapters'
+```
+
+#### ✅ 新版本
+```typescript
+// 方式 1: 从核心包导入
+import { FetchAdapter, AxiosAdapter } from '@ldesign/http-core'
+
+// 方式 2: 从子模块导入 (更好的 tree-shaking)
+import { FetchAdapter } from '@ldesign/http-core/adapters'
+import { AxiosAdapter } from '@ldesign/http-core/adapters'
+```
+
+### 3. Vue 适配器导入
+
+#### ❌ 旧版本
+```typescript
+import { useHttp } from '@ldesign/http-vue'
+import type { RequestState } from '@ldesign/http-core/types/vue'
+```
+
+#### ✅ 新版本
+```typescript
+import { useHttp } from '@ldesign/http-vue'
+import type { RequestState } from '@ldesign/http-vue'
+```
+
+---
+
+## 🛠️ API 变更
+
+### 1. 创建 HTTP 客户端
+
+#### ❌ 旧版本
+```typescript
+import { HttpClient } from '@ldesign/http-core'
+import { FetchAdapter } from '@ldesign/http-adapters'
+
+const client = new HttpClient({
+  adapter: new FetchAdapter()
+})
+```
+
+#### ✅ 新版本
+```typescript
+import { createHttpClient } from '@ldesign/http-core'
+
+// 方式 1: 使用工厂函数 (推荐)
+const client = createHttpClient({
+  adapter: 'fetch'  // 自动创建适配器
+})
+
+// 方式 2: 手动创建适配器
+import { FetchAdapter } from '@ldesign/http-core'
+const client = createHttpClient({
+  adapter: new FetchAdapter()
+})
+```
+
+### 2. 使用拦截器
+
+#### ❌ 旧版本
+```typescript
+import { InterceptorManager } from '@ldesign/http-interceptors'
+
+const interceptors = new InterceptorManager()
+client.interceptors.request.use(config => config)
+```
+
+#### ✅ 新版本
+```typescript
+// 拦截器已内置在核心包中
+client.interceptors.request.use(config => config)
+
+// 或使用便捷方法
+client.addRequestInterceptor(config => config)
+```
+
+### 3. Vue Composables
+
+#### ❌ 旧版本
+```typescript
+import { useHttp } from '@ldesign/http-vue'
+import type { UseRequestOptions } from '@ldesign/http-core/types/vue'
+
+const { data, loading, error } = useHttp<User>('/api/user', {
+  immediate: true
+})
+```
+
+#### ✅ 新版本
+```typescript
+import { useHttp } from '@ldesign/http-vue'
+import type { UseRequestOptions } from '@ldesign/http-vue'
+
+// API 保持不变
+const { data, loading, error } = useHttp<User>('/api/user', {
+  immediate: true
+})
+```
+
+---
+
+## 📝 类型定义变更
+
+### 1. 核心类型
+
+#### ❌ 旧版本
+```typescript
+import type { RequestConfig } from '@ldesign/http-core'
+import type { HttpAdapter } from '@ldesign/http-adapters'
+import type { CacheConfig } from '@ldesign/http-features'
+```
+
+#### ✅ 新版本
+```typescript
+// 所有类型从核心包导入
+import type { 
+  RequestConfig,
+  HttpAdapter,
+  CacheConfig
+} from '@ldesign/http-core'
+```
+
+### 2. Vue 类型
+
+#### ❌ 旧版本
+```typescript
+import type { RequestState } from '@ldesign/http-core/types/vue'
+import type { UseRequestOptions } from '@ldesign/http-vue'
+```
+
+#### ✅ 新版本
+```typescript
+// 所有 Vue 类型从 Vue 包导入
+import type { 
+  RequestState,
+  UseRequestOptions
+} from '@ldesign/http-vue'
+```
+
+---
+
+## 🔧 配置变更
+
+### package.json 依赖更新
+
+#### ❌ 旧版本
 ```json
 {
   "dependencies": {
     "@ldesign/http-core": "^0.1.0",
-    "@ldesign/http-adapters": "^0.1.0"
+    "@ldesign/http-adapters": "^0.1.0",
+    "@ldesign/http-interceptors": "^0.1.0",
+    "@ldesign/http-features": "^0.1.0",
+    "@ldesign/http-vue": "^0.1.0"
   }
 }
 ```
 
-### 2. 更新导入语句
-
-#### 旧方式
-```typescript
-// 从主包导入
-import { createHttpClient } from '@ldesign/http'
-import { FetchAdapter } from '@ldesign/http/adapters'
-import { useHttp } from '@ldesign/http/vue'
+#### ✅ 新版本
+```json
+{
+  "dependencies": {
+    "@ldesign/http-core": "^0.2.0",
+    "@ldesign/http-vue": "^0.2.0"
+  }
+}
 ```
-
-#### 新方式
-```typescript
-// 从独立子包导入
-import { createHttpClient } from '@ldesign/http-core'
-import { FetchAdapter } from '@ldesign/http-adapters'
-import { useHttp } from '@ldesign/http-vue'
-```
-
-### 3. 更新类型导入
-
-#### 旧方式
-```typescript
-import type { 
-  HttpClient, 
-  RequestConfig, 
-  ResponseData 
-} from '@ldesign/http'
-```
-
-#### 新方式
-```typescript
-import type { 
-  HttpClient, 
-  RequestConfig, 
-  ResponseData 
-} from '@ldesign/http-core'
-```
-
-## 📋 完整迁移示例
-
-### 示例 1: 基础客户端
-
-#### 旧代码
-```typescript
-import { createHttpClient, FetchAdapter } from '@ldesign/http'
-
-const client = createHttpClient(
-  { baseURL: 'https://api.example.com' },
-  new FetchAdapter()
-)
-```
-
-#### 新代码
-```typescript
-import { createHttpClient } from '@ldesign/http-core'
-import { FetchAdapter } from '@ldesign/http-adapters'
-
-const client = createHttpClient(
-  { baseURL: 'https://api.example.com' },
-  new FetchAdapter()
-)
-```
-
-### 示例 2: 使用拦截器
-
-#### 旧代码
-```typescript
-import { createHttpClient } from '@ldesign/http'
-import { createInterceptorManager } from '@ldesign/http/interceptors'
-
-const client = createHttpClient(config, adapter)
-client.interceptors.request.use(config => {
-  // ...
-  return config
-})
-```
-
-#### 新代码
-```typescript
-import { createHttpClient } from '@ldesign/http-core'
-import { FetchAdapter } from '@ldesign/http-adapters'
-// 拦截器功能已内置在 http-core 中
-// 如需高级拦截器功能，可安装 @ldesign/http-interceptors
-
-const client = createHttpClient(config, new FetchAdapter())
-client.interceptors.request.use(config => {
-  // ...
-  return config
-})
-```
-
-### 示例 3: Vue 3 集成
-
-#### 旧代码
-```typescript
-import { createApp } from 'vue'
-import { createHttpPlugin } from '@ldesign/http/vue'
-
-const app = createApp(App)
-app.use(createHttpPlugin(config))
-```
-
-#### 新代码
-```typescript
-import { createApp } from 'vue'
-import { createHttpPlugin } from '@ldesign/http-vue'
-
-const app = createApp(App)
-app.use(createHttpPlugin(config))
-```
-
-### 示例 4: 使用高级特性
-
-#### 旧代码
-```typescript
-import { createHttpClient } from '@ldesign/http'
-import { CacheManager, RetryManager } from '@ldesign/http/features'
-
-const client = createHttpClient({
-  cache: { enabled: true },
-  retry: { retries: 3 },
-}, adapter)
-```
-
-#### 新代码
-```typescript
-import { createHttpClient } from '@ldesign/http-core'
-import { FetchAdapter } from '@ldesign/http-adapters'
-// 高级特性配置保持不变，由 http-core 支持
-// 如需自定义缓存/重试策略，可安装 @ldesign/http-features
-
-const client = createHttpClient({
-  cache: { enabled: true },
-  retry: { retries: 3 },
-}, new FetchAdapter())
-```
-
-## ⚠️ 注意事项
-
-### 1. 破坏性变更
-
-- **适配器导入**: 所有适配器现在从 `@ldesign/http-adapters` 导入
-- **Vue 集成**: Vue 相关功能从 `@ldesign/http-vue` 导入
-- **工具函数**: 工具函数从 `@ldesign/http-utils` 导入
-
-### 2. 依赖关系
-
-新的子包有依赖关系：
-
-- `@ldesign/http-adapters` 依赖 `@ldesign/http-core`
-- `@ldesign/http-interceptors` 依赖 `@ldesign/http-core`
-- `@ldesign/http-features` 依赖 `@ldesign/http-core` 和 `@ldesign/http-utils`
-- `@ldesign/http-vue` 依赖 `@ldesign/http-core` 和 `@ldesign/http-adapters`
-
-使用 pnpm workspace 时，这些依赖会自动解析。
-
-### 3. 包体积
-
-新的子包结构可以显著减小最终打包体积：
-
-| 使用场景 | 旧包大小 | 新包大小 | 节省 |
-|---------|---------|---------|------|
-| 仅使用核心功能 | ~60KB | ~20KB | 67% |
-| 使用核心 + Fetch | ~60KB | ~25KB | 58% |
-| 使用核心 + Vue | ~60KB | ~35KB | 42% |
-| 使用全部功能 | ~60KB | ~60KB | 0% |
-
-## 🛠️ 自动化迁移工具
-
-我们提供了自动化迁移脚本帮助你快速迁移：
-
-```bash
-# 在项目根目录运行
-npx @ldesign/http-migrate
-```
-
-该工具会自动：
-1. 分析你的代码
-2. 更新 package.json 依赖
-3. 更新导入语句
-4. 生成迁移报告
-
-## 🐛 常见问题
-
-### Q: 我需要安装所有子包吗？
-
-A: 不需要。只安装你实际使用的子包。最基本的使用只需要 `@ldesign/http-core` 和 `@ldesign/http-adapters`。
-
-### Q: 旧的 @ldesign/http 包还会维护吗？
-
-A: 旧包会保持维护状态 3 个月，之后将标记为废弃。建议尽快迁移到新的子包结构。
-
-### Q: 如何确定我需要哪些子包？
-
-A: 参考以下规则：
-- 基础HTTP请求 → `http-core` + `http-adapters`
-- 需要拦截器 → 添加 `http-interceptors`
-- 需要缓存/重试 → 添加 `http-features`
-- Vue 3 项目 → 添加 `http-vue`
-- 需要调试工具 → 添加 `http-devtools`
-
-### Q: 子包之间的版本号需要保持一致吗？
-
-A: 建议保持一致，但不是强制的。使用 `workspace:*` 可以自动引用最新的工作区版本。
-
-## 📚 更多资源
-
-- [子包总览](./packages/README.md)
-- [核心包文档](./packages/http-core/README.md)
-- [适配器文档](./packages/http-adapters/README.md)
-- [Vue 集成文档](./packages/http-vue/README.md)
-
-## 💬 获取帮助
-
-如果在迁移过程中遇到问题：
-
-1. 查阅 [FAQ](./FAQ.md)
-2. 查看 [示例代码](./examples)
-3. 提交 [Issue](https://github.com/ldesign/http/issues)
-4. 加入我们的 [Discord 社区](https://discord.gg/ldesign)
 
 ---
 
-祝迁移顺利！🚀
+## 🚀 迁移步骤
 
+### 步骤 1: 更新依赖
+
+```bash
+# 1. 卸载旧包
+pnpm remove @ldesign/http-adapters
+pnpm remove @ldesign/http-interceptors
+pnpm remove @ldesign/http-features
+pnpm remove @ldesign/http-utils
+
+# 2. 更新核心包
+pnpm update @ldesign/http-core@latest
+
+# 3. 更新框架适配器 (如果使用)
+pnpm update @ldesign/http-vue@latest
+```
+
+### 步骤 2: 更新导入语句
+
+使用查找替换功能批量更新:
+
+```bash
+# 替换适配器导入
+@ldesign/http-adapters → @ldesign/http-core
+
+# 替换拦截器导入
+@ldesign/http-interceptors → @ldesign/http-core
+
+# 替换特性导入
+@ldesign/http-features → @ldesign/http-core
+
+# 替换工具导入
+@ldesign/http-utils → @ldesign/http-core
+
+# 替换 Vue 类型导入
+@ldesign/http-core/types/vue → @ldesign/http-vue
+```
+
+### 步骤 3: 更新类型导入
+
+```typescript
+// 查找所有这样的导入
+import type { ... } from '@ldesign/http-core/types/vue'
+
+// 替换为
+import type { ... } from '@ldesign/http-vue'
+```
+
+### 步骤 4: 测试应用
+
+```bash
+# 运行类型检查
+pnpm type-check
+
+# 运行测试
+pnpm test
+
+# 运行应用
+pnpm dev
+```
+
+---
+
+## ⚠️ 破坏性变更
+
+### 1. 删除的包
+
+以下包已被删除,功能已合并到核心包:
+
+- ❌ `@ldesign/http-adapters` → ✅ `@ldesign/http-core`
+- ❌ `@ldesign/http-interceptors` → ✅ `@ldesign/http-core`
+- ❌ `@ldesign/http-features` → ✅ `@ldesign/http-core`
+- ❌ `@ldesign/http-utils` → ✅ `@ldesign/http-core`
+- ❌ `@ldesign/http-devtools` → ✅ `@ldesign/http-core`
+- ❌ `@ldesign/http-presets` → ✅ `@ldesign/http-core`
+
+### 2. 移除的导出
+
+- ❌ `@ldesign/http-core/types/vue` - Vue 类型已移到 `@ldesign/http-vue`
+
+### 3. API 保持兼容
+
+✅ 所有公共 API 保持向后兼容,只是导入路径发生变化
+
+---
+
+## 💡 最佳实践
+
+### 1. 使用子模块导入优化包体积
+
+```typescript
+// ❌ 不推荐: 导入整个核心包
+import { FetchAdapter } from '@ldesign/http-core'
+
+// ✅ 推荐: 从子模块导入
+import { FetchAdapter } from '@ldesign/http-core/adapters'
+import { CacheManager } from '@ldesign/http-core/cache'
+import { RetryManager } from '@ldesign/http-core/retry'
+```
+
+### 2. 使用工厂函数
+
+```typescript
+// ✅ 推荐: 使用工厂函数
+import { createHttpClient } from '@ldesign/http-core'
+
+const client = createHttpClient({
+  adapter: 'fetch',
+  baseURL: 'https://api.example.com',
+  timeout: 5000
+})
+```
+
+### 3. 类型安全
+
+```typescript
+// ✅ 使用类型定义
+import type { RequestConfig, ResponseData } from '@ldesign/http-core'
+
+interface User {
+  id: number
+  name: string
+}
+
+const config: RequestConfig = {
+  url: '/api/user',
+  method: 'GET'
+}
+
+const response: ResponseData<User> = await client.request(config)
+```
+
+---
+
+## 🆘 常见问题
+
+### Q1: 为什么要重构包结构?
+
+**A**: 旧版本存在严重的包重复问题,导致:
+- 维护困难
+- 包体积大
+- 依赖混乱
+- 用户困惑
+
+新版本通过合并核心功能到单一包,解决了这些问题。
+
+### Q2: 迁移会影响现有功能吗?
+
+**A**: 不会。所有公共 API 保持向后兼容,只是导入路径发生变化。
+
+### Q3: 需要修改多少代码?
+
+**A**: 大部分情况下只需要批量替换导入路径,实际业务逻辑无需修改。
+
+### Q4: 如何验证迁移成功?
+
+**A**: 
+1. 运行 `pnpm type-check` 检查类型错误
+2. 运行 `pnpm test` 运行测试
+3. 运行 `pnpm build` 构建应用
+4. 手动测试关键功能
+
+---
+
+## 📚 相关文档
+
+- [重构计划](./REFACTORING_PLAN.md)
+- [重构完成报告](./REFACTORING_COMPLETED.md)
+- [API 文档](./docs/API.md)
+- [示例代码](./examples/)
+
+---
+
+## 🤝 获取帮助
+
+如果在迁移过程中遇到问题:
+
+1. 查看 [常见问题](#常见问题)
+2. 查看 [GitHub Issues](https://github.com/ldesign/http/issues)
+3. 提交新的 Issue
+
+---
+
+**祝迁移顺利!** 🎉
 

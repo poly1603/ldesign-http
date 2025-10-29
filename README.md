@@ -18,27 +18,30 @@ _功能强大 • 类型安全 • 开箱即用 • Tree-shakable • 372+ 测�
 
 ---
 
-## 🎉 v0.3.0 性能优化版本
+## 🎉 v0.2.0 架构重构版本
 
-本版本进行了全面的性能优化和功能增强：
+本版本进行了全面的架构重构,提供更清晰、更模块化的包结构:
 
-### 🚀 性能提升
-- ⚡ **包体积减少 30%** - 从 60KB → 42KB（核心模块）
-- 💨 **请求性能提升 40%** - 快速路径优化，跳过不必要的中间件
-- 💾 **内存占用减少 40%** - WeakMap 自动清理，批量调度优化
-- 📦 **Tree-shaking 支持** - 按需导入，最小可至 25KB
-- 🔄 **适配器懒加载** - 动态导入，减少初始包体积
+### 🏗️ 架构改进
+- 📦 **统一核心包** - 所有核心功能合并到 `@ldesign/http-core`
+- 🎯 **框架适配器分离** - React、Vue、Solid、Svelte 独立包
+- 🧹 **消除重复** - 删除 8 个重复包,简化依赖关系
+- 📝 **清晰职责** - 核心包完全框架无关
+- 🌳 **更好的 Tree-shaking** - 子模块导出,按需加载
 
-### ✨ 新增功能
-- 🎯 **预设配置系统** - 8种开箱即用的场景预设（REST、GraphQL、实时应用等）
-- 🚄 **请求快速路径** - 简单请求性能提升 40-50%
-- 💡 **智能缓存优化** - 两级缓存策略，查询性能提升 60%
-- ⚙️ **批量任务调度** - 微任务批处理，高并发性能提升 35%
+### 📦 新包结构
+```
+@ldesign/http-core      # 核心包 (框架无关)
+@ldesign/http-react     # React 适配器
+@ldesign/http-vue       # Vue 适配器
+@ldesign/http-solid     # Solid 适配器
+@ldesign/http-svelte    # Svelte 适配器
+```
 
-详见：
-- [性能优化总结](./OPTIMIZATION_SUMMARY.md) ⭐ **推荐阅读**
-- [快速开始指南](./QUICK_START.md)
-- [迁移指南](./MIGRATION_GUIDE.md)
+### 📚 重要文档
+- [重构完成报告](./REFACTORING_COMPLETED.md) ⭐ **了解重构详情**
+- [迁移指南](./MIGRATION_GUIDE.md) ⭐ **从 v0.1.x 迁移**
+- [重构计划](./REFACTORING_PLAN.md) - 详细设计方案
 
 ---
 
@@ -59,43 +62,74 @@ _功能强大 • 类型安全 • 开箱即用 • Tree-shakable • 372+ 测�
 
 ### 📦 安装
 
+#### 核心包 (框架无关)
+
 ```bash
 # 使用 pnpm（推荐）
-pnpm add @ldesign/http
+pnpm add @ldesign/http-core
 
 # 使用 npm
-npm install @ldesign/http
+npm install @ldesign/http-core
 
 # 使用 yarn
-yarn add @ldesign/http
+yarn add @ldesign/http-core
 ```
 
-### 🌟 基础用法（使用预设配置 - 推荐）
+#### 框架适配器 (可选)
+
+```bash
+# Vue 3
+pnpm add @ldesign/http-vue
+
+# React
+pnpm add @ldesign/http-react
+
+# Solid
+pnpm add @ldesign/http-solid
+
+# Svelte
+pnpm add @ldesign/http-svelte
+```
+
+### 🌟 基础用法
+
+#### 使用核心包
 
 ```typescript
-import { createHttpClient, presets } from '@ldesign/http'
+import { createHttpClient } from '@ldesign/http-core'
 
-// 方式1：使用预设配置（推荐，开箱即用）
-const client = await createHttpClient({
-  ...presets.restful,  // REST API 预设
-  baseURL: 'https://api.example.com'
+// 创建 HTTP 客户端
+const client = createHttpClient({
+  baseURL: 'https://api.example.com',
+  timeout: 5000,
+  adapter: 'fetch'  // 或 'axios', 'alova'
 })
 
-// 方式2：自动选择预设
-const client = await createHttpClient({
-  ...autoPreset(),  // 根据环境自动选择
-  baseURL: 'https://api.example.com'
+// 发送请求
+const response = await client.get('/users')
+console.log(response.data)
+
+// POST 请求
+const newUser = await client.post('/users', {
+  name: 'John Doe',
+  email: 'john@example.com'
+})
+```
+
+#### 使用 Vue 适配器
+
+```typescript
+import { useHttp } from '@ldesign/http-vue'
+
+// 在 Vue 组件中
+const { data, loading, error, execute } = useHttp<User>('/api/user', {
+  immediate: true
 })
 
-// 可用的预设：
-// - presets.restful - REST API（推荐）
-// - presets.graphql - GraphQL API
-// - presets.realtime - 实时应用
-// - presets.lowPower - 低功耗（移动设备）
-// - presets.batch - 批量操作
-// - presets.development - 开发环境
-// - presets.production - 生产环境
-// - presets.offlineFirst - 离线优先（PWA）
+// 响应式数据自动更新
+watch(data, (newData) => {
+  console.log('User data updated:', newData)
+})
 ```
 
 ### 🌟 传统用法（手动配置）

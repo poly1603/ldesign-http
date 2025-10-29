@@ -42,8 +42,7 @@
     "clean": "rimraf es lib dist"
   },
   "dependencies": {
-    "@ldesign/http-core": "workspace:*",
-    "@ldesign/http-interceptors": "workspace:*"
+    "@ldesign/http-core": "workspace:*"
   },
   "peerDependencies": {},
   "devDependencies": {
