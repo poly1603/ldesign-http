@@ -1,9 +1,10 @@
 /**
  * @ldesign/http-svelte
- * 
- * Svelte adapter for @ldesign/http-core
+ * Svelte HTTP请求库
  */
 
+// 重新导出核心库
+export * from '@ldesign/http-core'
+
+// 导出Svelte特定功能
 export * from './stores'
-export * from './actions'
-export { version } from './version'

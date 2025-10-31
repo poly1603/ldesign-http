@@ -1,0 +1,51 @@
+{
+  "name": "@ldesign/http-remix",
+  "version": "0.1.0",
+  "description": "Remix HTTP请求库",
+  "keywords": [
+    "remix",
+    "http",
+    "request",
+    "typescript"
+  ],
+  "author": "ldesign",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./es/index.d.ts",
+      "import": "./es/index.js",
+      "require": "./lib/index.cjs"
+    }
+  },
+  "main": "./lib/index.cjs",
+  "module": "./es/index.js",
+  "types": "./es/index.d.ts",
+  "files": [
+    "README.md",
+    "LICENSE",
+    "package.json",
+    "es",
+    "lib"
+  ],
+  "scripts": {
+    "build": "ldesign-builder build -f esm,cjs,dts",
+    "dev": "ldesign-builder build -f esm,cjs,dts --watch",
+    "clean": "rimraf es lib"
+  },
+  "dependencies": {
+    "@ldesign/http-core": "workspace:*"
+  },
+  "peerDependencies": {
+    "@remix-run/react": "*",
+    "react": "*"
+  },
+  "devDependencies": {
+    "@ldesign/builder": "workspace:*",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

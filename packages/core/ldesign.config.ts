@@ -4,7 +4,7 @@ export default defineConfig({
   input: 'src/index.ts',
 
   output: {
-    format: ['esm', 'cjs', 'umd'],
+    format: ['esm', 'cjs'],
     esm: {
       dir: 'es',
       preserveStructure: true,
@@ -12,10 +12,6 @@ export default defineConfig({
     cjs: {
       dir: 'lib',
       preserveStructure: true,
-    },
-    umd: {
-      dir: 'dist',
-      name: 'HttpCore',
     },
   },
 
@@ -25,8 +21,10 @@ export default defineConfig({
   clean: true,
 
   external: [
-    {},
     "axios",
-    "alova"
+    "alova",
+    "vue",
+    /vue\//,
+    /@vue\//
   ],
 })

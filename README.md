@@ -1,5 +1,24 @@
 # @ldesign/http
 
+🚀 功能强大的跨框架HTTP请求库 - 支持16个框架，内置拦截器、缓存、重试、进度跟踪等企业级功能
+
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
+[![pnpm](https://img.shields.io/badge/pnpm-9.15-orange)](https://pnpm.io/)
+[![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
+
+## ✨ 特性
+
+- 🎯 **16个框架支持** - Vue, React, Svelte, Solid, Angular, Preact, Lit, Qwik, Next.js, Nuxt, Remix, SvelteKit 等
+- 💻 **TypeScript First** - 完整的类型定义和泛型支持
+- 🚀 **企业级功能** - 拦截器、缓存、重试、取消请求、进度跟踪
+- 🎭 **性能优化** - 请求队列、去重、批量处理
+- 🔌 **多适配器** - Axios / Fetch API / 自定义适配器
+- 🧩 **模块化设计** - 核心包 + 框架适配层
+- 📦 **树摇支持** - ESM + CJS + TypeScript声明
+- ⚙️ **高度可配置** - 灵活的配置选项
+
+## 📚 文档
+
 <div align="center">
 
 ![ldesign HTTP](https://img.shields.io/badge/@ldesign-http-blue?style=for-the-badge)

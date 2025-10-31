@@ -1,6 +1,6 @@
 # @ldesign/http-svelte
 
-> Svelte adapter for @ldesign/http-core
+Svelte HTTP请求库
 
 ## 安装
 
@@ -11,16 +11,16 @@ pnpm add @ldesign/http-svelte
 ## 使用
 
 ```typescript
-import {} from '@ldesign/http-svelte'
+import { createHttpClient } from '@ldesign/http-svelte'
 
-// TODO: 添加使用示例
+const http = createHttpClient({
+  baseURL: 'https://api.example.com',
+})
+
+const response = await http.get('/users')
+console.log(response.data)
 ```
-
-## API
-
-- `stores` - stores 模块
-- `actions` - actions 模块
 
 ## License
 
-MIT © ldesign
+MIT

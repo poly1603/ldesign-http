@@ -1,6 +1,6 @@
 # @ldesign/http-solid
 
-> Solid adapter for @ldesign/http-core
+Solid HTTP请求库
 
 ## 安装
 
@@ -11,16 +11,16 @@ pnpm add @ldesign/http-solid
 ## 使用
 
 ```typescript
-import {} from '@ldesign/http-solid'
+import { createHttpClient } from '@ldesign/http-solid'
 
-// TODO: 添加使用示例
+const http = createHttpClient({
+  baseURL: 'https://api.example.com',
+})
+
+const response = await http.get('/users')
+console.log(response.data)
 ```
-
-## API
-
-- `hooks` - hooks 模块
-- `provider` - provider 模块
 
 ## License
 
-MIT © ldesign
+MIT

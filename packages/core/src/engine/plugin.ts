@@ -1,8 +1,15 @@
 import type { HttpClient, HttpClientConfig } from '../types'
-import type { HttpPluginOptions } from '../types/vue'
+// import type { HttpPluginOptions } from '../types/vue'
 import { createAdapter } from '../adapters'
 import { HttpClientImpl } from '../client'
-import { HttpPlugin } from '../vue/plugin'
+// import { HttpPlugin } from '../vue/plugin'
+
+interface HttpPluginOptions {
+  client?: HttpClient
+  globalConfig?: HttpClientConfig
+  globalProperty?: string
+  [key: string]: any
+}
 
 // 临时使用 any 类型，避免循环依赖
 interface Plugin {
@@ -170,12 +177,13 @@ export function createHttpEnginePlugin(
                 })()
 
             // 安装 HTTP Vue 插件
-            vueApp.use(HttpPlugin, {
-              client: httpClient,
-              globalConfig: globalConfig || clientConfig,
-              globalProperty: globalPropertyName,
-              ...httpOptions,
-            })
+            // vueApp.use(HttpPlugin, {
+            //   client: httpClient,
+            //   globalConfig: globalConfig || clientConfig,
+            //   globalProperty: globalPropertyName,
+            //   ...httpOptions,
+            // })
+            console.warn('HttpPlugin installation is disabled in core package')
 
             // 将 HTTP 客户端注册到引擎中，便于其他插件访问
             if (engine.http) {

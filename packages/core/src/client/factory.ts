@@ -1,5 +1,5 @@
-import type { HttpClientConfig } from './types'
-import { createAdapter, createAdapterSync, preloadAdapters } from './adapters'
+import type { HttpClientConfig } from '../types'
+import { createAdapter, createAdapterSync, preloadAdapters } from '../adapters'
 import { HttpClientImpl } from './client'
 
 /**

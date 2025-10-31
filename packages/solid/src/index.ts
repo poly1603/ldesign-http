@@ -1,9 +1,10 @@
 /**
  * @ldesign/http-solid
- * 
- * Solid adapter for @ldesign/http-core
+ * Solid HTTP请求库
  */
 
-export * from './hooks'
-export * from './provider'
-export { version } from './version'
+// 重新导出核心库
+export * from '@ldesign/http-core'
+
+// 导出Solid特定功能
+export * from './createHttpResource'
