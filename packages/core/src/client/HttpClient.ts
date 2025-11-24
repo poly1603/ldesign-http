@@ -10,35 +10,27 @@ import type {
   ResponseData,
   ResponseInterceptor,
   RetryConfig,
-} from './types'
-import type { CancelManager } from './utils/cancel'
+} from '../types'
+import type { CancelManager } from '../utils/cancel'
 import type {
   DownloadConfig,
   DownloadResult,
-} from './utils/download'
-import type { Priority } from './utils/priority'
+} from '../utils/download'
+import type { Priority } from '../utils/priority'
 import type {
   UploadConfig,
   UploadResult,
-} from './utils/upload'
-import { InterceptorManagerImpl } from './interceptors/manager'
-import { generateId } from './utils'
-import { CacheManager } from './utils/cache'
-import { globalCancelManager } from './utils/cancel'
-import { ConcurrencyManager } from './utils/concurrency'
-import {
-  DownloadProgressCalculator,
-  getFilenameFromResponse,
-  getFilenameFromURL,
-  getMimeTypeFromFilename,
-  saveFileToLocal,
-} from './utils/download'
-import { RetryManager } from './utils/error'
-import { RequestMonitor } from './utils/monitor'
-import { RequestPool } from './utils/pool'
-import { determinePriority, PriorityQueue } from './utils/priority'
-// 静态导入工具函数，避免动态导入冲突
-import { createUploadFormData, ProgressCalculator, validateFile } from './utils/upload'
+} from '../utils/upload'
+import { InterceptorManagerImpl } from '../interceptors/manager'
+import { generateId } from '../utils'
+import { CacheManager } from '../utils/cache'
+import { globalCancelManager } from '../utils/cancel'
+import { ConcurrencyManager } from '../utils/concurrency'
+import { RetryManager } from '../utils/error'
+import { RequestMonitor } from '../utils/monitor'
+import { RequestPool } from '../utils/pool'
+import { determinePriority, PriorityQueue } from '../utils/priority'
+import { ConfigMerger, FileOperationHandler, InterceptorProcessor } from './helpers'
 
 /**
  * HTTP 客户端核心实现类
@@ -137,6 +129,15 @@ export class HttpClientImpl implements HttpClient {
   /** 客户端是否已销毁的标志 */
   private isDestroyed = false
 
+  /** 配置合并器：负责合并默认配置和请求配置 */
+  private configMerger: ConfigMerger
+
+  /** 拦截器处理器：负责执行拦截器链 */
+  private interceptorProcessor: InterceptorProcessor
+
+  /** 文件操作处理器：负责文件上传和下载 */
+  private fileOperationHandler: FileOperationHandler
+
   /**
    * 拦截器管理器集合
    * - request: 请求拦截器，在发送请求前执行
@@ -188,9 +189,9 @@ export class HttpClientImpl implements HttpClient {
     this.cancelManager = globalCancelManager
     this.cacheManager = new CacheManager(config.cache)
     this.concurrencyManager = new ConcurrencyManager(config.concurrency)
-    this.monitor = new RequestMonitor(config.monitor as any)
-    this.priorityQueue = new PriorityQueue(config.priorityQueue as any)
-    this.requestPool = new RequestPool(config.connectionPool as any)
+    this.monitor = new RequestMonitor(config.monitor)
+    this.priorityQueue = new PriorityQueue(config.priorityQueue)
+    this.requestPool = new RequestPool(config.connectionPool)
 
     // 初始化拦截器管理器
     this.interceptors = {
@@ -198,6 +199,13 @@ export class HttpClientImpl implements HttpClient {
       response: new InterceptorManagerImpl<ResponseInterceptor>(),
       error: new InterceptorManagerImpl<ErrorInterceptor>(),
     }
+
+    // 初始化辅助类
+    this.configMerger = new ConfigMerger(this.config)
+    this.interceptorProcessor = new InterceptorProcessor(this.interceptors)
+    this.fileOperationHandler = new FileOperationHandler(
+      <T>(config: RequestConfig) => this.request<T>(config),
+    )
   }
 
   /**
@@ -285,8 +293,8 @@ export class HttpClientImpl implements HttpClient {
     }
 
     // 合并默认配置和请求配置
-    // 只对 headers 和 params 进行深度合并，其他字段浅合并
-    const mergedConfig = this.optimizedMergeConfig(config)
+    // 使用 ConfigMerger 进行优化的配置合并
+    const mergedConfig = this.configMerger.merge(config)
 
     // 条件性生成请求ID：只在性能监控开启时才生成
     // 避免不必要的 ID 生成开销
@@ -445,18 +453,8 @@ export class HttpClientImpl implements HttpClient {
    * ```
    */
   private async fastRequest<T = unknown>(config: RequestConfig): Promise<ResponseData<T>> {
-    // 快速配置合并（浅合并）
-    // 只合并 headers，其他字段直接覆盖
-    // 这比深度合并快约 3-5 倍
-    const fullConfig: RequestConfig = {
-      ...this.config,
-      ...config,
-      // 只在请求配置中有 headers 时才合并
-      // 避免不必要的对象创建
-      headers: config.headers
-        ? { ...this.config.headers, ...config.headers }
-        : this.config.headers,
-    }
+    // 使用 ConfigMerger 进行快速配置合并（浅合并）
+    const fullConfig = this.configMerger.fastMerge(config)
 
     // 直接调用适配器，跳过所有中间件
     // 这里的 this.adapter 已经在构造函数中验证过，不会为 undefined
@@ -491,23 +489,8 @@ export class HttpClientImpl implements HttpClient {
    * ```
    */
   private hasInterceptors(): boolean {
-    // 获取各类型拦截器的数组
-    const requestInterceptors = (
-      this.interceptors.request as InterceptorManagerImpl<RequestInterceptor>
-    ).getInterceptors()
-    const responseInterceptors = (
-      this.interceptors.response as InterceptorManagerImpl<ResponseInterceptor>
-    ).getInterceptors()
-    const errorInterceptors = (
-      this.interceptors.error as InterceptorManagerImpl<ErrorInterceptor>
-    ).getInterceptors()
-
-    // 只要有任何一种拦截器，就返回 true
-    return (
-      requestInterceptors.length > 0
-      || responseInterceptors.length > 0
-      || errorInterceptors.length > 0
-    )
+    // 使用 InterceptorProcessor 检查是否有拦截器
+    return this.interceptorProcessor.hasInterceptors()
   }
 
   /**
@@ -561,13 +544,13 @@ export class HttpClientImpl implements HttpClient {
 
     try {
       // 执行请求拦截器
-      processedConfig = await this.processRequestInterceptors(config)
+      processedConfig = await this.interceptorProcessor.processRequest(config)
 
       // 发送请求
       let response = await this.adapter.request<T>(processedConfig)
 
       // 执行响应拦截器
-      response = await this.processResponseInterceptors(response)
+      response = await this.interceptorProcessor.processResponse(response)
 
       // 缓存响应
       await this.cacheManager.set(processedConfig, response)
@@ -576,7 +559,7 @@ export class HttpClientImpl implements HttpClient {
     }
     catch (error) {
       // 执行错误拦截器
-      const processedError = await this.processErrorInterceptors(
+      const processedError = await this.interceptorProcessor.processError(
         error as HttpError,
       )
       throw processedError
@@ -689,6 +672,88 @@ export class HttpClientImpl implements HttpClient {
   }
 
   /**
+   * 发送 JSON 请求
+   *
+   * 便捷方法,自动设置 Content-Type 为 application/json
+   *
+   * @param url - 请求 URL
+   * @param data - 请求数据(将被序列化为 JSON)
+   * @param config - 请求配置
+   * @returns 响应数据
+   *
+   * @example
+   * ```typescript
+   * // 发送 JSON 数据
+   * const result = await client.json('/api/users', {
+   *   name: 'John Doe',
+   *   email: 'john@example.com'
+   * })
+   * ```
+   */
+  json<T = unknown, D = unknown>(
+    url: string,
+    data: D,
+    config: RequestConfig = {},
+  ): Promise<ResponseData<T>> {
+    return this.request<T>({
+      ...config,
+      url,
+      method: 'POST',
+      data,
+      headers: {
+        'Content-Type': 'application/json',
+        ...config.headers,
+      },
+    })
+  }
+
+  /**
+   * 发送表单请求
+   *
+   * 便捷方法,自动设置 Content-Type 为 application/x-www-form-urlencoded
+   *
+   * @param url - 请求 URL
+   * @param data - 表单数据(对象或 URLSearchParams)
+   * @param config - 请求配置
+   * @returns 响应数据
+   *
+   * @example
+   * ```typescript
+   * // 发送表单数据
+   * const result = await client.form('/api/login', {
+   *   username: 'admin',
+   *   password: '123456'
+   * })
+   * ```
+   */
+  form<T = unknown>(
+    url: string,
+    data: Record<string, any> | URLSearchParams,
+    config: RequestConfig = {},
+  ): Promise<ResponseData<T>> {
+    // 如果数据是对象,转换为 URLSearchParams
+    const formData = data instanceof URLSearchParams
+      ? data
+      : new URLSearchParams(
+        Object.entries(data).map(([key, value]) => [
+          key,
+          String(value),
+        ]),
+      )
+
+    return this.request<T>({
+      ...config,
+      url,
+      method: 'POST',
+      data: formData,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        ...config.headers,
+      },
+    })
+  }
+
+  /**
    * 取消所有请求
    */
   cancelAll(reason?: string): void {
@@ -721,6 +786,8 @@ export class HttpClientImpl implements HttpClient {
         ...config.headers,
       },
     }
+    // 同步更新 ConfigMerger
+    this.configMerger.updateDefault(this.config)
   }
 
   /**
@@ -785,148 +852,8 @@ export class HttpClientImpl implements HttpClient {
     this.concurrencyManager.cancelQueue(reason)
   }
 
-  /**
-   * 处理请求拦截器（优化版 - 区分同步/异步）
-   */
-  private async processRequestInterceptors(
-    config: RequestConfig,
-  ): Promise<RequestConfig> {
-    let processedConfig = config
-
-    const manager = this.interceptors.request as InterceptorManagerImpl<RequestInterceptor>
-
-    // 先执行同步拦截器（无需 await，更快）
-    const syncInterceptors = manager.getSyncInterceptors()
-    for (const interceptor of syncInterceptors) {
-      try {
-        // 同步执行，不使用 await
-        processedConfig = interceptor.fulfilled(processedConfig) as RequestConfig
-      }
-      catch (error) {
-        if (interceptor.rejected) {
-          throw await interceptor.rejected(error as HttpError)
-        }
-        throw error
-      }
-    }
-
-    // 再执行异步拦截器
-    const asyncInterceptors = manager.getAsyncInterceptors()
-    for (const interceptor of asyncInterceptors) {
-      try {
-        processedConfig = await interceptor.fulfilled(processedConfig)
-      }
-      catch (error) {
-        if (interceptor.rejected) {
-          throw await interceptor.rejected(error as HttpError)
-        }
-        throw error
-      }
-    }
-
-    return processedConfig
-  }
-
-  /**
-   * 处理响应拦截器（优化版 - 区分同步/异步）
-   */
-  private async processResponseInterceptors<T>(
-    response: ResponseData<T>,
-  ): Promise<ResponseData<T>> {
-    let processedResponse = response as ResponseData<unknown>
-
-    const manager = this.interceptors.response as InterceptorManagerImpl<ResponseInterceptor>
-
-    // 先执行同步拦截器
-    const syncInterceptors = manager.getSyncInterceptors()
-    for (const interceptor of syncInterceptors) {
-      try {
-        processedResponse = interceptor.fulfilled(processedResponse) as ResponseData<unknown>
-      }
-      catch (error) {
-        if (interceptor.rejected) {
-          throw await interceptor.rejected(error as HttpError)
-        }
-        throw error
-      }
-    }
-
-    // 再执行异步拦截器
-    const asyncInterceptors = manager.getAsyncInterceptors()
-    for (const interceptor of asyncInterceptors) {
-      try {
-        processedResponse = await interceptor.fulfilled(processedResponse)
-      }
-      catch (error) {
-        if (interceptor.rejected) {
-          throw await interceptor.rejected(error as HttpError)
-        }
-        throw error
-      }
-    }
-
-    return processedResponse as ResponseData<T>
-  }
-
-  /**
-   * 处理错误拦截器（优化版 - 区分同步/异步）
-   */
-  private async processErrorInterceptors(error: HttpError): Promise<HttpError> {
-    let processedError = error
-
-    const manager = this.interceptors.error as InterceptorManagerImpl<ErrorInterceptor>
-
-    // 先执行同步拦截器
-    const syncInterceptors = manager.getSyncInterceptors()
-    for (const interceptor of syncInterceptors) {
-      try {
-        processedError = interceptor.fulfilled(processedError) as HttpError
-      }
-      catch (err) {
-        processedError = err as HttpError
-      }
-    }
-
-    // 再执行异步拦截器
-    const asyncInterceptors = manager.getAsyncInterceptors()
-    for (const interceptor of asyncInterceptors) {
-      try {
-        processedError = await interceptor.fulfilled(processedError)
-      }
-      catch (err) {
-        processedError = err as HttpError
-      }
-    }
-
-    return processedError
-  }
-
-  // 移除对象池（现代JS引擎的对象创建已经很快，池化反而增加复杂度）
-
-  /**
-   * 优化的配置合并（简化版，去除对象池开销）
-   */
-  private optimizedMergeConfig(config: RequestConfig): RequestConfig {
-    // 如果请求配置为空，直接返回默认配置副本
-    if (!config || Object.keys(config).length === 0) {
-      return { ...this.config }
-    }
-
-    // 直接创建新对象（现代JS引擎优化很好）
-    const merged: RequestConfig = { ...this.config, ...config }
-
-    // 只有在两者都有 headers 时才进行深度合并
-    if (this.config?.headers && config.headers) {
-      merged.headers = { ...this.config.headers, ...config.headers }
-    }
-
-    // 只有在两者都有 params 时才进行深度合并
-    if (this.config?.params && config.params) {
-      merged.params = { ...this.config.params, ...config.params }
-    }
-
-    return merged
-  }
+  // 拦截器处理和配置合并已移至辅助类
+  // 参见: InterceptorProcessor 和 ConfigMerger
 
 
   /**
@@ -939,126 +866,11 @@ export class HttpClientImpl implements HttpClient {
   ): Promise<UploadResult<T>> {
     this.checkDestroyed()
 
-    const files = Array.isArray(file) ? file : [file]
-
-    if (files.length === 1) {
-      return this.uploadSingleFile<T>(url, files[0], config)
-    }
-    else {
-      return this.uploadMultipleFiles<T>(url, files, config)
-    }
+    // 使用 FileOperationHandler 处理文件上传
+    return this.fileOperationHandler.upload<T>(url, file, config)
   }
 
-  /**
-   * 上传单个文件
-   */
-  private async uploadSingleFile<T = unknown>(
-    url: string,
-    file: File,
-    config: UploadConfig,
-  ): Promise<UploadResult<T>> {
-    // 使用静态导入的工具函数
-
-    // 验证文件
-    validateFile(file, config)
-
-    const startTime = Date.now()
-    const progressCalculator = new ProgressCalculator()
-
-    // 创建表单数据
-    const formData = createUploadFormData(file, config)
-
-    // 配置请求
-    const requestConfig: RequestConfig = {
-      method: 'POST',
-      url,
-      data: formData,
-      headers: {
-        ...(config.headers || {}),
-        // 不设置 Content-Type，让浏览器自动设置 multipart/form-data
-      },
-      ...(config || {}),
-      onUploadProgress: config.onProgress
-        ? (progressEvent: { loaded: number, total?: number }) => {
-          const progress = progressCalculator.calculate(
-            progressEvent.loaded,
-            progressEvent.total || 0,
-            file,
-          )
-          config.onProgress?.(progress)
-        }
-        : undefined,
-    }
-
-    const response = await this.request<T>(requestConfig)
-
-    return {
-      ...response,
-      file,
-      duration: Date.now() - startTime,
-    }
-  }
-
-  /**
-   * 上传多个文件
-   */
-  private async uploadMultipleFiles<T = unknown>(
-    url: string,
-    files: File[],
-    config: UploadConfig,
-  ): Promise<UploadResult<T>> {
-    // 使用静态导入的工具函数
-
-    // 验证所有文件
-    files.forEach(file => validateFile(file, config))
-
-    const startTime = Date.now()
-    const progressCalculator = new ProgressCalculator()
-
-    // 创建表单数据
-    const formData = new FormData()
-
-    // 添加所有文件
-    const fileField = config.fileField || 'files'
-    files.forEach((file, index) => {
-      formData.append(`${fileField}[${index}]`, file)
-    })
-
-    // 添加额外的表单数据
-    if (config.formData) {
-      Object.entries(config.formData).forEach(([key, value]) => {
-        formData.append(key, value)
-      })
-    }
-
-    // 配置请求
-    const requestConfig: RequestConfig = {
-      method: 'POST',
-      url,
-      data: formData,
-      headers: {
-        ...(config.headers || {}),
-      },
-      ...(config || {}),
-      onUploadProgress: config.onProgress
-        ? (progressEvent: { loaded: number, total?: number }) => {
-          const progress = progressCalculator.calculate(
-            progressEvent.loaded,
-            progressEvent.total || 0,
-          )
-          config.onProgress?.(progress)
-        }
-        : undefined,
-    }
-
-    const response = await this.request<T>(requestConfig)
-
-    return {
-      ...response,
-      file: files[0], // 返回第一个文件作为代表
-      duration: Date.now() - startTime,
-    }
-  }
+  // 文件上传方法已移至 FileOperationHandler
 
   /**
    * 下载文件
@@ -1069,57 +881,8 @@ export class HttpClientImpl implements HttpClient {
   ): Promise<DownloadResult> {
     this.checkDestroyed()
 
-    // 使用静态导入的工具函数
-
-    const startTime = Date.now()
-    const progressCalculator = new DownloadProgressCalculator()
-
-    // 配置请求
-    const requestConfig: RequestConfig = {
-      method: 'GET',
-      url,
-      responseType: 'blob',
-      ...(config || {}),
-      onDownloadProgress: config.onProgress
-        ? (progressEvent: { loaded: number, total?: number }) => {
-          const progress = progressCalculator.calculate(
-            progressEvent.loaded,
-            progressEvent.total || 0,
-            config.filename,
-          )
-          config.onProgress?.(progress)
-        }
-        : undefined,
-    }
-
-    const response = await this.request<Blob>(requestConfig)
-
-    // 确定文件名
-    let filename = config.filename
-    if (!filename) {
-      filename = getFilenameFromResponse(response.headers)
-        || getFilenameFromURL(response.config.url || url)
-        || 'download'
-    }
-
-    // 确定文件类型
-    const type = response.data?.type || getMimeTypeFromFilename(filename)
-
-    // 自动保存文件（浏览器环境）
-    let downloadUrl: string | undefined
-    if (config.autoSave !== false && typeof window !== 'undefined') {
-      saveFileToLocal(response.data, filename)
-      downloadUrl = URL.createObjectURL(response.data)
-    }
-
-    return {
-      data: response.data,
-      filename,
-      size: response.data.size,
-      type,
-      duration: Date.now() - startTime,
-      url: downloadUrl,
-    }
+    // 使用 FileOperationHandler 处理文件下载
+    return this.fileOperationHandler.download(url, config)
   }
 
   /**
@@ -1323,5 +1086,230 @@ export class HttpClientImpl implements HttpClient {
     if (this.isDestroyed) {
       throw new Error('HttpClient has been destroyed')
     }
+  }
+
+  /**
+   * 批量发送请求
+   *
+   * 并行发送多个请求,使用 Promise.all 等待所有请求完成
+   *
+   * @param configs - 请求配置数组
+   * @returns 所有请求的响应数组
+   *
+   * @example
+   * ```typescript
+   * const results = await client.batch([
+   *   { url: '/users' },
+   *   { url: '/posts' },
+   *   { url: '/comments' }
+   * ])
+   * console.log(results[0].data) // users
+   * console.log(results[1].data) // posts
+   * console.log(results[2].data) // comments
+   * ```
+   */
+  async batch<T = any>(configs: RequestConfig[]): Promise<ResponseData<T>[]> {
+    this.checkDestroyed()
+    return Promise.all(configs.map(config => this.request<T>(config)))
+  }
+
+  /**
+   * 批量发送请求(容错版本)
+   *
+   * 并行发送多个请求,即使部分请求失败也会返回所有结果
+   * 失败的请求会在结果中标记为 error
+   *
+   * @param configs - 请求配置数组
+   * @returns 所有请求的结果数组(成功或失败)
+   *
+   * @example
+   * ```typescript
+   * const results = await client.batchSettled([
+   *   { url: '/users' },
+   *   { url: '/invalid' }, // 这个会失败
+   *   { url: '/posts' }
+   * ])
+   *
+   * results.forEach((result, index) => {
+   *   if (result.status === 'fulfilled') {
+   *     console.log(`请求 ${index} 成功:`, result.value.data)
+   *   } else {
+   *     console.error(`请求 ${index} 失败:`, result.reason)
+   *   }
+   * })
+   * ```
+   */
+  async batchSettled<T = any>(
+    configs: RequestConfig[],
+  ): Promise<Array<PromiseSettledResult<ResponseData<T>>>> {
+    this.checkDestroyed()
+    return Promise.allSettled(configs.map(config => this.request<T>(config)))
+  }
+
+  /**
+   * 获取客户端健康状态
+   *
+   * 检查客户端各个子系统的健康状态
+   *
+   * @returns 健康检查结果
+   *
+   * @example
+   * ```typescript
+   * const health = client.healthCheck()
+   * if (!health.healthy) {
+   *   console.error('客户端异常:', health.issues)
+   * }
+   * console.log('缓存命中率:', health.stats.cacheHitRate)
+   * ```
+   */
+  healthCheck(): {
+    healthy: boolean
+    issues: string[]
+    stats: {
+      cacheSize: number
+      cacheHitRate: number
+      activeRequests: number
+      totalRequests: number
+      averageResponseTime: number
+    }
+  } {
+    this.checkDestroyed()
+
+    const issues: string[] = []
+
+    // 检查是否已销毁
+    if (this.isDestroyed) {
+      issues.push('客户端已销毁')
+    }
+
+    // 检查适配器
+    if (!this.adapter) {
+      issues.push('HTTP 适配器未配置')
+    }
+
+    // 获取监控统计
+    const monitorStats = this.monitor?.getStats() || {
+      totalRequests: 0,
+      successfulRequests: 0,
+      failedRequests: 0,
+      averageResponseTime: 0,
+      slowRequests: 0,
+    }
+
+    // 获取缓存统计
+    const cacheStats = this.cacheManager?.getStats?.() || {
+      size: 0,
+      hits: 0,
+      misses: 0,
+    }
+
+    const totalCacheRequests = cacheStats.hits + cacheStats.misses
+    const cacheHitRate = totalCacheRequests > 0 ? cacheStats.hits / totalCacheRequests : 0
+
+    // 检查缓存命中率
+    if (totalCacheRequests > 100 && cacheHitRate < 0.3) {
+      issues.push(`缓存命中率过低: ${(cacheHitRate * 100).toFixed(1)}%`)
+    }
+
+    // 检查慢请求
+    if (monitorStats.slowRequests > monitorStats.totalRequests * 0.1) {
+      issues.push(`慢请求比例过高: ${((monitorStats.slowRequests / monitorStats.totalRequests) * 100).toFixed(1)}%`)
+    }
+
+    return {
+      healthy: issues.length === 0,
+      issues,
+      stats: {
+        cacheSize: cacheStats.size,
+        cacheHitRate,
+        activeRequests: this.concurrencyManager?.getActiveCount() || 0,
+        totalRequests: monitorStats.totalRequests,
+        averageResponseTime: monitorStats.averageResponseTime,
+      },
+    }
+  }
+
+  /**
+   * 获取详细的性能报告
+   *
+   * 生成包含所有性能指标的详细报告
+   *
+   * @returns 性能报告对象
+   *
+   * @example
+   * ```typescript
+   * const report = client.getPerformanceReport()
+   * console.log('成功率:', report.successRate, '%')
+   * console.log('平均响应时间:', report.averageResponseTime, 'ms')
+   * console.log('最慢的请求:', report.slowestRequest)
+   * ```
+   */
+  getPerformanceReport(): {
+    totalRequests: number
+    successfulRequests: number
+    failedRequests: number
+    successRate: number
+    averageResponseTime: number
+    slowRequests: number
+    cacheHitRate: number
+    activeRequests: number
+  } {
+    this.checkDestroyed()
+
+    const monitorStats = this.monitor?.getStats() || {
+      totalRequests: 0,
+      successfulRequests: 0,
+      failedRequests: 0,
+      averageResponseTime: 0,
+      slowRequests: 0,
+    }
+
+    const cacheStats = this.cacheManager?.getStats?.() || {
+      size: 0,
+      hits: 0,
+      misses: 0,
+    }
+
+    const totalCacheRequests = cacheStats.hits + cacheStats.misses
+    const cacheHitRate = totalCacheRequests > 0 ? cacheStats.hits / totalCacheRequests : 0
+    const successRate = monitorStats.totalRequests > 0
+      ? (monitorStats.successfulRequests / monitorStats.totalRequests) * 100
+      : 0
+
+    return {
+      totalRequests: monitorStats.totalRequests,
+      successfulRequests: monitorStats.successfulRequests,
+      failedRequests: monitorStats.failedRequests,
+      successRate: Math.round(successRate * 100) / 100,
+      averageResponseTime: Math.round(monitorStats.averageResponseTime * 100) / 100,
+      slowRequests: monitorStats.slowRequests,
+      cacheHitRate: Math.round(cacheHitRate * 10000) / 100,
+      activeRequests: this.concurrencyManager?.getActiveCount() || 0,
+    }
+  }
+
+  /**
+   * 导出配置和统计信息为 JSON
+   *
+   * @param pretty - 是否格式化输出
+   * @returns JSON 字符串
+   *
+   * @example
+   * ```typescript
+   * const json = client.exportJSON(true)
+   * console.log(json)
+   * ```
+   */
+  exportJSON(pretty = false): string {
+    this.checkDestroyed()
+
+    const data = {
+      config: this.config,
+      health: this.healthCheck(),
+      performance: this.getPerformanceReport(),
+      timestamp: Date.now(),
+    }
+
+    return pretty ? JSON.stringify(data, null, 2) : JSON.stringify(data)
   }
 }

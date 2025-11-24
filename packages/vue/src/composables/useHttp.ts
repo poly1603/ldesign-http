@@ -1,5 +1,5 @@
-import type { InjectionKey, Ref } from 'vue'
-import type { HttpClient, RequestConfig } from '../types'
+﻿import type { Ref } from 'vue'
+import type { HttpClient, RequestConfig } from '@ldesign/http-core'
 import { computed, inject, provide, ref } from 'vue'
 import {
   useDelete,
@@ -10,17 +10,7 @@ import {
 } from './useMutation'
 import { useQuery } from './useQuery'
 import { useRequest } from './useRequest'
-
-/**
- * HTTP 客户端注入键
- */
-export const HTTP_CLIENT_KEY: InjectionKey<HttpClient> = Symbol('http-client')
-
-/**
- * 全局配置注入键
- */
-export const HTTP_CONFIG_KEY: InjectionKey<Ref<RequestConfig>>
-  = Symbol('http-config')
+import { HTTP_CLIENT_KEY, HTTP_CONFIG_KEY } from '../symbols'
 
 /**
  * 提供 HTTP 客户端

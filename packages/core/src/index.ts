@@ -8,7 +8,10 @@
 // 核心客户端
 // ============================================================================
 export * from './client'
-export * from './factory'
+// 注意：不再导出旧版本的 factory.ts，使用 client/factory.ts 中的新版本
+// export * from './factory'  // 已废弃，使用 client/factory.ts
+// 显式导出 HttpClient 别名，确保不被 tree-shaking 移除
+export { HttpClientImpl as HttpClient } from './client'
 
 // ============================================================================
 // 适配器系统
@@ -71,6 +74,6 @@ export * from './engine'
 export { version } from './version'
 
 // ============================================================================
-// 默认导出
+// 默认导出（使用新版本的 createHttpClient）
 // ============================================================================
-export { createHttpClient } from './factory'
+export { createHttpClient, createHttpClientSync } from './client/factory'

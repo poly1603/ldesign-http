@@ -1,5 +1,5 @@
-import type { Ref } from 'vue'
-import type { HttpClient, RequestConfig } from '../types'
+﻿import type { Ref } from 'vue'
+import type { HttpClient, RequestConfig } from '@ldesign/http-core'
 import { computed, ref } from 'vue'
 
 /**

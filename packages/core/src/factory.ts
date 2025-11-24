@@ -1,34 +1,16 @@
 /**
- * HTTP 客户端工厂
+ * HTTP 客户端工厂（旧版本 - 已废弃）
+ *
+ * ⚠️ 此文件已废弃，请使用 `client/factory.ts` 中的新版本
+ *
+ * @deprecated 请使用 `import { createHttpClient } from '@ldesign/http-core'` 或 `import { createHttpClient } from '@ldesign/http-core/client'`
  */
 
-import type { HttpAdapter } from './types/adapter'
-import type { HttpClient, HttpClientConfig } from './types/client'
-import { HttpClientImpl } from './client'
-
-/**
- * 创建 HTTP 客户端实例
- * 
- * @param config - 客户端配置
- * @param adapter - HTTP 适配器
- * @returns HTTP 客户端实例
- * 
- * @example
- * ```typescript
- * import { createHttpClient } from '@ldesign/http-core'
- * import { FetchAdapter } from '@ldesign/http-adapters'
- * 
- * const client = createHttpClient(
- *   { baseURL: 'https://api.example.com' },
- *   new FetchAdapter()
- * )
- * ```
- */
-export function createHttpClient(
-  config: HttpClientConfig,
-  adapter: HttpAdapter,
-): HttpClient {
-  return new HttpClientImpl(config, adapter)
-}
+// 重新导出新版本的函数，确保所有导入都使用新版本
+export {
+  createHttpClient,
+  createHttpClientSync,
+  preloadAdapters,
+} from './client/factory'
 
 

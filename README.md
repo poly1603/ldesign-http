@@ -31,7 +31,13 @@
 
 _功能强大 • 类型安全 • 开箱即用 • Tree-shakable • 372+ 测试用例_
 
-[快速开始](./QUICK_START.md) • [完整文档](./docs) • [API 参考](./docs/api) • [示例项目](./examples)
+[快速开始](./QUICK_START.md) • [完整文档](./docs) • [API 参考](./docs/api/README.md) • [示例项目](./examples)
+
+**📖 文档导航**:
+- 🚀 [最佳实践指南](./docs/BEST_PRACTICES.md) - 推荐的使用模式和技巧
+- ⚡ [性能优化指南](./docs/PERFORMANCE.md) - 性能优化策略和基准测试
+- ❓ [常见问题 FAQ](./docs/FAQ.md) - 常见问题解答
+- 📘 [API 文档](./docs/api/README.md) - 完整的 API 参考
 
 </div>
 

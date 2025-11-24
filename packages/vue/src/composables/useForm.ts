@@ -1,7 +1,7 @@
 import type { Ref } from 'vue'
-import type { HttpClientConfig, RequestConfig } from '../types'
+import type { HttpClientConfig, RequestConfig } from '@ldesign/http-core'
 import { computed, onUnmounted, reactive, ref } from 'vue'
-import { createHttpClient } from '../factory'
+import { createHttpClient } from '@ldesign/http-core'
 
 /**
  * 表单验证规则
@@ -272,7 +272,7 @@ export function useForm<T extends Record<string, any>>(
    * 设置字段值
    */
   const setField = (field: keyof T, value: any) => {
-    ;(data as any)[field] = value
+    ; (data as any)[field] = value
     // 设置值后自动验证该字段
     if (validationRules.value[field as string]) {
       validateField(field)

@@ -41,6 +41,56 @@
       "import": "./es/cache/*.js",
       "require": "./lib/cache/*.cjs"
     },
+    "./client": {
+      "types": "./es/client/index.d.ts",
+      "import": "./es/client/index.js",
+      "require": "./lib/client/index.cjs"
+    },
+    "./client/*": {
+      "types": "./es/client/*.d.ts",
+      "import": "./es/client/*.js",
+      "require": "./lib/client/*.cjs"
+    },
+    "./core": {
+      "types": "./es/core/index.d.ts",
+      "import": "./es/core/index.js",
+      "require": "./lib/core/index.cjs"
+    },
+    "./core/*": {
+      "types": "./es/core/*.d.ts",
+      "import": "./es/core/*.js",
+      "require": "./lib/core/*.cjs"
+    },
+    "./devtools": {
+      "types": "./es/devtools/index.d.ts",
+      "import": "./es/devtools/index.js",
+      "require": "./lib/devtools/index.cjs"
+    },
+    "./devtools/*": {
+      "types": "./es/devtools/*.d.ts",
+      "import": "./es/devtools/*.js",
+      "require": "./lib/devtools/*.cjs"
+    },
+    "./engine": {
+      "types": "./es/engine/index.d.ts",
+      "import": "./es/engine/index.js",
+      "require": "./lib/engine/index.cjs"
+    },
+    "./engine/*": {
+      "types": "./es/engine/*.d.ts",
+      "import": "./es/engine/*.js",
+      "require": "./lib/engine/*.cjs"
+    },
+    "./features": {
+      "types": "./es/features/index.d.ts",
+      "import": "./es/features/index.js",
+      "require": "./lib/features/index.cjs"
+    },
+    "./features/*": {
+      "types": "./es/features/*.d.ts",
+      "import": "./es/features/*.js",
+      "require": "./lib/features/*.cjs"
+    },
     "./interceptors": {
       "types": "./es/interceptors/index.d.ts",
       "import": "./es/interceptors/index.js",
@@ -60,6 +110,16 @@
       "types": "./es/middleware/*.d.ts",
       "import": "./es/middleware/*.js",
       "require": "./lib/middleware/*.cjs"
+    },
+    "./optimizations/*": {
+      "types": "./es/optimizations/*.d.ts",
+      "import": "./es/optimizations/*.js",
+      "require": "./lib/optimizations/*.cjs"
+    },
+    "./queue/*": {
+      "types": "./es/queue/*.d.ts",
+      "import": "./es/queue/*.js",
+      "require": "./lib/queue/*.cjs"
     },
     "./retry": {
       "types": "./es/retry/index.d.ts",

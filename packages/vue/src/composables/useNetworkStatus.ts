@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Vue 网络状态 Composable
  *
  * 响应式的网络状态监听
@@ -12,7 +12,7 @@ import {
   type NetworkInfo,
   type NetworkMonitorConfig,
   type NetworkStatus,
-} from '../utils/network'
+} from '@ldesign/http-core'
 
 
 /**

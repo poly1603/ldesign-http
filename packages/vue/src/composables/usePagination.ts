@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 分页 Hook
  * 
  * 用于实现标准的分页数据加载
@@ -45,7 +45,7 @@
 import { computed, ref, unref, watch } from 'vue'
 import type { MaybeRef, Ref } from 'vue'
 import { useHttp as useHttpStandalone } from './useHttpStandalone'
-import type { RequestConfig } from '../types'
+import type { RequestConfig } from '@ldesign/http-core'
 
 export interface PaginationOptions<T = any> {
   /**

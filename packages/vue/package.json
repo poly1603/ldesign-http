@@ -28,6 +28,16 @@
       "import": "./es/composables/*.js",
       "require": "./lib/composables/*.cjs"
     },
+    "./directives": {
+      "types": "./es/directives/index.d.ts",
+      "import": "./es/directives/index.js",
+      "require": "./lib/directives/index.cjs"
+    },
+    "./directives/*": {
+      "types": "./es/directives/*.d.ts",
+      "import": "./es/directives/*.js",
+      "require": "./lib/directives/*.cjs"
+    },
     "./plugin": {
       "types": "./es/plugin/index.d.ts",
       "import": "./es/plugin/index.js",
@@ -37,6 +47,16 @@
       "types": "./es/plugin/*.d.ts",
       "import": "./es/plugin/*.js",
       "require": "./lib/plugin/*.cjs"
+    },
+    "./types": {
+      "types": "./es/types/index.d.ts",
+      "import": "./es/types/index.js",
+      "require": "./lib/types/index.cjs"
+    },
+    "./types/*": {
+      "types": "./es/types/*.d.ts",
+      "import": "./es/types/*.js",
+      "require": "./lib/types/*.cjs"
     }
   },
   "main": "./lib/index.cjs",
@@ -53,14 +73,17 @@
     "dist"
   ],
   "scripts": {
-    "build": "ldesign-builder build -f esm,cjs,dts",
-    "dev": "ldesign-builder build -f esm,cjs,dts --watch",
+    "build": "ldesign-builder build",
+    "build:watch": "ldesign-builder build --watch",
+    "dev": "ldesign-builder build --watch",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint . --fix",
-    "lint:check": "eslint .",
-    "type-check": "vue-tsc --noEmit"
+    "clean": "rimraf esm cjs dist coverage .tsbuildinfo",
+    "type-check": "vue-tsc --noEmit",
+    "type-check:watch": "vue-tsc --noEmit --watch",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@ldesign/http-core": "workspace:*"

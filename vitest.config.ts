@@ -41,6 +41,13 @@ export default defineConfig({
         'src/**/types.ts',
         'src/**/index.ts',
       ],
+      // 覆盖率门槛 (LDesign 标准: 70%)
+      thresholds: {
+        statements: 70,
+        branches: 70,
+        functions: 70,
+        lines: 70,
+      },
     },
   },
   resolve: {

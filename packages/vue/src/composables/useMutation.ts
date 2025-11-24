@@ -1,13 +1,13 @@
-import type { Ref } from 'vue'
+﻿import type { Ref } from 'vue'
 import type {
   HttpClient,
   HttpError,
   RequestConfig,
   ResponseData,
-} from '../types'
+} from '@ldesign/http-core'
 import type { UseMutationOptions, UseMutationReturn } from '../types/vue'
 import { onUnmounted, ref } from 'vue'
-import { createCancelTokenSource, isCancelError } from '../utils/cancel'
+import { createCancelTokenSource, isCancelError } from '@ldesign/http-core'
 
 /**
  * useMutation Hook

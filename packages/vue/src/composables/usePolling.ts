@@ -1,13 +1,13 @@
-/**
+﻿/**
  * Vue 智能轮询 Composable
  *
  * 自动轮询请求，支持条件停止、错误处理、网络感知等
  */
 
 import type { Ref } from 'vue'
-import type { HttpClient, RequestConfig } from '../types'
+import type { HttpClient, RequestConfig } from '@ldesign/http-core'
 import { onUnmounted, ref } from 'vue'
-import { createHttpClient } from '../factory'
+import { createHttpClient } from '@ldesign/http-core'
 
 /**
  * 轮询配置

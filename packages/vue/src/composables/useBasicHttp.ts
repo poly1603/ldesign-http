@@ -1,7 +1,7 @@
 import type { MaybeRef, Ref } from 'vue'
-import type { HttpClientConfig, RequestConfig } from '../types'
+import type { HttpClientConfig, RequestConfig } from '@ldesign/http-core'
 import { computed, getCurrentInstance, onUnmounted, ref, unref, watch } from 'vue'
-import { createHttpClient } from '../factory'
+import { createHttpClient } from '@ldesign/http-core'
 
 /**
  * 基础HTTP请求选项

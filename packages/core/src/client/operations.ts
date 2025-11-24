@@ -7,23 +7,23 @@
 import type {
   HttpClient,
   RequestConfig,
-} from './types'
+} from '../types'
 import type {
   DownloadConfig,
   DownloadResult,
-} from './utils/download'
+} from '../utils/download'
 import type {
   UploadConfig,
   UploadResult,
-} from './utils/upload'
+} from '../utils/upload'
 import {
   DownloadProgressCalculator,
   getFilenameFromResponse,
   getFilenameFromURL,
   getMimeTypeFromFilename,
   saveFileToLocal,
-} from './utils/download'
-import { ProgressCalculator, validateFile } from './utils/upload'
+} from '../utils/download'
+import { ProgressCalculator, validateFile } from '../utils/upload'
 
 /**
  * 文件操作功能接口
@@ -51,7 +51,7 @@ export interface FileOperations {
  * 文件操作处理器
  */
 export class FileOperationHandler implements FileOperations {
-  constructor(private client: HttpClient) {}
+  constructor(private client: HttpClient) { }
 
   /**
    * 上传文件（支持多文件和进度跟踪）
@@ -77,7 +77,7 @@ export class FileOperationHandler implements FileOperations {
     }
     else {
       files = Array.isArray(file) ? file : [file]
-      
+
       // 验证文件
       files.forEach(f => validateFile(f, config))
 
@@ -112,12 +112,12 @@ export class FileOperationHandler implements FileOperations {
       ...(config || {}),
       onUploadProgress: config.onProgress
         ? (progressEvent: any) => {
-            const progress = progressCalculator.calculate(
-              progressEvent.loaded,
-              progressEvent.total,
-            )
-            config.onProgress!(progress)
-          }
+          const progress = progressCalculator.calculate(
+            progressEvent.loaded,
+            progressEvent.total,
+          )
+          config.onProgress!(progress)
+        }
         : undefined,
     }
 
@@ -148,13 +148,13 @@ export class FileOperationHandler implements FileOperations {
       ...(config || {}),
       onDownloadProgress: config.onProgress
         ? (progressEvent: any) => {
-            const progress = progressCalculator.calculate(
-              progressEvent.loaded,
-              progressEvent.total,
-              config.filename,
-            )
-            config.onProgress!(progress)
-          }
+          const progress = progressCalculator.calculate(
+            progressEvent.loaded,
+            progressEvent.total,
+            config.filename,
+          )
+          config.onProgress!(progress)
+        }
         : undefined,
     }
 

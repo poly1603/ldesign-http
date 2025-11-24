@@ -1,10 +1,9 @@
-import type { App, Plugin } from 'vue'
-import type { HttpClient, RequestConfig } from '../types'
+﻿import type { App, Plugin } from 'vue'
+import type { HttpClient, RequestConfig } from '@ldesign/http-core'
 import type { HttpPluginOptions } from '../types/vue'
 import { provide, ref } from 'vue'
-import { createAdapter } from '../adapters'
-import { HttpClientImpl } from '../client'
-import { HTTP_CLIENT_KEY, HTTP_CONFIG_KEY } from './useHttp'
+import { createAdapter, HttpClientImpl } from '@ldesign/http-core'
+import { HTTP_CLIENT_KEY, HTTP_CONFIG_KEY } from '../symbols'
 
 /**
  * Vue 3 HTTP 插件
@@ -15,7 +14,7 @@ export const HttpPlugin: Plugin = {
     // 创建或使用提供的 HTTP 客户端
     const client: HttpClient
       = httpOptions.client
-        || new HttpClientImpl(httpOptions.globalConfig || {}, await createAdapter())
+      || new HttpClientImpl(httpOptions.globalConfig || {}, await createAdapter())
 
     // 提供 HTTP 客户端到应用上下文
     app.provide(HTTP_CLIENT_KEY, client)
@@ -25,7 +24,7 @@ export const HttpPlugin: Plugin = {
 
     // 注册全局属性
     const globalProperty = httpOptions.globalProperty || '$http'
-    ;(app.config.globalProperties as any)[globalProperty] = client
+      ; (app.config.globalProperties as any)[globalProperty] = client
 
     // 提供全局方法
     app.provide('httpClient', client)

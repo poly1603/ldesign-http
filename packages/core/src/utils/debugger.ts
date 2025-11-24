@@ -53,13 +53,24 @@ export interface ResponseLog {
 }
 
 /**
+ * 调试事件数据类型
+ */
+export type DebugEventData =
+  | RequestConfig
+  | ResponseData
+  | HttpError
+  | { key: string; hit: boolean }  // 缓存事件
+  | { attempt: number; delay: number }  // 重试事件
+  | Record<string, unknown>  // 自定义事件
+
+/**
  * 调试事件
  */
-export interface DebugEvent {
+export interface DebugEvent<T = DebugEventData> {
   /** 事件类型 */
   type: 'request' | 'response' | 'error' | 'cache_hit' | 'cache_miss' | 'retry' | 'custom'
   /** 事件数据 */
-  data: any
+  data: T
   /** 事件时间 */
   timestamp: number
   /** 事件级别 */
@@ -161,7 +172,7 @@ export class HttpDebugger {
       logResponseBody: config.logResponseBody ?? false,
       maxLogs: config.maxLogs ?? 1000,
       console: config.console ?? true,
-      handler: config.handler || (() => {}),
+      handler: config.handler || (() => { }),
       performance: config.performance ?? true,
       cacheTracking: config.cacheTracking ?? true,
     } as Required<DebuggerConfig>

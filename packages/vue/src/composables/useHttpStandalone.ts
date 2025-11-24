@@ -1,7 +1,6 @@
-import type { HttpClientConfig, RequestConfig } from '../types'
+﻿import type { HttpClientConfig, RequestConfig } from '@ldesign/http-core'
 import { computed, ref } from 'vue'
-import { createAdapter } from '../adapters'
-import { HttpClientImpl } from '../client'
+import { createAdapter, HttpClientImpl } from '@ldesign/http-core'
 
 /**
  * HTTP客户端组合式函数
@@ -12,7 +11,7 @@ export function useHttp(config?: HttpClientConfig) {
     const adapter = await createAdapter(config?.adapter)
     return new HttpClientImpl(config || {}, adapter)
   })()
-  
+
   const loading = ref(false)
   const error = ref<Error | null>(null)
   const data = ref<unknown>(null)

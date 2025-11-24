@@ -51,13 +51,17 @@ export type { PaginationOptions, UsePaginationReturn } from './usePagination'
 
 // 依赖注入版本 (适用于需要全局配置的场景)
 export {
-  HTTP_CLIENT_KEY,
-  HTTP_CONFIG_KEY,
   injectHttpClient,
   injectHttpConfig,
   provideHttpClient,
   useHttp as useInjectedHttp,
 } from './useHttp'
+
+// 注入键
+export {
+  HTTP_CLIENT_KEY,
+  HTTP_CONFIG_KEY,
+} from '../symbols'
 
 // 独立 HTTP 客户端 (推荐: 最简单的使用方式,无需配置)
 export { useHttp } from './useHttpStandalone'

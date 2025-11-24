@@ -1,5 +1,5 @@
-import type { MaybeRef, Ref } from 'vue'
-import type { HttpClient, RequestConfig } from '../types'
+﻿import type { MaybeRef, Ref } from 'vue'
+import type { HttpClient, RequestConfig } from '@ldesign/http-core'
 import { ref, unref } from 'vue'
 
 /**

@@ -1,13 +1,13 @@
-import type { MaybeRef, Ref } from 'vue'
+﻿import type { MaybeRef, Ref } from 'vue'
 import type {
   HttpClient,
   HttpError,
   RequestConfig,
   ResponseData,
-} from '../types'
+} from '@ldesign/http-core'
 import type { UseQueryOptions, UseQueryReturn } from '../types/vue'
 import { computed, onUnmounted, ref, unref, watch } from 'vue'
-import { createCancelTokenSource, isCancelError } from '../utils/cancel'
+import { createCancelTokenSource, isCancelError } from '@ldesign/http-core'
 
 /**
  * 查询缓存管理器

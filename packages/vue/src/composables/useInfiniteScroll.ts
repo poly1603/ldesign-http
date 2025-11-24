@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 无限滚动 Hook
  * 
  * 用于实现分页数据的无限滚动加载
@@ -36,7 +36,7 @@
 import { computed, ref, unref } from 'vue'
 import type { MaybeRef } from 'vue'
 import { useHttp as useHttpStandalone } from './useHttpStandalone'
-import type { RequestConfig } from '../types'
+import type { RequestConfig } from '@ldesign/http-core'
 
 export interface InfiniteScrollOptions<T = any> {
   /**

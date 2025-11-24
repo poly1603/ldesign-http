@@ -287,12 +287,16 @@ export class ResponseCompressor {
 
   /**
    * 估算压缩后的大小（字节）
+   *
+   * @param data - 要估算的数据（任意可序列化的值）
+   * @returns 估算的字节大小，失败时返回 0
    */
-  static estimateSize(data: any): number {
+  static estimateSize(data: unknown): number {
     try {
       const json = JSON.stringify(data)
       return new Blob([json]).size
-    } catch {
+    }
+    catch {
       return 0
     }
   }
@@ -300,22 +304,33 @@ export class ResponseCompressor {
 
 /**
  * 自动垃圾回收触发器
+ *
+ * 提供自动内存监控和垃圾回收触发功能
+ * 支持自动清理，防止内存泄漏
  */
 export class AutoGCTrigger {
   private threshold: number
   private interval: number
   private timer: NodeJS.Timeout | null = null
+  private isDestroyed = false
+  private cleanupHandler: (() => void) | null = null
 
   constructor(options: { threshold?: number; interval?: number } = {}) {
     this.threshold = options.threshold || 100 // MB
     this.interval = options.interval || 60000 // 60秒
+
+    // 添加页面卸载时的自动清理（仅浏览器环境）
+    if (typeof window !== 'undefined') {
+      this.cleanupHandler = () => this.destroy()
+      window.addEventListener('beforeunload', this.cleanupHandler)
+    }
   }
 
   /**
    * 启动自动GC
    */
   start(): void {
-    if (this.timer) return
+    if (this.timer || this.isDestroyed) return
 
     this.timer = setInterval(() => {
       this.checkAndTriggerGC()
@@ -333,9 +348,37 @@ export class AutoGCTrigger {
   }
 
   /**
+   * 销毁实例，清理所有资源
+   *
+   * 确保定时器被清理，防止内存泄漏
+   */
+  destroy(): void {
+    // 停止定时器
+    this.stop()
+
+    // 移除事件监听器
+    if (typeof window !== 'undefined' && this.cleanupHandler) {
+      window.removeEventListener('beforeunload', this.cleanupHandler)
+      this.cleanupHandler = null
+    }
+
+    // 标记为已销毁
+    this.isDestroyed = true
+  }
+
+  /**
+   * 检查是否已销毁
+   */
+  isDisposed(): boolean {
+    return this.isDestroyed
+  }
+
+  /**
    * 检查并触发GC
    */
   private checkAndTriggerGC(): void {
+    if (this.isDestroyed) return
+
     if (typeof performance !== 'undefined' && (performance as any).memory) {
       const memory = (performance as any).memory
       const usedMB = memory.usedJSHeapSize / 1024 / 1024
@@ -356,7 +399,8 @@ export class AutoGCTrigger {
     if (typeof global !== 'undefined' && (global as any).gc) {
       try {
         (global as any).gc()
-      } catch (e) {
+      }
+      catch (e) {
         // GC not available
       }
     }
@@ -444,9 +488,40 @@ export interface MemoryOptimizationConfig {
 }
 
 /**
- * 应用内存优化配置
+ * 内存优化管理器
+ *
+ * 封装所有内存优化功能，提供统一的清理接口
  */
-export function applyMemoryOptimizations(config: MemoryOptimizationConfig = {}) {
+export interface MemoryOptimizations {
+  objectPool: ObjectPool<any> | null
+  lruCache: LRUCache<any>
+  memoryMonitor: MemoryMonitor
+  gcTrigger: AutoGCTrigger | null
+  monitorTimer: NodeJS.Timeout | null
+
+  /**
+   * 销毁所有优化实例，清理资源
+   */
+  destroy(): void
+}
+
+/**
+ * 应用内存优化配置
+ *
+ * @returns 内存优化管理器实例，包含 destroy 方法用于清理资源
+ *
+ * @example
+ * ```typescript
+ * const optimizations = applyMemoryOptimizations({
+ *   autoGC: true,
+ *   gcThreshold: 100
+ * })
+ *
+ * // 使用完毕后清理
+ * optimizations.destroy()
+ * ```
+ */
+export function applyMemoryOptimizations(config: MemoryOptimizationConfig = {}): MemoryOptimizations {
   const {
     objectPooling = true,
     responseCompression = true,
@@ -456,24 +531,47 @@ export function applyMemoryOptimizations(config: MemoryOptimizationConfig = {}) 
     cacheSize = 100,
   } = config
 
-  const optimizations = {
-    objectPool: objectPooling ? new ObjectPool(() => ({}), { maxSize: 50 }) : null,
-    lruCache: new LRUCache(cacheSize),
-    memoryMonitor: new MemoryMonitor(100),
-    gcTrigger: autoGC ? new AutoGCTrigger({ threshold: gcThreshold, interval: gcInterval }) : null,
-  }
+  const objectPool = objectPooling ? new ObjectPool(() => ({}), { maxSize: 50 }) : null
+  const lruCache = new LRUCache(cacheSize)
+  const memoryMonitor = new MemoryMonitor(100)
+  const gcTrigger = autoGC ? new AutoGCTrigger({ threshold: gcThreshold, interval: gcInterval }) : null
 
   // 启动自动GC
-  if (optimizations.gcTrigger) {
-    optimizations.gcTrigger.start()
+  if (gcTrigger) {
+    gcTrigger.start()
   }
 
   // 定期采样内存
-  setInterval(() => {
-    optimizations.memoryMonitor.sample()
+  const monitorTimer = setInterval(() => {
+    memoryMonitor.sample()
   }, 10000)
 
-  return optimizations
+  // 返回优化管理器，包含清理方法
+  return {
+    objectPool,
+    lruCache,
+    memoryMonitor,
+    gcTrigger,
+    monitorTimer,
+
+    /**
+     * 销毁所有优化实例，清理资源
+     */
+    destroy() {
+      // 清理定时器
+      if (monitorTimer) {
+        clearInterval(monitorTimer)
+      }
+
+      // 清理 GC 触发器
+      if (gcTrigger) {
+        gcTrigger.destroy()
+      }
+
+      // 清理缓存
+      lruCache.clear()
+    },
+  }
 }
 
 export default {

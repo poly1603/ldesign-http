@@ -80,6 +80,9 @@ export class MemoryMonitor {
     cleanupCount: 0,
   }
 
+  private isDestroyed = false
+  private cleanupHandler: (() => void) | null = null
+
   constructor(config: MemoryMonitorConfig = {}) {
     this.config = {
       enabled: config.enabled ?? true,
@@ -95,13 +98,19 @@ export class MemoryMonitor {
     if (this.config?.enabled) {
       this.start()
     }
+
+    // 添加页面卸载时的自动清理（仅浏览器环境）
+    if (typeof window !== 'undefined') {
+      this.cleanupHandler = () => this.destroy()
+      window.addEventListener('beforeunload', this.cleanupHandler)
+    }
   }
 
   /**
    * 启动监控
    */
   start(): void {
-    if (this.monitorTimer) {
+    if (this.monitorTimer || this.isDestroyed) {
       return
     }
 
@@ -124,11 +133,40 @@ export class MemoryMonitor {
   }
 
   /**
+   * 销毁监控器，清理所有资源
+   *
+   * 确保定时器被清理，防止内存泄漏
+   */
+  destroy(): void {
+    // 停止监控
+    this.stop()
+
+    // 移除事件监听器
+    if (typeof window !== 'undefined' && this.cleanupHandler) {
+      window.removeEventListener('beforeunload', this.cleanupHandler)
+      this.cleanupHandler = null
+    }
+
+    // 清空历史数据
+    this.usageHistory = []
+
+    // 标记为已销毁
+    this.isDestroyed = true
+  }
+
+  /**
+   * 检查是否已销毁
+   */
+  isDisposed(): boolean {
+    return this.isDestroyed
+  }
+
+  /**
    * 检查内存使用
    */
   private check(): void {
     const usage = this.getMemoryUsage()
-    
+
     // 更新当前使用情况
     this.stats.current = usage
 
@@ -150,7 +188,7 @@ export class MemoryMonitor {
     if (usage.used >= this.config?.dangerThreshold) {
       this.stats.dangerCount++
       this.config?.onDanger?.(usage)
-      
+
       if (this.config?.autoCleanup) {
         this.cleanup()
       }
@@ -236,13 +274,6 @@ export class MemoryMonitor {
     this.usageHistory = []
   }
 
-  /**
-   * 销毁监控器
-   */
-  destroy(): void {
-    this.stop()
-    this.usageHistory = []
-  }
 }
 
 /**
@@ -270,7 +301,7 @@ export class MemoryCleaner {
    */
   register(handler: () => void): () => void {
     this.cleanupHandlers.push(handler)
-    
+
     // 返回取消注册函数
     return () => {
       const index = this.cleanupHandlers.indexOf(handler)

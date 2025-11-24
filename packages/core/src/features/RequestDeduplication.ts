@@ -1,19 +1,21 @@
 import type { RequestConfig, ResponseData } from '../types'
+import { generateRequestKey } from '../utils/serializer'
 
 /**
  * 请求去重管理器
+ *
+ * 使用统一的序列化器生成请求键，避免代码重复
  */
 export class RequestDeduplication {
   private pendingRequests = new Map<string, Promise<ResponseData>>()
 
   /**
    * 生成请求键
+   *
+   * 使用统一的序列化器
    */
   private generateKey(config: RequestConfig): string {
-    const { method = 'GET', url = '', params = {}, data } = config
-    const paramsStr = JSON.stringify(params)
-    const dataStr = data ? JSON.stringify(data) : ''
-    return `${method}:${url}:${paramsStr}:${dataStr}`
+    return generateRequestKey(config)
   }
 
   /**

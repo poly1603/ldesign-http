@@ -1,5 +1,6 @@
 import type { CacheConfig, CacheStorage, RequestConfig, ResponseData } from '../types'
 import { MemoryCacheStorage } from './MemoryCacheStorage'
+import { generateRequestKey } from '../utils/serializer'
 
 /**
  * 缓存管理器
@@ -19,17 +20,16 @@ export class CacheManager {
 
   /**
    * 生成缓存键
+   *
+   * 使用统一的序列化器生成键，避免代码重复
    */
   private generateKey(config: RequestConfig): string {
     if (this.config.keyGenerator) {
       return this.config.keyGenerator(config)
     }
 
-    // 默认键生成策略
-    const { method = 'GET', url = '', params = {}, data } = config
-    const paramsStr = JSON.stringify(params)
-    const dataStr = data ? JSON.stringify(data) : ''
-    return `${method}:${url}:${paramsStr}:${dataStr}`
+    // 使用统一的序列化器
+    return generateRequestKey(config)
   }
 
   /**

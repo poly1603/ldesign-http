@@ -27,16 +27,16 @@ export class AdapterFactory {
   // 适配器加载器映射
   private static loaders = new Map<string, AdapterLoader>([
     ['fetch', async () => {
-      const module = await import('./fetch')
-      return new module.FetchAdapter()
+      const { FetchAdapter } = await import('./fetch')
+      return new FetchAdapter()
     }],
     ['axios', async () => {
-      const module = await import('./axios')
-      return new module.AxiosAdapter()
+      const { AxiosAdapter } = await import('./axios')
+      return new AxiosAdapter()
     }],
     ['alova', async () => {
-      const module = await import('./alova')
-      return new module.AlovaAdapter()
+      const { AlovaAdapter } = await import('./alova')
+      return new AlovaAdapter()
     }],
   ])
 

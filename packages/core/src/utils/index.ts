@@ -551,3 +551,22 @@ export * from './memory'
 export * from './offline'
 export * from './signature'
 export * from './warmup'
+
+// 导出取消令牌相关
+export * from './cancel-token'
+export * from './cancel'
+// 显式导出常用函数，确保不被 tree-shaking 移除
+export { createCancelTokenSource, createTimeoutToken, combineCancelTokens } from './cancel-token'
+export { createEnhancedCancelManager, createTimeoutCancelToken } from './cancel'
+
+// 导出网络监控相关
+export * from './network'
+// 显式导出常用函数
+export { createNetworkMonitor, ConnectionType } from './network'
+
+// 导出 ErrorClassifier 中的 isCancelError 作为独立函数
+export const isCancelError = ErrorClassifier.isCancelError
+
+// 导出序列化器相关
+export * from './serializer'
+export { generateRequestKey, generateRequestFingerprint } from './serializer'
