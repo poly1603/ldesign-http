@@ -4,6 +4,15 @@
  * HTTP 高级特性库 - 缓存、重试、熔断、限流等
  */
 
+// 请求去重
+export * from './deduplication'
+
+// 批量优化
+export * from './batch'
+
+// 进度追踪
+export * from './ProgressTracker'
+
 // 缓存功能
 export * from './cache'
 

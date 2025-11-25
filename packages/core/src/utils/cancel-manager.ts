@@ -1,11 +1,11 @@
 /**
- * 增强取消管理器模块
- * 
+ * 取消管理器模块
+ *
  * 提供高级请求取消管理功能
  */
 
 import type { RequestConfig } from '../types'
-import type { CancelToken, CancelTokenImpl  } from './cancel-token'
+import type { CancelToken, CancelTokenImpl } from './cancel-token'
 
 
 /**
@@ -37,12 +37,12 @@ export interface CancelStrategy {
 }
 
 /**
- * 增强取消管理器
+ * 取消管理器
  */
-export class EnhancedCancelManager {
+export class CancelManager {
   private metadata = new Map<string, RequestMetadata>()
   private strategies = new Map<string, CancelStrategy>()
-  
+
   // 内置策略
   private readonly builtInStrategies: Record<string, CancelStrategy> = {
     timeout: {
@@ -62,9 +62,9 @@ export class EnhancedCancelManager {
         // 检查是否有相同URL的新请求
         let hasDuplicate = false
         this.metadata.forEach((meta, _id) => {
-          if (meta !== metadata && 
-              meta.config?.url === metadata.config?.url &&
-              meta.createdAt > metadata.createdAt) {
+          if (meta !== metadata &&
+            meta.config?.url === metadata.config?.url &&
+            meta.createdAt > metadata.createdAt) {
             hasDuplicate = true
           }
         })
@@ -125,7 +125,7 @@ export class EnhancedCancelManager {
     }
 
     metadata.controller.abort(reason)
-    
+
     if (metadata.token && !metadata.token.isCancelled) {
       (metadata.token as CancelTokenImpl).cancel(reason)
     }
@@ -139,7 +139,7 @@ export class EnhancedCancelManager {
    */
   cancelBatch(requestIds: string[], reason?: string): number {
     let cancelledCount = 0
-    
+
     requestIds.forEach(id => {
       if (this.cancel(id, reason)) {
         cancelledCount++
@@ -179,9 +179,9 @@ export class EnhancedCancelManager {
       }
     })
 
-    const finalReason = reason || 
-      (strategy.getReason ? 
-        idsToCancel.map(id => strategy.getReason!(this.metadata.get(id)!))[0] : 
+    const finalReason = reason ||
+      (strategy.getReason ?
+        idsToCancel.map(id => strategy.getReason!(this.metadata.get(id)!))[0] :
         `Cancelled by strategy: ${strategyName}`)
 
     return this.cancelBatch(idsToCancel, finalReason)
@@ -479,8 +479,18 @@ export class EnhancedCancelManager {
 }
 
 /**
- * 创建增强取消管理器
+ * 创建取消管理器
  */
-export function createEnhancedCancelManager(): EnhancedCancelManager {
-  return new EnhancedCancelManager()
+export function createCancelManager(): CancelManager {
+  return new CancelManager()
 }
+
+/**
+ * @deprecated Use createCancelManager instead. Will be removed in v3.0.0
+ */
+export const createEnhancedCancelManager = createCancelManager
+
+/**
+ * @deprecated Use CancelManager instead. Will be removed in v3.0.0
+ */
+export { CancelManager as EnhancedCancelManager }

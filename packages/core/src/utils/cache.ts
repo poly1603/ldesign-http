@@ -500,9 +500,9 @@ export class CacheManager {
 }
 
 /**
- * 增强缓存配置
+ * 扩展缓存配置
  */
-export interface EnhancedCacheConfig extends CacheConfig {
+export interface ExtendedCacheConfig extends CacheConfig {
   /** 缓存策略 */
   strategy?: 'lru' | 'lfu' | 'fifo' | 'ttl'
   /** 最大缓存大小（字节） */
@@ -566,23 +566,23 @@ export interface CacheItemMetadata {
 }
 
 /**
- * 增强的缓存项
+ * 扩展的缓存项
  */
-export interface EnhancedCacheItem extends CacheItem {
+export interface ExtendedCacheItem extends CacheItem {
   /** 元数据 */
   metadata: CacheItemMetadata
 }
 
 /**
- * 增强的缓存管理器
+ * 扩展的缓存管理器
  */
-export class EnhancedCacheManager extends CacheManager {
-  private enhancedConfig: EnhancedCacheConfig
+export class ExtendedCacheManager extends CacheManager {
+  private enhancedConfig: ExtendedCacheConfig
   private accessLog = new Map<string, number>() // 访问计数
   private tagIndex = new Map<string, Set<string>>() // 标签索引
   private dependencyGraph = new Map<string, Set<string>>() // 依赖图
 
-  constructor(config: EnhancedCacheConfig = {}) {
+  constructor(config: ExtendedCacheConfig = {}) {
     super(config)
     this.enhancedConfig = {
       strategy: 'lru',
@@ -842,13 +842,33 @@ export function createCacheManager(config?: CacheConfig): CacheManager {
 }
 
 /**
- * 创建增强缓存管理器
+ * 创建扩展缓存管理器
  */
-export function createEnhancedCacheManager(
-  config?: EnhancedCacheConfig,
-): EnhancedCacheManager {
-  return new EnhancedCacheManager(config)
+export function createExtendedCacheManager(
+  config?: ExtendedCacheConfig,
+): ExtendedCacheManager {
+  return new ExtendedCacheManager(config)
 }
+
+/**
+ * @deprecated Use createExtendedCacheManager instead. Will be removed in v3.0.0
+ */
+export const createEnhancedCacheManager = createExtendedCacheManager
+
+/**
+ * @deprecated Use ExtendedCacheManager instead. Will be removed in v3.0.0
+ */
+export { ExtendedCacheManager as EnhancedCacheManager }
+
+/**
+ * @deprecated Use ExtendedCacheConfig instead. Will be removed in v3.0.0
+ */
+export type { ExtendedCacheConfig as EnhancedCacheConfig }
+
+/**
+ * @deprecated Use ExtendedCacheItem instead. Will be removed in v3.0.0
+ */
+export type { ExtendedCacheItem as EnhancedCacheItem }
 
 /**
  * 创建内存缓存存储

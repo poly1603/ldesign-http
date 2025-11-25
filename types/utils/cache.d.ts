@@ -79,9 +79,9 @@ export declare class CacheManager {
     private defaultKeyGenerator;
 }
 /**
- * 高级缓存配置
+ * 扩展缓存配置
  */
-export interface AdvancedCacheConfig extends CacheConfig {
+export interface ExtendedCacheConfig extends CacheConfig {
     /** 缓存策略 */
     strategy?: 'lru' | 'lfu' | 'fifo' | 'ttl';
     /** 最大缓存大小（字节） */
@@ -145,22 +145,22 @@ export interface CacheItemMetadata {
     compressed?: boolean;
 }
 /**
- * 增强的缓存项
+ * 扩展的缓存项
  */
-export interface EnhancedCacheItem extends CacheItem {
+export interface ExtendedCacheItem extends CacheItem {
     /** 元数据 */
     metadata: CacheItemMetadata;
 }
 /**
- * 增强的缓存管理器
+ * 扩展的缓存管理器
  */
-export declare class AdvancedCacheManager extends CacheManager {
+export declare class ExtendedCacheManager extends CacheManager {
     private stats;
     private advancedConfig;
     private accessLog;
     private tagIndex;
     private dependencyGraph;
-    constructor(config?: AdvancedCacheConfig);
+    constructor(config?: ExtendedCacheConfig);
     /**
      * 增强的获取方法
      */
@@ -234,9 +234,25 @@ export declare class AdvancedCacheManager extends CacheManager {
  */
 export declare function createCacheManager(config?: CacheConfig): CacheManager;
 /**
- * 创建高级缓存管理器
+ * 创建扩展缓存管理器
  */
-export declare function createAdvancedCacheManager(config?: AdvancedCacheConfig): AdvancedCacheManager;
+export declare function createExtendedCacheManager(config?: ExtendedCacheConfig): ExtendedCacheManager;
+/**
+ * @deprecated Use createExtendedCacheManager instead. Will be removed in v3.0.0
+ */
+export declare function createAdvancedCacheManager(config?: ExtendedCacheConfig): ExtendedCacheManager;
+/**
+ * @deprecated Use ExtendedCacheManager instead. Will be removed in v3.0.0
+ */
+export { ExtendedCacheManager as AdvancedCacheManager };
+/**
+ * @deprecated Use ExtendedCacheConfig instead. Will be removed in v3.0.0
+ */
+export type { ExtendedCacheConfig as AdvancedCacheConfig };
+/**
+ * @deprecated Use ExtendedCacheItem instead. Will be removed in v3.0.0
+ */
+export type { ExtendedCacheItem as EnhancedCacheItem };
 /**
  * 创建内存缓存存储
  */
@@ -245,4 +261,4 @@ export declare function createMemoryStorage(): MemoryCacheStorage;
  * 创建 LocalStorage 缓存存储
  */
 export declare function createLocalStorage(prefix?: string): LocalStorageCacheStorage;
-export {};
+export { };

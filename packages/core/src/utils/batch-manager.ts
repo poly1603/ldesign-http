@@ -1,6 +1,6 @@
 /**
- * 请求批处理优化器
- * 
+ * 请求批处理管理器
+ *
  * 功能：
  * 1. 自动合并相同端点的请求
  * 2. 智能分组批处理
@@ -13,7 +13,7 @@ import type { RequestConfig, ResponseData } from '../types'
 /**
  * 批处理配置
  */
-export interface BatchOptimizerConfig {
+export interface BatchConfig {
   /** 是否启用批处理 */
   enabled?: boolean
   /** 最大批次大小 */
@@ -62,16 +62,16 @@ export interface BatchStats {
 }
 
 /**
- * 请求批处理优化器
- * 
+ * 请求批处理管理器
+ *
  * 优化策略：
  * 1. 使用时间窗口收集请求
  * 2. 智能分组相似请求
  * 3. 合并重复请求
  * 4. 动态调整批次大小
  */
-export class BatchOptimizer {
-  private config: Required<BatchOptimizerConfig>
+export class BatchManager {
+  private config: Required<BatchConfig>
   private groups = new Map<string, BatchGroup>()
   private stats: BatchStats = {
     totalBatches: 0,
@@ -81,17 +81,17 @@ export class BatchOptimizer {
     totalSavedRequests: 0,
     compressionRatio: 1,
   }
-  
+
   // 动态批处理参数
   private currentBatchSize: number
   private successRate = 1.0
   private latencyHistory: number[] = []
-  
+
   // 请求签名缓存
   private signatureCache = new Map<string, string>()
   private readonly MAX_CACHE_SIZE = 1000
 
-  constructor(config: BatchOptimizerConfig = {}) {
+  constructor(config: BatchConfig = {}) {
     this.config = {
       enabled: config.enabled ?? true,
       maxBatchSize: config.maxBatchSize ?? 10,
@@ -100,7 +100,7 @@ export class BatchOptimizer {
       smartGrouping: config.smartGrouping ?? true,
       dynamicBatching: config.dynamicBatching ?? true,
     }
-    
+
     this.currentBatchSize = this.config.maxBatchSize
   }
 
@@ -127,7 +127,7 @@ export class BatchOptimizer {
       // 获取或创建批处理组
       const groupKey = this.getGroupKey(config)
       let group = this.groups.get(groupKey)
-      
+
       if (!group) {
         group = this.createGroup(config)
         this.groups.set(groupKey, group)
@@ -182,7 +182,7 @@ export class BatchOptimizer {
     const url = new URL(config.url || '')
     const endpoint = `${url.protocol}//${url.host}${url.pathname}`
     const method = config.method || 'GET'
-    
+
     return `${method}:${endpoint}`
   }
 
@@ -191,13 +191,13 @@ export class BatchOptimizer {
    */
   private findDuplicate(group: BatchGroup, config: RequestConfig): BatchRequest | null {
     const signature = this.getRequestSignature(config)
-    
+
     for (const request of group.requests) {
       if (this.getRequestSignature(request.config) === signature) {
         return request
       }
     }
-    
+
     return null
   }
 
@@ -206,11 +206,11 @@ export class BatchOptimizer {
    */
   private getRequestSignature(config: RequestConfig): string {
     const key = `${config.method}:${config.url}:${JSON.stringify(config.params)}:${JSON.stringify(config.data)}`
-    
+
     let signature = this.signatureCache.get(key)
     if (!signature) {
       signature = this.computeSignature(config)
-      
+
       // 限制缓存大小
       if (this.signatureCache.size >= this.MAX_CACHE_SIZE) {
         const firstKey = this.signatureCache.keys().next().value
@@ -218,10 +218,10 @@ export class BatchOptimizer {
           this.signatureCache.delete(firstKey)
         }
       }
-      
+
       this.signatureCache.set(key, signature)
     }
-    
+
     return signature
   }
 
@@ -236,7 +236,7 @@ export class BatchOptimizer {
       JSON.stringify(config.data || {}),
       JSON.stringify(config.headers || {}),
     ]
-    
+
     return parts.join('|')
   }
 
@@ -251,18 +251,18 @@ export class BatchOptimizer {
     const originalPromise = new Promise<ResponseData<T>>((resolve, reject) => {
       const originalResolve = original.resolve
       const originalReject = original.reject
-      
+
       original.resolve = (result) => {
         originalResolve(result)
         resolve(result as ResponseData<T>)
       }
-      
+
       original.reject = (error) => {
         originalReject(error)
         reject(error)
       }
     })
-    
+
     originalPromise.then(duplicate.resolve, duplicate.reject)
   }
 
@@ -274,7 +274,7 @@ export class BatchOptimizer {
     if (group.requests.length >= this.currentBatchSize) {
       return true
     }
-    
+
     // 第一个请求等待时间过长
     if (group.requests.length > 0) {
       const firstRequest = group.requests[0]
@@ -282,7 +282,7 @@ export class BatchOptimizer {
         return true
       }
     }
-    
+
     return false
   }
 
@@ -296,7 +296,7 @@ export class BatchOptimizer {
     if (group.timer) {
       return // 已经调度
     }
-    
+
     group.timer = setTimeout(() => {
       this.executeBatch(group, executor)
     }, this.config.batchWindow)
@@ -314,17 +314,17 @@ export class BatchOptimizer {
       clearTimeout(group.timer)
       group.timer = undefined
     }
-    
+
     // 取出所有请求
     const requests = group.requests.splice(0)
     if (requests.length === 0) {
       return
     }
-    
+
     // 更新统计
     this.stats.totalBatches++
     const batchStartTime = Date.now()
-    
+
     // 并行执行所有请求
     const promises = requests.map(async (request) => {
       try {
@@ -336,18 +336,18 @@ export class BatchOptimizer {
         return { success: false }
       }
     })
-    
+
     const results = await Promise.all(promises)
-    
+
     // 更新性能指标
     const batchDuration = Date.now() - batchStartTime
     this.updateMetrics(requests.length, batchDuration, results)
-    
+
     // 动态调整批次大小
     if (this.config.dynamicBatching) {
       this.adjustBatchSize()
     }
-    
+
     // 清理空组
     const groupKey = this.getGroupKey(requests[0].config)
     if (group.requests.length === 0) {
@@ -368,19 +368,19 @@ export class BatchOptimizer {
     if (this.latencyHistory.length > 100) {
       this.latencyHistory.shift()
     }
-    
+
     // 计算成功率
     const successCount = results.filter(r => r.success).length
     const currentRate = successCount / results.length
     this.successRate = this.successRate * 0.9 + currentRate * 0.1 // 指数移动平均
-    
+
     // 更新平均批次大小
     const totalBatches = this.stats.totalBatches
-    this.stats.averageBatchSize = 
+    this.stats.averageBatchSize =
       (this.stats.averageBatchSize * (totalBatches - 1) + batchSize) / totalBatches
-    
+
     // 计算压缩率
-    this.stats.compressionRatio = 
+    this.stats.compressionRatio =
       this.stats.totalRequests / (this.stats.totalRequests - this.stats.totalSavedRequests)
   }
 
@@ -399,12 +399,12 @@ export class BatchOptimizer {
         Math.floor(this.currentBatchSize * 1.2)
       )
     }
-    
+
     // 基于延迟调整
     if (this.latencyHistory.length > 10) {
       const avgLatency = this.latencyHistory.reduce((a, b) => a + b, 0) / this.latencyHistory.length
       const recentLatency = this.latencyHistory.slice(-10).reduce((a, b) => a + b, 0) / 10
-      
+
       if (recentLatency > avgLatency * 1.5) {
         // 延迟增加，减小批次
         this.currentBatchSize = Math.max(1, Math.floor(this.currentBatchSize * 0.9))
@@ -452,14 +452,14 @@ export class BatchOptimizer {
         clearTimeout(group.timer)
       }
     }
-    
+
     // 拒绝所有待处理请求
     for (const group of this.groups.values()) {
       for (const request of group.requests) {
-        request.reject(new Error('BatchOptimizer destroyed'))
+        request.reject(new Error('BatchManager destroyed'))
       }
     }
-    
+
     this.groups.clear()
     this.signatureCache.clear()
   }
@@ -473,8 +473,23 @@ export class BatchOptimizer {
 }
 
 /**
- * 创建批处理优化器
+ * 创建批处理管理器
  */
-export function createBatchOptimizer(config?: BatchOptimizerConfig): BatchOptimizer {
-  return new BatchOptimizer(config)
+export function createBatchManager(config?: BatchConfig): BatchManager {
+  return new BatchManager(config)
 }
+
+/**
+ * @deprecated Use createBatchManager instead. Will be removed in v3.0.0
+ */
+export const createBatchOptimizer = createBatchManager
+
+/**
+ * @deprecated Use BatchManager instead. Will be removed in v3.0.0
+ */
+export { BatchManager as BatchOptimizer }
+
+/**
+ * @deprecated Use BatchConfig instead. Will be removed in v3.0.0
+ */
+export type { BatchConfig as BatchOptimizerConfig }

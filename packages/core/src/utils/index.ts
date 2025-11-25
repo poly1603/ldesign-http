@@ -554,10 +554,14 @@ export * from './warmup'
 
 // 导出取消令牌相关
 export * from './cancel-token'
-export * from './cancel'
+export * from './cancel-manager'
 // 显式导出常用函数，确保不被 tree-shaking 移除
 export { createCancelTokenSource, createTimeoutToken, combineCancelTokens } from './cancel-token'
-export { createEnhancedCancelManager, createTimeoutCancelToken } from './cancel'
+export { createCancelManager } from './cancel-manager'
+
+// 兼容性导出
+/** @deprecated Use createCancelManager instead */
+export { createCancelManager as createEnhancedCancelManager } from './cancel-manager'
 
 // 导出网络监控相关
 export * from './network'
