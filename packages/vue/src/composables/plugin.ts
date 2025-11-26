@@ -3,7 +3,7 @@ import type { HttpClient, RequestConfig } from '@ldesign/http-core'
 import type { HttpPluginOptions } from '../types/vue'
 import { provide, ref } from 'vue'
 import { createAdapter, HttpClientImpl } from '@ldesign/http-core'
-import { HTTP_CLIENT_KEY, HTTP_CONFIG_KEY } from '../symbols'
+import { HTTP_CLIENT_KEY, HTTP_CONFIG_KEY } from '../lib/symbols'
 
 /**
  * Vue 3 HTTP 插件

@@ -61,7 +61,7 @@ export {
 export {
   HTTP_CLIENT_KEY,
   HTTP_CONFIG_KEY,
-} from '../symbols'
+} from '../lib/symbols'
 
 // 独立 HTTP 客户端 (推荐: 最简单的使用方式,无需配置)
 export { useHttp } from './useHttpStandalone'

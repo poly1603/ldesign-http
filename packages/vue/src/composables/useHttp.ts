@@ -1,285 +1,153 @@
-﻿import type { Ref } from 'vue'
-import type { HttpClient, RequestConfig } from '@ldesign/http-core'
-import { computed, inject, provide, ref } from 'vue'
-import {
-  useDelete,
-  useMutation,
-  usePatch,
-  usePost,
-  usePut,
-} from './useMutation'
-import { useQuery } from './useQuery'
-import { useRequest } from './useRequest'
-import { HTTP_CLIENT_KEY, HTTP_CONFIG_KEY } from '../symbols'
+import type { HttpClient, RequestConfig, ResponseData } from '@ldesign/http-core'
+import { createHttpClient, createHttpClientSync } from '@ldesign/http-core'
+import { inject, provide, ref, type Ref, shallowRef } from 'vue'
+import { HTTP_CLIENT_KEY, HTTP_CONFIG_KEY } from '../lib/symbols'
+
+export interface UseHttpOptions extends RequestConfig {
+  /** 是否立即执行 */
+  immediate?: boolean
+}
+
+export interface UseHttpReturn<T> {
+  /** 响应数据 */
+  data: Ref<T | null>
+  /** 加载状态 */
+  loading: Ref<boolean>
+  /** 错误信息 */
+  error: Ref<Error | null>
+  /** 执行请求 */
+  execute: (config?: RequestConfig) => Promise<ResponseData<T>>
+  /** 重置状态 */
+  reset: () => void
+}
 
 /**
- * 提供 HTTP 客户端
+ * Vue HTTP请求 composable
  */
-export function provideHttpClient(
-  client: HttpClient,
-  globalConfig?: RequestConfig,
-): void {
-  provide(HTTP_CLIENT_KEY, client)
-  if (globalConfig) {
-    provide(HTTP_CONFIG_KEY, ref(globalConfig))
+export function useHttp<T = any>(
+  url?: string,
+  options: UseHttpOptions = {},
+): UseHttpReturn<T> {
+  // 尝试注入全局客户端，否则创建新实例
+  const client = inject<HttpClient>(HTTP_CLIENT_KEY) || createHttpClientSync({})
+
+  const data = shallowRef<T | null>(null)
+  const loading = ref(false)
+  const error = ref<Error | null>(null)
+
+  const { immediate = false, ...requestConfig } = options
+
+  const execute = async (config?: RequestConfig): Promise<ResponseData<T>> => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const mergedConfig: RequestConfig = {
+        ...requestConfig,
+        ...config,
+        url: config?.url || url,
+      }
+
+      const response = await client.request<T>(mergedConfig)
+      data.value = response.data
+      return response
+    }
+    catch (err: any) {
+      error.value = err
+      throw err
+    }
+    finally {
+      loading.value = false
+    }
   }
+
+  const reset = () => {
+    data.value = null
+    loading.value = false
+    error.value = null
+  }
+
+  // 立即执行
+  if (immediate && url) {
+    execute()
+  }
+
+  return {
+    data,
+    loading,
+    error,
+    execute,
+    reset,
+  }
+}
+
+/**
+ * GET请求
+ */
+export function useGet<T = any>(
+  url: string,
+  options: UseHttpOptions = {},
+): UseHttpReturn<T> {
+  return useHttp<T>(url, { ...options, method: 'GET' })
+}
+
+/**
+ * POST请求
+ */
+export function usePost<T = any>(
+  url: string,
+  options: UseHttpOptions = {},
+): UseHttpReturn<T> {
+  return useHttp<T>(url, { ...options, method: 'POST' })
+}
+
+/**
+ * PUT请求
+ */
+export function usePut<T = any>(
+  url: string,
+  options: UseHttpOptions = {},
+): UseHttpReturn<T> {
+  return useHttp<T>(url, { ...options, method: 'PUT' })
+}
+
+/**
+ * DELETE请求
+ */
+export function useDelete<T = any>(
+  url: string,
+  options: UseHttpOptions = {},
+): UseHttpReturn<T> {
+  return useHttp<T>(url, { ...options, method: 'DELETE' })
+}
+
+/**
+ * PATCH请求
+ */
+export function usePatch<T = any>(
+  url: string,
+  options: UseHttpOptions = {},
+): UseHttpReturn<T> {
+  return useHttp<T>(url, { ...options, method: 'PATCH' })
+}
+
+/**
+ * 提供 HTTP 客户端到子组件
+ */
+export function provideHttpClient(client: HttpClient): void {
+  provide(HTTP_CLIENT_KEY, client)
 }
 
 /**
  * 注入 HTTP 客户端
  */
-export function injectHttpClient(): HttpClient {
-  const client = inject(HTTP_CLIENT_KEY)
-  if (!client) {
-    throw new Error(
-      'HTTP client not provided. Please use provideHttpClient() in a parent component.',
-    )
-  }
-  return client as HttpClient
+export function injectHttpClient(): HttpClient | undefined {
+  return inject<HttpClient>(HTTP_CLIENT_KEY, undefined)
 }
 
 /**
- * 注入全局配置
+ * 注入 HTTP 配置
  */
-export function injectHttpConfig(): Ref<RequestConfig> {
-  return inject(HTTP_CONFIG_KEY, ref({})) as Ref<RequestConfig>
-}
-
-/**
- * 主要的 HTTP Hook
- * 自动注入客户端和全局配置
- */
-export function useHttp() {
-  const client = injectHttpClient()
-  const globalConfig = injectHttpConfig()
-
-  /**
-   * 合并全局配置
-   */
-  const mergeConfig = (config: RequestConfig = {}): RequestConfig => {
-    return {
-      ...globalConfig.value,
-      ...config,
-      headers: {
-        ...globalConfig.value.headers,
-        ...config.headers,
-      },
-    }
-  }
-
-  return {
-    client,
-    globalConfig,
-
-    // 基础请求方法
-    request: <T = any>(config: RequestConfig) =>
-      client.request<T>(mergeConfig(config)),
-
-    get: <T = any>(url: string, config?: RequestConfig) =>
-      client.get<T>(url, mergeConfig(config)),
-
-    post: <T = any>(url: string, data?: any, config?: RequestConfig) =>
-      client.post<T>(url, data, mergeConfig(config)),
-
-    put: <T = any>(url: string, data?: any, config?: RequestConfig) =>
-      client.put<T>(url, data, mergeConfig(config)),
-
-    delete: <T = any>(url: string, config?: RequestConfig) =>
-      client.delete<T>(url, mergeConfig(config)),
-
-    patch: <T = any>(url: string, data?: any, config?: RequestConfig) =>
-      client.patch<T>(url, data, mergeConfig(config)),
-
-    head: <T = any>(url: string, config?: RequestConfig) =>
-      client.head<T>(url, mergeConfig(config)),
-
-    options: <T = any>(url: string, config?: RequestConfig) =>
-      client.options<T>(url, mergeConfig(config)),
-
-    // Composition API hooks
-    useRequest: <T = any>(config: RequestConfig, options?: any) =>
-      useRequest<T>(client, ref(mergeConfig(config)), options),
-
-    useQuery: <T = any>(queryKey: any, config: RequestConfig, options?: any) =>
-      useQuery<T>(client, queryKey, ref(mergeConfig(config)), options),
-
-    useMutation: <T = any, V = any>(mutationFn: any, options?: any) =>
-      useMutation<T, V>(client, mutationFn, options),
-
-    usePost: <T = any, D = any>(url: string, options?: any) =>
-      usePost<T, D>(client, url, options),
-
-    usePut: <T = any, D = any>(url: string, options?: any) =>
-      usePut<T, D>(client, url, options),
-
-    usePatch: <T = any, D = any>(url: string, options?: any) =>
-      usePatch<T, D>(client, url, options),
-
-    useDelete: <T = any>(url: string, options?: any) =>
-      useDelete<T>(client, url, options),
-
-    // 客户端控制方法
-    cancelAll: (reason?: string) => client.cancelAll(reason),
-    clearCache: () => client.clearCache(),
-    getActiveRequestCount: () => client.getActiveRequestCount(),
-    getConcurrencyStatus: () => client.getConcurrencyStatus(),
-  }
-}
-
-/**
- * 创建资源 Hook
- * 用于 RESTful API 操作
- *
- * 注意: 这是一个轻量级的资源hook,用于依赖注入场景
- * 如需更完整的功能(loading状态、error处理等),请使用 useResource from './useResource'
- */
-export function useResource<T = any>(baseUrl: string) {
-  const {
-    get,
-    post,
-    put,
-    patch,
-    delete: del,
-    useQuery,
-    useMutation,
-  } = useHttp()
-
-  return {
-    // 查询操作
-    useList: (params?: Record<string, any>, options?: any) =>
-      useQuery(
-        ['resource-list', baseUrl, params],
-        { url: baseUrl, params },
-        options,
-      ),
-
-    useDetail: (id: string | number, options?: any) =>
-      useQuery(
-        ['resource-detail', baseUrl, id],
-        { url: `${baseUrl}/${id}` },
-        options,
-      ),
-
-    // 变更操作
-    useCreate: (options?: any) =>
-      useMutation((data: T) => post<T>(`${baseUrl}`, data), options),
-
-    useUpdate: (options?: any) =>
-      useMutation(
-        ({ id, data }: { id: string | number, data: Partial<T> }) =>
-          put<T>(`${baseUrl}/${id}`, data),
-        options,
-      ),
-
-    usePatch: (options?: any) =>
-      useMutation(
-        ({ id, data }: { id: string | number, data: Partial<T> }) =>
-          patch<T>(`${baseUrl}/${id}`, data),
-        options,
-      ),
-
-    useDelete: (options?: any) =>
-      useMutation((id: string | number) => del(`${baseUrl}/${id}`), options),
-
-    // 直接调用方法
-    list: (params?: Record<string, any>) => get<T[]>(baseUrl, { params }),
-    detail: (id: string | number) => get<T>(`${baseUrl}/${id}`),
-    create: (data: T) => post<T>(baseUrl, data),
-    update: (id: string | number, data: Partial<T>) =>
-      put<T>(`${baseUrl}/${id}`, data),
-    patch: (id: string | number, data: Partial<T>) =>
-      patch<T>(`${baseUrl}/${id}`, data),
-    remove: (id: string | number) => del(`${baseUrl}/${id}`),
-  }
-}
-
-/**
- * 分页查询 Hook
- */
-export function usePagination<T = any>(
-  baseUrl: string,
-  initialPage = 1,
-  initialPageSize = 10,
-) {
-  const page = ref<number>(initialPage)
-  const pageSize = ref<number>(initialPageSize)
-  const total = ref<number>(0)
-
-  const { useQuery } = useHttp()
-
-  const queryKey = computed(() => [
-    'pagination',
-    baseUrl,
-    page.value,
-    pageSize.value,
-  ])
-  const config = computed(() => ({
-    url: baseUrl,
-    params: {
-      page: page.value,
-      pageSize: pageSize.value,
-    },
-  }))
-
-  const query = useQuery<{
-    data: T[]
-    total: number
-    page: number
-    pageSize: number
-  }>(queryKey, config.value, {
-    onSuccess: (data: {
-      data: T[]
-      total: number
-      page: number
-      pageSize: number
-    }) => {
-      total.value = data.total
-    },
-  })
-
-  const totalPages = computed(() => Math.ceil(total.value / pageSize.value))
-  const hasNextPage = computed(() => page.value < totalPages.value)
-  const hasPrevPage = computed(() => page.value > 1)
-
-  const nextPage = () => {
-    if (hasNextPage.value) {
-      page.value++
-    }
-  }
-
-  const prevPage = () => {
-    if (hasPrevPage.value) {
-      page.value--
-    }
-  }
-
-  const goToPage = (targetPage: number) => {
-    if (targetPage >= 1 && targetPage <= totalPages.value) {
-      page.value = targetPage
-    }
-  }
-
-  const setPageSize = (newPageSize: number) => {
-    pageSize.value = newPageSize
-    page.value = 1 // 重置到第一页
-  }
-
-  return {
-    // 查询状态
-    ...query,
-
-    // 分页数据
-    page,
-    pageSize,
-    total,
-    totalPages,
-    hasNextPage,
-    hasPrevPage,
-
-    // 操作方法
-    nextPage,
-    prevPage,
-    goToPage,
-    setPageSize,
-  }
+export function injectHttpConfig(): Ref<RequestConfig> | undefined {
+  return inject<Ref<RequestConfig>>(HTTP_CONFIG_KEY, undefined)
 }

@@ -51,6 +51,11 @@
       "import": "./es/client/*.js",
       "require": "./lib/client/*.cjs"
     },
+    "./constants/*": {
+      "types": "./es/constants/*.d.ts",
+      "import": "./es/constants/*.js",
+      "require": "./lib/constants/*.cjs"
+    },
     "./core": {
       "types": "./es/core/index.d.ts",
       "import": "./es/core/index.js",
@@ -60,6 +65,11 @@
       "types": "./es/core/*.d.ts",
       "import": "./es/core/*.js",
       "require": "./lib/core/*.cjs"
+    },
+    "./deprecated/*": {
+      "types": "./es/deprecated/*.d.ts",
+      "import": "./es/deprecated/*.js",
+      "require": "./lib/deprecated/*.cjs"
     },
     "./devtools": {
       "types": "./es/devtools/index.d.ts",

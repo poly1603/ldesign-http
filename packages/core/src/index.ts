@@ -8,7 +8,7 @@
 // 核心客户端
 // ============================================================================
 // 从 client 目录导出完整的 HttpClient 实现
-export { HttpClientImpl, HttpClientImpl as HttpClient } from './client/HttpClient'
+export { HttpClientImpl } from './client/HttpClient'
 export { createHttpClient, createHttpClientSync } from './client/factory'
 // operations 和 helpers 中的 FileOperationHandler 重复，只导出 operations 中的
 export type { FileOperations } from './client/operations'
@@ -166,7 +166,7 @@ export * from './engine'
 // ============================================================================
 // 版本信息
 // ============================================================================
-export { version } from './version'
+export { version } from './constants/version'
 
 // ============================================================================
 // 默认导出

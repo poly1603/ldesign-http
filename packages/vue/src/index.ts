@@ -25,13 +25,13 @@ export {
   provideHttpClient,
   injectHttpClient,
   injectHttpConfig,
-} from './composables/useHttp'
+} from './composables'
 
 export {
   // 注入键
   HTTP_CLIENT_KEY,
   HTTP_CONFIG_KEY,
-} from './symbols'
+} from './lib/symbols'
 
 export {
   // 基础请求 Hook
@@ -98,22 +98,15 @@ export {
 export {
   createHttpPlugin,
   HttpPlugin,
-} from './plugin'
-
-export type {
-  HttpPluginOptions,
-} from './plugin'
-
-// Engine Plugin - 用于 LDesign Engine
-export {
   createHttpEnginePlugin,
   createDefaultHttpEnginePlugin,
   httpPlugin,
-} from './plugin'
+} from './plugin/plugin'
 
 export type {
+  HttpPluginOptions,
   HttpEnginePluginOptions,
-} from './plugin'
+} from './plugin/plugin'
 
 // ==================== 类型定义 ====================
 
@@ -161,7 +154,7 @@ export type {
 
 // ==================== 版本信息 ====================
 
-export { version } from './version'
+export { version } from './constants/version'
 
 // ==================== 默认导出 ====================
 

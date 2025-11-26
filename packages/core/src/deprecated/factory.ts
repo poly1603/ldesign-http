@@ -11,6 +11,6 @@ export {
   createHttpClient,
   createHttpClientSync,
   preloadAdapters,
-} from './client/factory'
+} from '../client/factory'
 
 

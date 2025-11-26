@@ -62,9 +62,9 @@ export interface ResponseData<T = unknown> {
 }
 
 /**
- * 错误信息接口
+ * HTTP 错误类
  */
-export interface HttpError extends Error {
+export class HttpError extends Error {
   /** 错误代码 */
   code?: string
   /** HTTP状态码 */
@@ -81,6 +81,37 @@ export interface HttpError extends Error {
   isCancelError?: boolean
   /** 原始错误 */
   cause?: Error
+
+  constructor(
+    message: string,
+    options?: {
+      code?: string
+      status?: number
+      config?: RequestConfig
+      response?: ResponseData
+      isNetworkError?: boolean
+      isTimeoutError?: boolean
+      isCancelError?: boolean
+      cause?: Error
+    }
+  ) {
+    super(message)
+    this.name = 'HttpError'
+    
+    if (options) {
+      this.code = options.code
+      this.status = options.status
+      this.config = options.config
+      this.response = options.response
+      this.isNetworkError = options.isNetworkError
+      this.isTimeoutError = options.isTimeoutError
+      this.isCancelError = options.isCancelError
+      this.cause = options.cause
+    }
+
+    // 维护正确的原型链
+    Object.setPrototypeOf(this, HttpError.prototype)
+  }
 }
 
 /**
@@ -659,7 +690,7 @@ export {
   ResponseType as BrandResponseType,
 } from './brand'
 
-// 导出安全类型
+// 导出安全类型（排除已在本文件定义的 DeepReadonly 和 DeepPartial）
 export type {
   UnknownObject,
   UnknownArray,
@@ -686,8 +717,6 @@ export type {
   Optional,
   ArrayElement,
   PromiseValue,
-  DeepReadonly,
-  DeepPartial,
   DeepRequired,
   ValueOf,
   ExcludeUndefined,

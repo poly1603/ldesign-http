@@ -9,7 +9,7 @@
 import type { App, Plugin } from 'vue'
 import type { HttpClient } from '@ldesign/http-core'
 import { createHttpClient } from '@ldesign/http-core'
-import { HTTP_CLIENT_KEY } from './symbols'
+import { HTTP_CLIENT_KEY } from '../lib/symbols'
 
 // ==================== 类型定义 ====================
 

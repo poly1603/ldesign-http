@@ -14,79 +14,89 @@
   "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./es/index.d.ts",
-      "import": "./es/index.js",
-      "require": "./lib/index.cjs"
+      "types": "./esm/index.d.ts",
+      "import": "./esm/index.js",
+      "require": "./cjs/index.cjs"
     },
     "./components": {
-      "types": "./es/components/index.d.ts",
-      "import": "./es/components/index.js",
-      "require": "./lib/components/index.cjs"
+      "types": "./esm/components/index.d.ts",
+      "import": "./esm/components/index.js",
+      "require": "./cjs/components/index.cjs"
     },
     "./components/*": {
-      "types": "./es/components/*.d.ts",
-      "import": "./es/components/*.js",
-      "require": "./lib/components/*.cjs"
+      "types": "./esm/components/*.d.ts",
+      "import": "./esm/components/*.js",
+      "require": "./cjs/components/*.cjs"
     },
     "./composables": {
-      "types": "./es/composables/index.d.ts",
-      "import": "./es/composables/index.js",
-      "require": "./lib/composables/index.cjs"
+      "types": "./esm/composables/index.d.ts",
+      "import": "./esm/composables/index.js",
+      "require": "./cjs/composables/index.cjs"
     },
     "./composables/*": {
-      "types": "./es/composables/*.d.ts",
-      "import": "./es/composables/*.js",
-      "require": "./lib/composables/*.cjs"
+      "types": "./esm/composables/*.d.ts",
+      "import": "./esm/composables/*.js",
+      "require": "./cjs/composables/*.cjs"
+    },
+    "./constants/*": {
+      "types": "./esm/constants/*.d.ts",
+      "import": "./esm/constants/*.js",
+      "require": "./cjs/constants/*.cjs"
     },
     "./directives": {
-      "types": "./es/directives/index.d.ts",
-      "import": "./es/directives/index.js",
-      "require": "./lib/directives/index.cjs"
+      "types": "./esm/directives/index.d.ts",
+      "import": "./esm/directives/index.js",
+      "require": "./cjs/directives/index.cjs"
     },
     "./directives/*": {
-      "types": "./es/directives/*.d.ts",
-      "import": "./es/directives/*.js",
-      "require": "./lib/directives/*.cjs"
+      "types": "./esm/directives/*.d.ts",
+      "import": "./esm/directives/*.js",
+      "require": "./cjs/directives/*.cjs"
+    },
+    "./lib/*": {
+      "types": "./esm/lib/*.d.ts",
+      "import": "./esm/lib/*.js",
+      "require": "./cjs/lib/*.cjs"
     },
     "./plugin": {
-      "types": "./es/plugin/index.d.ts",
-      "import": "./es/plugin/index.js",
-      "require": "./lib/plugin/index.cjs"
+      "types": "./esm/plugin/index.d.ts",
+      "import": "./esm/plugin/index.js",
+      "require": "./cjs/plugin/index.cjs"
     },
     "./plugin/*": {
-      "types": "./es/plugin/*.d.ts",
-      "import": "./es/plugin/*.js",
-      "require": "./lib/plugin/*.cjs"
+      "types": "./esm/plugin/*.d.ts",
+      "import": "./esm/plugin/*.js",
+      "require": "./cjs/plugin/*.cjs"
     },
     "./types": {
-      "types": "./es/types/index.d.ts",
-      "import": "./es/types/index.js",
-      "require": "./lib/types/index.cjs"
+      "types": "./esm/types/index.d.ts",
+      "import": "./esm/types/index.js",
+      "require": "./cjs/types/index.cjs"
     },
     "./types/*": {
-      "types": "./es/types/*.d.ts",
-      "import": "./es/types/*.js",
-      "require": "./lib/types/*.cjs"
+      "types": "./esm/types/*.d.ts",
+      "import": "./esm/types/*.js",
+      "require": "./cjs/types/*.cjs"
     },
-    "./lib/components/HttpError/index.css": "./lib/components/HttpError/index.css",
-    "./lib/components/HttpLoader/index.css": "./lib/components/HttpLoader/index.css",
-    "./lib/components/HttpProgress/index.css": "./lib/components/HttpProgress/index.css",
-    "./lib/components/HttpRetry/index.css": "./lib/components/HttpRetry/index.css",
-    "./lib/index.css": "./lib/index.css",
+    "./cjs/components/HttpError/index.css": "./cjs/components/HttpError/index.css",
+    "./cjs/components/HttpLoader/index.css": "./cjs/components/HttpLoader/index.css",
+    "./cjs/components/HttpProgress/index.css": "./cjs/components/HttpProgress/index.css",
+    "./cjs/components/HttpRetry/index.css": "./cjs/components/HttpRetry/index.css",
+    "./cjs/index.css": "./cjs/index.css",
     "./dist/index.css": "./dist/index.css",
     "./dist/index.min.css": "./dist/index.min.css"
   },
-  "main": "./lib/index.cjs",
-  "module": "./es/index.js",
-  "types": "./es/index.d.ts",
+  "main": "./cjs/index.cjs",
+  "module": "./esm/index.js",
+  "types": "./esm/index.d.ts",
   "unpkg": "./dist/index.min.js",
   "jsdelivr": "./dist/index.min.js",
   "files": [
     "README.md",
     "LICENSE",
     "package.json",
-    "es",
-    "lib",
+    "esm",
+    "cjs",
     "dist"
   ],
   "scripts": {
