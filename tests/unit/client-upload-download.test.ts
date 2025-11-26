@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { HttpClientImpl } from '../../src/client'
-import { FetchAdapter } from '../../src/adapters/fetch'
+import { HttpClientImpl } from '../../packages/core/src/client/HttpClient'
+import { FetchAdapter } from '../../packages/core/src/adapters/fetch'
 
 // Mock fetch
 global.fetch = vi.fn()

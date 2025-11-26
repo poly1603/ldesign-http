@@ -1,4 +1,26 @@
 import { afterEach, vi } from 'vitest'
+import { config } from '@vue/test-utils'
+
+// 配置 Vue Test Utils 全局选项
+config.global.config.errorHandler = (err) => {
+  // 在测试中捕获但不抛出错误，避免干扰测试流程
+  if (process.env.DEBUG) {
+    console.error('Vue Error in Test:', err)
+  }
+}
+
+config.global.config.warnHandler = (msg) => {
+  // 静默某些预期的警告
+  if (process.env.DEBUG) {
+    console.warn('Vue Warning in Test:', msg)
+  }
+}
+
+// 配置全局 stubs，处理常见的Vue内置组件
+config.global.stubs = {
+  transition: false,
+  'transition-group': false,
+}
 
 // Mock fetch API
 globalThis.fetch = vi.fn()

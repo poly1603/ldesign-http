@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { withCache } from '../../../src/features/cache'
-import type { RequestConfig, ResponseData } from '../../../src/types'
+import { withCache } from '../../../packages/core/src/features/cache'
+import type { RequestConfig, ResponseData } from '../../../packages/core/src/types'
 
 describe('Cache Feature', () => {
   let mockNext: ReturnType<typeof vi.fn>

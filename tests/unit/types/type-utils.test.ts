@@ -19,7 +19,7 @@ import {
   typedMerge,
   typedValues,
   wrapPromise,
-} from '../../../src/types/utils'
+} from '../../../packages/core/src/types/utils'
 
 describe('Type Utils', () => {
   describe('Type Guards', () => {

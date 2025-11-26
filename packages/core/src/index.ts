@@ -7,11 +7,14 @@
 // ============================================================================
 // 核心客户端
 // ============================================================================
-export * from './client'
-// 注意：不再导出旧版本的 factory.ts，使用 client/factory.ts 中的新版本
-// export * from './factory'  // 已废弃，使用 client/factory.ts
-// 显式导出 HttpClient 别名，确保不被 tree-shaking 移除
-export { HttpClientImpl as HttpClient } from './client'
+// 从 client 目录导出完整的 HttpClient 实现
+export { HttpClientImpl, HttpClientImpl as HttpClient } from './client/HttpClient'
+export { createHttpClient, createHttpClientSync } from './client/factory'
+// operations 和 helpers 中的 FileOperationHandler 重复，只导出 operations 中的
+export type { FileOperations } from './client/operations'
+export { FileOperationHandler, createFileOperationHandler } from './client/operations'
+// 导出辅助类（除了 FileOperationHandler）
+export { ConfigMerger, InterceptorProcessor } from './client/helpers'
 
 // ============================================================================
 // 适配器系统
@@ -26,17 +29,19 @@ export * from './interceptors'
 // ============================================================================
 // 缓存系统
 // ============================================================================
-export * from './cache'
+export { CacheManager } from './cache/CacheManager'
+export { MemoryCacheStorage } from './cache/MemoryCacheStorage'
 
 // ============================================================================
 // 重试机制
 // ============================================================================
-export * from './retry'
+export { RetryManager } from './retry/RetryManager'
 
 // ============================================================================
 // 中间件
 // ============================================================================
-export * from './middleware'
+// middleware 模块尚未实现，暂时注释
+// export * from './middleware'
 
 // ============================================================================
 // 高级特性
@@ -51,17 +56,107 @@ export * from './devtools'
 // ============================================================================
 // 工具函数
 // ============================================================================
-export * from './utils'
+// 导出常用工具函数（避免与 features/types 冲突，只导出必要的函数）
+export {
+  // 取消令牌相关
+  createCancelTokenSource,
+  createTimeoutToken,
+  combineCancelTokens,
+  createCancelManager,
+  isCancelError,
+  // 网络监控相关
+  createNetworkMonitor,
+  ConnectionType,
+  // 序列化相关
+  generateRequestKey,
+  generateRequestFingerprint,
+  // 通用工具
+  mergeConfig,
+  buildQueryString,
+  buildURL,
+  isAbsoluteURL,
+  combineURLs,
+  createHttpError,
+  delay,
+  generateId,
+  deepClone,
+  isFormData,
+  isBlob,
+  isArrayBuffer,
+  isURLSearchParams,
+  HttpStatus,
+  ErrorClassifier,
+} from './utils'
+
+// 导出取消令牌类型
+export type {
+  CancelToken,
+  CancelTokenSource,
+  CancelManager,
+  EnhancedCancelManager,
+  EnhancedCancelConfig,
+} from './utils/cancel'
+
+// 导出网络监控类型
+export type {
+  NetworkInfo,
+  NetworkMonitorConfig,
+  NetworkStatus,
+} from './utils/network'
 
 // ============================================================================
 // 类型定义
 // ============================================================================
-export * from './types'
+// 导出常用类型（避免与 features/utils 冲突，只导出必要的类型）
+export type {
+  HttpMethod,
+  RequestConfig,
+  ResponseData,
+  HttpError,
+  RequestInterceptor,
+  ResponseInterceptor,
+  ErrorInterceptor,
+  InterceptorManager,
+  RetryConfig,
+  CacheConfig,
+  CacheStorage,
+  ConcurrencyConfig,
+  HttpClientConfig,
+  HttpAdapter,
+  HttpClient,
+  TypedHttpClient,
+  ApiEndpoint,
+  TypedRequestConfig,
+  TypedResponseData,
+  HttpStatusCode,
+  ExtendedRequestConfig,
+  StrictRequestConfig,
+  StrictResponseData,
+  ApiEndpointDefinition,
+  TypedHttpMethods,
+  RequestDataByMethod,
+  ResponseDataByType,
+  RequiredKeys,
+  DeepReadonly,
+  DeepPartial,
+} from './types/index'
+
+export {
+  ContentType,
+  RequestPriority,
+  isHttpError,
+  isNetworkError,
+  isTimeoutError,
+  isSuccessStatus,
+  isClientError,
+  isServerError,
+} from './types/index'
 
 // ============================================================================
 // 核心处理器
 // ============================================================================
-export * from './core'
+// TODO: 阶段6 - 重组导出，避免重复导出问题（与interceptors有冲突）
+// export * from './core'
 
 // ============================================================================
 // 引擎系统
@@ -74,6 +169,6 @@ export * from './engine'
 export { version } from './version'
 
 // ============================================================================
-// 默认导出（使用新版本的 createHttpClient）
+// 默认导出
 // ============================================================================
-export { createHttpClient, createHttpClientSync } from './client/factory'
+export { createHttpClient as default } from './client/factory'

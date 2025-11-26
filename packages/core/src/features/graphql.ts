@@ -1,4 +1,6 @@
 import type { HttpClient, RequestConfig } from '../types'
+import { GraphQLQueryBuilder, query, mutation, subscription } from './graphql-builder'
+import type { GraphQLOperationType } from './graphql-builder'
 
 /**
  * GraphQL 查询变量类型
@@ -117,6 +119,39 @@ export class GraphQLClient {
       batchDelay: config.batchDelay ?? 10,
       debug: config.debug ?? false,
     }
+  }
+
+  /**
+   * 使用查询构建器创建查询
+   */
+  createQuery(name?: string): GraphQLQueryBuilder {
+    return query(name)
+  }
+
+  /**
+   * 使用查询构建器创建变更
+   */
+  createMutation(name?: string): GraphQLQueryBuilder {
+    return mutation(name)
+  }
+
+  /**
+   * 使用查询构建器创建订阅
+   */
+  createSubscription(name?: string): GraphQLQueryBuilder {
+    return subscription(name)
+  }
+
+  /**
+   * 使用构建器执行查询
+   */
+  async executeBuilder<T = any>(
+    builder: GraphQLQueryBuilder,
+    variables?: GraphQLVariables,
+    config?: GraphQLRequestConfig,
+  ): Promise<GraphQLResponse<T>> {
+    const queryString = builder.build()
+    return this.query<T>(queryString, variables, config)
   }
 
   /**
@@ -344,6 +379,154 @@ export class GraphQLClient {
    */
   getConfig(): GraphQLClientConfig {
     return { ...this.config }
+  }
+
+  /**
+   * 批量执行多个查询（使用 DataLoader 模式）
+   *
+   * @example
+   * ```typescript
+   * const users = await client.batchQueries([
+   *   { query: 'query GetUser($id: ID!) { user(id: $id) { id name } }', variables: { id: '1' } },
+   *   { query: 'query GetUser($id: ID!) { user(id: $id) { id name } }', variables: { id: '2' } },
+   * ])
+   * ```
+   */
+  async batchQueries<T = any>(
+    queries: Array<{ query: string; variables?: GraphQLVariables; operationName?: string }>,
+    config?: GraphQLRequestConfig,
+  ): Promise<GraphQLResponse<T>[]> {
+    const endpoint = config?.endpoint || this.config?.endpoint
+
+    if (this.config?.debug) {
+      console.debug('[GraphQL Batch Queries]', `Executing ${queries.length} queries`)
+    }
+
+    try {
+      // 构建批量请求
+      const batchRequest = queries.map(item => ({
+        query: item.query,
+        variables: item.variables,
+        operationName: item.operationName,
+      }))
+
+      // 发送批量请求
+      const response = await this.httpClient.post<GraphQLResponse<T>[]>(
+        endpoint,
+        batchRequest,
+        {
+          ...config,
+          headers: {
+            'Content-Type': 'application/json',
+            ...this.config?.headers,
+            ...config?.headers,
+          },
+        },
+      )
+
+      return response.data
+    }
+    catch (error: any) {
+      if (this.config?.debug) {
+        console.error('[GraphQL Batch Queries Error]', error)
+      }
+      throw new GraphQLClientError([{
+        message: error.message || 'GraphQL batch queries failed',
+        extensions: { originalError: error },
+      }])
+    }
+  }
+
+  /**
+   * DataLoader 风格的批量加载器
+   * 自动合并相同类型的查询，减少网络请求
+   */
+  createLoader<K, V>(
+    loadFn: (keys: K[]) => Promise<V[]>,
+    options: {
+      /** 批量大小 */
+      batchSize?: number
+      /** 批量延迟（毫秒） */
+      batchDelay?: number
+      /** 缓存结果 */
+      cache?: boolean
+    } = {},
+  ): {
+    load: (key: K) => Promise<V>
+    loadMany: (keys: K[]) => Promise<V[]>
+    clear: () => void
+  } {
+    const {
+      batchSize = 100,
+      batchDelay = this.config?.batchDelay || 10,
+      cache = true,
+    } = options
+
+    const queue: Array<{
+      key: K
+      resolve: (value: V) => void
+      reject: (error: Error) => void
+    }> = []
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const cacheMap = cache ? new Map<K, V>() : null
+
+    const processBatch = async () => {
+      const batch = queue.splice(0, batchSize)
+      timer = null
+
+      if (batch.length === 0) return
+
+      try {
+        const keys = batch.map(item => item.key)
+        const values = await loadFn(keys)
+
+        batch.forEach((item, index) => {
+          const value = values[index]
+          if (cacheMap) {
+            cacheMap.set(item.key, value)
+          }
+          item.resolve(value)
+        })
+      }
+      catch (error: any) {
+        batch.forEach(item => item.reject(error))
+      }
+
+      // 如果队列中还有项目，继续处理
+      if (queue.length > 0) {
+        timer = setTimeout(processBatch, 0)
+      }
+    }
+
+    const load = (key: K): Promise<V> => {
+      // 检查缓存
+      if (cacheMap?.has(key)) {
+        return Promise.resolve(cacheMap.get(key)!)
+      }
+
+      return new Promise<V>((resolve, reject) => {
+        queue.push({ key, resolve, reject })
+
+        if (!timer) {
+          timer = setTimeout(processBatch, batchDelay)
+        }
+      })
+    }
+
+    const loadMany = async (keys: K[]): Promise<V[]> => {
+      return Promise.all(keys.map(key => load(key)))
+    }
+
+    const clear = () => {
+      if (timer) {
+        clearTimeout(timer)
+        timer = null
+      }
+      queue.length = 0
+      cacheMap?.clear()
+    }
+
+    return { load, loadMany, clear }
   }
 }
 

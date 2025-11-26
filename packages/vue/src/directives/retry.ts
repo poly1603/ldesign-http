@@ -1,34 +1,47 @@
 /**
- * v-retry 指令
+ * v-retry 指令 - 重试控制
  * 
- * 失败重试指令，自动重试失败的请求
- * 
- * @example
- * ```vue
- * <button v-retry="{ maxRetries: 3, delay: 1000 }" @click="fetchData">
- *   获取数据
- * </button>
- * 
- * <div v-retry:auto="{ maxRetries: 5, backoff: true }">
- *   自动重试内容
- * </div>
- * ```
+ * 用法:
+ * <button v-retry="retryFn">重试</button>
+ * <button v-retry="{ fn: retryFn, maxRetries: 3 }">重试</button>
+ * <button v-retry:auto="{ fn: retryFn, delay: 1000 }">自动重试</button>
  */
+
 import type { Directive, DirectiveBinding } from 'vue'
 
-interface RetryOptions {
+export interface RetryDirectiveOptions {
+  /** 重试函数 */
+  fn: () => Promise<any> | any
   /** 最大重试次数 */
   maxRetries?: number
   /** 重试延迟（毫秒） */
   delay?: number
-  /** 是否使用指数退避 */
-  backoff?: boolean
+  /** 指数退避 */
+  exponentialBackoff?: boolean
   /** 退避因子 */
-  backoffFactor?: number
-  /** 重试回调 */
-  onRetry?: (attempt: number) => void
+  backoffMultiplier?: number
+  /** 成功回调 */
+  onSuccess?: (result: any) => void
   /** 失败回调 */
-  onFailed?: (error: any) => void
+  onError?: (error: Error) => void
+  /** 重试回调 */
+  onRetry?: (attempt: number, maxRetries: number) => void
+  /** 禁用状态 */
+  disabled?: boolean
+  /** 自动重试（无需用户点击） */
+  auto?: boolean
+}
+
+export interface RetryDirectiveElement extends HTMLElement {
+  _retryInstance?: {
+    options: RetryDirectiveOptions
+    currentAttempt: number
+    isRetrying: boolean
+    timer?: number
+    abortController?: AbortController
+  }
+  _retryOriginalText?: string
+  _retryClickHandler?: () => void
 }
 
 /**
@@ -37,145 +50,297 @@ interface RetryOptions {
 function calculateDelay(
   attempt: number,
   baseDelay: number,
-  useBackoff: boolean,
-  backoffFactor: number,
+  exponentialBackoff: boolean,
+  backoffMultiplier: number
 ): number {
-  if (!useBackoff) {
+  if (!exponentialBackoff) {
     return baseDelay
   }
-  return baseDelay * Math.pow(backoffFactor, attempt - 1)
+  return baseDelay * Math.pow(backoffMultiplier, attempt - 1)
 }
 
 /**
- * 延迟函数
+ * 更新元素状态
  */
-function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
+function updateElementState(
+  el: RetryDirectiveElement,
+  state: 'idle' | 'retrying' | 'success' | 'error'
+): void {
+  el.setAttribute('data-retry-state', state)
+
+  const instance = el._retryInstance
+  if (!instance) return
+
+  switch (state) {
+    case 'idle':
+      el.removeAttribute('disabled')
+      if (el._retryOriginalText) {
+        el.textContent = el._retryOriginalText
+      }
+      break
+
+    case 'retrying':
+      el.setAttribute('disabled', 'true')
+      if (el._retryOriginalText === undefined) {
+        el._retryOriginalText = el.textContent || ''
+      }
+      el.textContent = `重试中 (${instance.currentAttempt}/${instance.options.maxRetries || 3})...`
+      break
+
+    case 'success':
+      el.removeAttribute('disabled')
+      if (el._retryOriginalText) {
+        el.textContent = el._retryOriginalText
+      }
+      setTimeout(() => {
+        el.removeAttribute('data-retry-state')
+      }, 2000)
+      break
+
+    case 'error':
+      el.removeAttribute('disabled')
+      if (el._retryOriginalText) {
+        el.textContent = el._retryOriginalText
+      }
+      break
+  }
 }
 
 /**
- * 执行重试逻辑
+ * 执行重试
  */
-async function executeWithRetry<T>(
-  fn: () => Promise<T>,
-  options: RetryOptions,
-): Promise<T> {
+async function executeRetry(el: RetryDirectiveElement): Promise<void> {
+  const instance = el._retryInstance
+  if (!instance || instance.isRetrying) return
+
+  const { options } = instance
   const maxRetries = options.maxRetries || 3
   const baseDelay = options.delay || 1000
-  const useBackoff = options.backoff || false
-  const backoffFactor = options.backoffFactor || 2
+  const exponentialBackoff = options.exponentialBackoff ?? true
+  const backoffMultiplier = options.backoffMultiplier || 2
 
-  let lastError: any
+  // 如果已禁用，不执行
+  if (options.disabled) {
+    return
+  }
 
-  for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+  instance.isRetrying = true
+  instance.currentAttempt = 0
+  instance.abortController = new AbortController()
+
+  while (instance.currentAttempt < maxRetries) {
+    instance.currentAttempt++
+
     try {
-      return await fn()
-    }
-    catch (error) {
-      lastError = error
+      // 更新状态
+      updateElementState(el, 'retrying')
 
-      if (attempt <= maxRetries) {
-        // 触发重试回调
-        options.onRetry?.(attempt)
+      // 触发重试回调
+      options.onRetry?.(instance.currentAttempt, maxRetries)
 
-        // 计算延迟时间
-        const delayMs = calculateDelay(attempt, baseDelay, useBackoff, backoffFactor)
+      // 执行重试函数
+      const result = await Promise.resolve(options.fn())
 
-        // 等待后重试
-        await delay(delayMs)
+      // 检查是否已取消
+      if (instance.abortController.signal.aborted) {
+        return
+      }
+
+      // 成功
+      updateElementState(el, 'success')
+      options.onSuccess?.(result)
+      instance.isRetrying = false
+      return
+    } catch (error: any) {
+      // 检查是否已取消
+      if (instance.abortController.signal.aborted) {
+        return
+      }
+
+      // 如果已达到最大重试次数
+      if (instance.currentAttempt >= maxRetries) {
+        updateElementState(el, 'error')
+        options.onError?.(error)
+        instance.isRetrying = false
+        return
+      }
+
+      // 计算延迟时间
+      const delay = calculateDelay(
+        instance.currentAttempt,
+        baseDelay,
+        exponentialBackoff,
+        backoffMultiplier
+      )
+
+      // 等待延迟
+      await new Promise<void>((resolve) => {
+        instance.timer = window.setTimeout(() => {
+          resolve()
+        }, delay)
+      })
+
+      // 检查是否已取消
+      if (instance.abortController.signal.aborted) {
+        return
       }
     }
   }
-
-  // 所有重试都失败
-  options.onFailed?.(lastError)
-  throw lastError
 }
 
 /**
- * 解析指令值
+ * 取消重试
  */
-function parseValue(value: number | RetryOptions): RetryOptions {
-  if (typeof value === 'number') {
-    return { maxRetries: value }
+function cancelRetry(el: RetryDirectiveElement): void {
+  const instance = el._retryInstance
+  if (!instance) return
+
+  // 取消定时器
+  if (instance.timer) {
+    clearTimeout(instance.timer)
+    instance.timer = undefined
   }
-  return value
+
+  // 取消 AbortController
+  if (instance.abortController) {
+    instance.abortController.abort()
+    instance.abortController = undefined
+  }
+
+  instance.isRetrying = false
+  updateElementState(el, 'idle')
+}
+
+/**
+ * 解析指令选项
+ */
+function parseOptions(
+  binding: DirectiveBinding<RetryDirectiveOptions | (() => any)>,
+  arg?: string
+): RetryDirectiveOptions | null {
+  let options: RetryDirectiveOptions
+
+  // 如果 value 是函数
+  if (typeof binding.value === 'function') {
+    options = { fn: binding.value }
+  } else if (typeof binding.value === 'object' && binding.value) {
+    options = binding.value
+  } else {
+    console.warn('[v-retry] Invalid directive value:', binding.value)
+    return null
+  }
+
+  // 验证 fn
+  if (typeof options.fn !== 'function') {
+    console.warn('[v-retry] Missing required "fn" option')
+    return null
+  }
+
+  // 处理参数
+  if (arg === 'auto' || binding.modifiers.auto) {
+    options.auto = true
+  }
+
+  return options
+}
+
+/**
+ * 设置点击处理器
+ */
+function setupClickHandler(el: RetryDirectiveElement): void {
+  // 移除旧的处理器
+  if (el._retryClickHandler) {
+    el.removeEventListener('click', el._retryClickHandler)
+  }
+
+  // 创建新的处理器
+  el._retryClickHandler = () => {
+    executeRetry(el)
+  }
+
+  // 添加事件监听
+  el.addEventListener('click', el._retryClickHandler)
 }
 
 /**
  * v-retry 指令定义
  */
-export const vRetry: Directive<HTMLElement, number | RetryOptions> = {
+export const vRetry: Directive<RetryDirectiveElement, RetryDirectiveOptions | (() => any)> = {
   mounted(el, binding) {
-    const options = parseValue(binding.value)
+    const options = parseOptions(binding, binding.arg)
+    if (!options) return
 
-    // 包装原始点击处理器
-    const originalHandler = (el as any).onclick
-    if (originalHandler) {
-      ;(el as any).onclick = async function (event: Event) {
-        try {
-          await executeWithRetry(
-            () => Promise.resolve(originalHandler.call(this, event)),
-            options,
-          )
-        }
-        catch (error) {
-          console.error('[v-retry] All retries failed:', error)
-        }
-      }
+    // 初始化实例
+    el._retryInstance = {
+      options,
+      currentAttempt: 0,
+      isRetrying: false,
     }
 
-    // 监听自定义重试事件
-    const retryHandler = async (event: CustomEvent) => {
-      const fn = event.detail?.fn
-      if (typeof fn === 'function') {
-        try {
-          await executeWithRetry(fn, options)
-        }
-        catch (error) {
-          console.error('[v-retry] All retries failed:', error)
-        }
-      }
+    // 设置点击处理器
+    setupClickHandler(el)
+
+    // 如果是自动重试模式，立即执行
+    if (options.auto) {
+      Promise.resolve().then(() => {
+        executeRetry(el)
+      })
     }
 
-    el.addEventListener('retry', retryHandler as EventListener)
-    ;(el as any)._retryHandler = retryHandler
+    // 初始化状态
+    updateElementState(el, 'idle')
   },
 
   updated(el, binding) {
-    const options = parseValue(binding.value)
+    const options = parseOptions(binding, binding.arg)
+    if (!options) return
 
-    // 更新重试选项
-    ;(el as any)._retryOptions = options
+    const instance = el._retryInstance
+    if (!instance) return
+
+    // 更新配置
+    instance.options = options
+
+    // 如果配置变化，取消当前重试
+    if (binding.value !== binding.oldValue) {
+      cancelRetry(el)
+
+      // 如果是自动重试模式，重新执行
+      if (options.auto && !options.disabled) {
+        executeRetry(el)
+      }
+    }
   },
 
   unmounted(el) {
-    // 移除事件监听器
-    const retryHandler = (el as any)._retryHandler
-    if (retryHandler) {
-      el.removeEventListener('retry', retryHandler as EventListener)
-      delete (el as any)._retryHandler
+    // 取消重试
+    cancelRetry(el)
+
+    // 移除事件监听
+    if (el._retryClickHandler) {
+      el.removeEventListener('click', el._retryClickHandler)
+      el._retryClickHandler = undefined
     }
 
-    delete (el as any)._retryOptions
+    // 清理引用
+    el._retryInstance = undefined
+    el._retryOriginalText = undefined
   },
 }
 
 /**
- * 触发重试
- * 
- * @example
- * ```ts
- * import { triggerRetry } from '@ldesign/http-vue'
- * 
- * triggerRetry(element, async () => {
- *   return await fetchData()
- * })
- * ```
+ * 便捷方法：手动触发重试
  */
-export function triggerRetry(el: HTMLElement, fn: () => Promise<any>): void {
-  el.dispatchEvent(new CustomEvent('retry', {
-    detail: { fn },
-  }))
+export function triggerRetry(el: RetryDirectiveElement): void {
+  executeRetry(el)
 }
 
+/**
+ * 便捷方法：取消重试
+ */
+export function cancelRetryDirective(el: RetryDirectiveElement): void {
+  cancelRetry(el)
+}
+
+// 默认导出
+export default vRetry

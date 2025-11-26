@@ -121,17 +121,40 @@ export type {
   HttpClient,
   RequestConfig,
   ResponseData,
-  HttpError,
-  HttpAdapter,
-  Interceptor,
-  RequestInterceptor,
-  ResponseInterceptor,
-  CacheConfig,
-  RetryConfig,
 } from './types'
 
 // ==================== Vue 组件 ====================
-// TODO: 添加 TSX 组件（参考 @ldesign/i18n-vue 的实现方式）
+
+export {
+  // 全局配置提供者
+  HttpProvider,
+  // 声明式数据加载器
+  HttpLoader,
+  // 智能错误展示
+  HttpError,
+  // 可视化重试控制器
+  HttpRetry,
+  // 上传下载进度条
+  HttpProgress,
+} from './components'
+
+export type {
+  // HttpProvider 类型
+  HttpProviderProps,
+  HttpProviderContext,
+  // HttpLoader 类型
+  HttpLoaderProps,
+  // HttpError 类型
+  HttpErrorProps,
+  // HttpRetry 类型
+  HttpRetryProps,
+  RetryEmits,
+  RetryStatus,
+  RetryHistoryItem,
+  // HttpProgress 类型
+  HttpProgressProps,
+  HttpProgressEmits,
+} from './components'
 
 // ==================== Vue 指令 ====================
 // TODO: 添加 Vue 指令

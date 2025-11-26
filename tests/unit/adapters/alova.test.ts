@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { AlovaAdapter } from '../../../src/adapters/alova'
-import type { RequestConfig } from '../../../src/types'
+import { AlovaAdapter } from '../../../packages/core/src/adapters/alova'
+import type { RequestConfig } from '../../../packages/core/src/types'
 
 // Mock alova
 const mockAlova = {

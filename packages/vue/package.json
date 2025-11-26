@@ -18,6 +18,16 @@
       "import": "./es/index.js",
       "require": "./lib/index.cjs"
     },
+    "./components": {
+      "types": "./es/components/index.d.ts",
+      "import": "./es/components/index.js",
+      "require": "./lib/components/index.cjs"
+    },
+    "./components/*": {
+      "types": "./es/components/*.d.ts",
+      "import": "./es/components/*.js",
+      "require": "./lib/components/*.cjs"
+    },
     "./composables": {
       "types": "./es/composables/index.d.ts",
       "import": "./es/composables/index.js",
@@ -57,7 +67,14 @@
       "types": "./es/types/*.d.ts",
       "import": "./es/types/*.js",
       "require": "./lib/types/*.cjs"
-    }
+    },
+    "./lib/components/HttpError/index.css": "./lib/components/HttpError/index.css",
+    "./lib/components/HttpLoader/index.css": "./lib/components/HttpLoader/index.css",
+    "./lib/components/HttpProgress/index.css": "./lib/components/HttpProgress/index.css",
+    "./lib/components/HttpRetry/index.css": "./lib/components/HttpRetry/index.css",
+    "./lib/index.css": "./lib/index.css",
+    "./dist/index.css": "./dist/index.css",
+    "./dist/index.min.css": "./dist/index.min.css"
   },
   "main": "./lib/index.cjs",
   "module": "./es/index.js",
@@ -74,8 +91,8 @@
   ],
   "scripts": {
     "build": "ldesign-builder build",
-    "build:watch": "ldesign-builder build --watch",
-    "dev": "ldesign-builder build --watch",
+    "build:watch": "vite build --watch",
+    "dev": "vite build --watch",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
@@ -89,17 +106,18 @@
     "@ldesign/http-core": "workspace:*"
   },
   "peerDependencies": {
-    "vue": "^3.3.0",
-    "@ldesign/http-core": "workspace:*"
+    "@ldesign/http-core": "workspace:*",
+    "vue": "^3.3.0"
   },
   "devDependencies": {
     "@ldesign/builder": "workspace:*",
     "@types/node": "^22.0.0",
-    "typescript": "^5.7.3",
-    "vitest": "^3.2.4",
+    "@vitejs/plugin-vue": "^5.0.3",
+    "@vue/test-utils": "^2.4.6",
     "eslint": "^9.18.0",
-    "vue": "^3.5.18",
-    "vue-tsc": "^3.0.5",
-    "@vitejs/plugin-vue": "^5.0.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.0.13",
+    "vue": "^3.4.38",
+    "vue-tsc": "^2.1.10"
   }
 }

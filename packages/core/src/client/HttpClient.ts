@@ -505,7 +505,8 @@ export class HttpClientImpl implements HttpClient {
     if (retryConfig?.retries && retryConfig.retries > 0) {
       return this.retryManager.executeWithRetry(
         () => {
-          this.monitor.recordRetry(requestId)
+          // 修复: 添加可选链保护,防止monitor为undefined
+          this.monitor?.recordRetry(requestId)
           return this.executeRequest<T>(config)
         },
         config,
@@ -546,8 +547,18 @@ export class HttpClientImpl implements HttpClient {
       // 执行请求拦截器
       processedConfig = await this.interceptorProcessor.processRequest(config)
 
-      // 发送请求
-      let response = await this.adapter.request<T>(processedConfig)
+      // 发送请求 - 添加错误保护
+      let response: ResponseData<T>
+      try {
+        response = await this.adapter!.request<T>(processedConfig)
+      } catch (adapterError: any) {
+        // 包装适配器错误,提供更友好的错误信息
+        const error = new Error(`Adapter request failed: ${adapterError.message || 'Unknown error'}`) as HttpError
+        error.code = 'ADAPTER_ERROR'
+        error.config = processedConfig
+        error.cause = adapterError
+        throw error
+      }
 
       // 执行响应拦截器
       response = await this.interceptorProcessor.processResponse(response)

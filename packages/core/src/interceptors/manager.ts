@@ -1,17 +1,39 @@
 import type { ErrorInterceptor, InterceptorManager } from '../types'
 
 /**
+ * 拦截器选项接口
+ *
+ * 用于配置拦截器的行为
+ */
+export interface InterceptorOptions {
+  /** 优先级（数字越大优先级越高，默认0） */
+  priority?: number
+  /** 拦截器名称（用于调试） */
+  name?: string
+  /** 是否启用（默认true） */
+  enabled?: boolean
+}
+
+/**
  * 拦截器项接口
  *
  * 定义单个拦截器的数据结构。
  */
 interface InterceptorItem<T> {
+  /** 拦截器唯一ID */
+  id: number
   /** 成功处理函数（必需） */
   fulfilled: T
   /** 错误处理函数（可选） */
   rejected?: ErrorInterceptor
   /** 是否为异步拦截器（用于性能优化） */
   isAsync?: boolean
+  /** 优先级（数字越大优先级越高） */
+  priority: number
+  /** 拦截器名称（用于调试） */
+  name?: string
+  /** 是否启用 */
+  enabled: boolean
 }
 
 /**
@@ -189,7 +211,7 @@ export class InterceptorManagerImpl<T> implements InterceptorManager<T> {
    * )
    * ```
    */
-  use(fulfilled: T, rejected?: ErrorInterceptor): number {
+  use(fulfilled: T, rejected?: ErrorInterceptor, options?: InterceptorOptions): number {
     // 生成唯一ID（自增）
     const id = this.nextId++
 
@@ -202,13 +224,20 @@ export class InterceptorManagerImpl<T> implements InterceptorManager<T> {
 
     // 添加拦截器到数组
     this.interceptors.push({
+      id,
       fulfilled,
       rejected,
       isAsync,
+      priority: options?.priority ?? 0,
+      name: options?.name,
+      enabled: options?.enabled ?? true,
     })
 
     // 建立 ID 到索引的映射，用于快速查找
     this.idMap.set(id, index)
+
+    // 按优先级排序（高优先级在前）
+    this.sortByPriority()
 
     // 标记分类缓存需要更新
     // 下次获取同步/异步拦截器时会重新分类
@@ -374,6 +403,24 @@ export class InterceptorManagerImpl<T> implements InterceptorManager<T> {
    *
    * @private
    */
+  /**
+   * 按优先级排序拦截器
+   *
+   * 优先级高的拦截器会先执行
+   *
+   * @private
+   */
+  private sortByPriority(): void {
+    // 排序：优先级高的在前
+    this.interceptors.sort((a, b) => b.priority - a.priority)
+    
+    // 重建索引映射
+    this.idMap.clear()
+    for (let i = 0; i < this.interceptors.length; i++) {
+      this.idMap.set(this.interceptors[i]!.id, i)
+    }
+  }
+
   private updateCategoryCache(): void {
     // 如果缓存是干净的，无需更新
     if (!this.categoryCacheDirty) {
@@ -384,8 +431,10 @@ export class InterceptorManagerImpl<T> implements InterceptorManager<T> {
     this.syncInterceptors = []
     this.asyncInterceptors = []
 
-    // 分类所有拦截器
+    // 分类所有拦截器（只包括启用的）
     for (const interceptor of this.interceptors) {
+      if (!interceptor.enabled) continue
+      
       if (interceptor.isAsync) {
         this.asyncInterceptors.push(interceptor)
       }
@@ -498,7 +547,7 @@ export class InterceptorManagerImpl<T> implements InterceptorManager<T> {
    * 提供一个便捷的方法来遍历所有拦截器。
    * 使用索引遍历而不是 for-of，性能提升约 5-10%。
    *
-   * @param fn - 遍历函数，接收拦截器项作为参数
+   * @param fn - 遍历函数，接收拦截器项作为参数（只包含fulfilled和rejected，不包含内部字段）
    *
    * @example
    * ```typescript
@@ -507,12 +556,16 @@ export class InterceptorManagerImpl<T> implements InterceptorManager<T> {
    * })
    * ```
    */
-  forEach(fn: (interceptor: InterceptorItem<T>) => void): void {
+  forEach(fn: (interceptor: Pick<InterceptorItem<T>, 'fulfilled' | 'rejected'>) => void): void {
     // 使用索引遍历，比 for-of 更快约 5-10%
     const len = this.interceptors.length
     for (let i = 0; i < len; i++) {
-      // 紧凑数组中的元素一定存在，使用非空断言
-      fn(this.interceptors[i]!)
+      const interceptor = this.interceptors[i]!
+      // 只传递公开的字段，不暴露内部的isAsync标记
+      fn({
+        fulfilled: interceptor.fulfilled,
+        rejected: interceptor.rejected,
+      })
     }
   }
 
@@ -568,5 +621,68 @@ export class InterceptorManagerImpl<T> implements InterceptorManager<T> {
    */
   isEmpty(): boolean {
     return this.interceptors.length === 0
+  }
+
+  /**
+   * 启用拦截器
+   *
+   * @param id - 拦截器ID
+   *
+   * @example
+   * ```typescript
+   * manager.enable(id)
+   * ```
+   */
+  enable(id: number): void {
+    const index = this.idMap.get(id)
+    if (index !== undefined && this.interceptors[index]) {
+      this.interceptors[index]!.enabled = true
+      this.categoryCacheDirty = true
+    }
+  }
+
+  /**
+   * 禁用拦截器
+   *
+   * @param id - 拦截器ID
+   *
+   * @example
+   * ```typescript
+   * manager.disable(id)
+   * ```
+   */
+  disable(id: number): void {
+    const index = this.idMap.get(id)
+    if (index !== undefined && this.interceptors[index]) {
+      this.interceptors[index]!.enabled = false
+      this.categoryCacheDirty = true
+    }
+  }
+
+  /**
+   * 获取拦截器信息（用于调试）
+   *
+   * @returns 拦截器信息数组
+   *
+   * @example
+   * ```typescript
+   * const info = manager.getInfo()
+   * console.log(info)
+   * ```
+   */
+  getInfo(): Array<{
+    id: number
+    priority: number
+    name?: string
+    enabled: boolean
+    isAsync: boolean
+  }> {
+    return this.interceptors.map(item => ({
+      id: item.id,
+      priority: item.priority,
+      name: item.name,
+      enabled: item.enabled,
+      isAsync: item.isAsync ?? false
+    }))
   }
 }

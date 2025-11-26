@@ -2,4 +2,7 @@
  * cache module
  */
 
-// TODO: 实现 cache 模块功能
+export { CacheManager } from './CacheManager'
+export { MemoryCacheStorage } from './MemoryCacheStorage'
+export { LocalStorageCacheStorage } from './LocalStorageCacheStorage'
+export { IndexedDBCacheStorage } from './IndexedDBCacheStorage'

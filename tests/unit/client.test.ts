@@ -1,6 +1,6 @@
 import type { HttpAdapter } from '@/types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { HttpClientImpl } from '@/client'
+import { HttpClientImpl } from '@/client/HttpClient'
 import { createMockError, createMockResponse } from '../setup'
 
 // 创建模拟适配器

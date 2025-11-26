@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { AxiosAdapter } from '../../../src/adapters/axios'
-import type { RequestConfig } from '../../../src/types'
+import { AxiosAdapter } from '../../../packages/core/src/adapters/axios'
+import type { RequestConfig } from '../../../packages/core/src/types'
 
 // Mock axios
 const mockAxios = {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { createHttpPlugin } from '../../../src/engine/plugin'
-import type { HttpClient } from '../../../src/client'
+import { createHttpPlugin } from '../../../packages/core/src/engine/plugin'
+import type { HttpClient } from '../../../packages/core/src/client'
 
 // Mock HttpClient
 const mockHttpClient = {

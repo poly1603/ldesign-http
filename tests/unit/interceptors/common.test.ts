@@ -6,8 +6,8 @@ import {
   timeoutInterceptor,
   retryInterceptor,
   cacheInterceptor,
-} from '../../../src/interceptors/common'
-import type { RequestConfig, ResponseData, HttpError } from '../../../src/types'
+} from '../../../packages/core/src/interceptors/common'
+import type { RequestConfig, ResponseData, HttpError } from '../../../packages/core/src/types'
 
 // Mock localStorage
 const localStorageMock = {

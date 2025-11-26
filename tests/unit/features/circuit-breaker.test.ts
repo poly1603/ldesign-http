@@ -3,7 +3,7 @@
  */
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import { CircuitBreaker, CircuitState } from '../../../src/features/circuit-breaker'
+import { CircuitBreaker, CircuitState } from '../../../packages/core/src/features/circuit-breaker'
 
 describe('CircuitBreaker 断路器测试', () => {
   let breaker: CircuitBreaker

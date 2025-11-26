@@ -12,7 +12,7 @@ import {
   formatTimeRemaining,
   isPreviewableFile,
   DownloadProgressCalculator,
-} from '../../../src/utils/download'
+} from '../../../packages/core/src/utils/download'
 
 describe('Download Utils', () => {
   describe('getFilenameFromResponse', () => {

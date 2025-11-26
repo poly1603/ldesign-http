@@ -4,10 +4,10 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { InterceptorManagerImpl } from '../../src/interceptors/manager'
-import { DeduplicationKeyGenerator } from '../../src/utils/concurrency'
-import { MemoryCacheStorage } from '../../src/utils/cache'
-import { RequestMonitor } from '../../src/utils/monitor'
+import { InterceptorManagerImpl } from '../../packages/core/src/interceptors/manager'
+import { DeduplicationKeyGenerator } from '../../packages/core/src/utils/concurrency'
+import { MemoryCacheStorage } from '../../packages/core/src/utils/cache'
+import { RequestMonitor } from '../../packages/core/src/utils/monitor'
 
 describe('性能优化测试', () => {
   describe('拦截器管理器性能', () => {

@@ -5,8 +5,8 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { OptimizedLRUCache } from '../../src/utils/cache-lru-optimized'
-import { BloomFilterCache } from '../../src/utils/cache-bloom-filter'
+import { OptimizedLRUCache } from '../../packages/core/src/utils/cache-lru-optimized'
+import { BloomFilterCache } from '../../packages/core/src/utils/cache-bloom-filter'
 
 describe('并发测试', () => {
   describe('LRU缓存并发测试', () => {

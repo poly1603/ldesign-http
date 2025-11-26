@@ -10,6 +10,77 @@ export interface SSEEvent {
   id?: string
   /** 重连延迟 */
   retry?: number
+  /** 时间戳 */
+  timestamp?: number
+}
+
+/**
+ * 重连策略类型
+ */
+export enum ReconnectStrategy {
+  /** 线性重连 - 固定延迟 */
+  LINEAR = 'linear',
+  /** 指数退避 - 延迟倍增 */
+  EXPONENTIAL = 'exponential',
+  /** 随机延迟 - 避免同时重连 */
+  RANDOM = 'random',
+}
+
+/**
+ * 连接质量等级
+ */
+export enum ConnectionQuality {
+  /** 优秀 - 事件接收率 > 95% */
+  EXCELLENT = 'excellent',
+  /** 良好 - 事件接收率 80-95% */
+  GOOD = 'good',
+  /** 一般 - 事件接收率 60-80% */
+  FAIR = 'fair',
+  /** 较差 - 事件接收率 < 60% */
+  POOR = 'poor',
+  /** 未知 - 数据不足 */
+  UNKNOWN = 'unknown',
+}
+
+/**
+ * 事件过滤器类型
+ */
+export type SSEEventFilter = (event: SSEEvent) => boolean
+
+/**
+ * 事件过滤配置
+ */
+export interface SSEEventFilterConfig {
+  /** 允许的事件类型列表 */
+  allowedTypes?: string[]
+  /** 拒绝的事件类型列表 */
+  deniedTypes?: string[]
+  /** 数据内容正则匹配 */
+  dataPattern?: RegExp
+  /** 自定义过滤函数 */
+  customFilter?: SSEEventFilter
+}
+
+/**
+ * SSE 连接统计信息
+ */
+export interface SSEConnectionStats {
+  /** 连接持续时间（毫秒） */
+  connectedDuration: number
+  /** 接收的事件总数 */
+  eventsReceived: number
+  /** 过滤掉的事件数 */
+  eventsFiltered: number
+  /** 重连次数 */
+  reconnectCount: number
+  /** 连接质量 */
+  quality: ConnectionQuality
+  /** 平均事件间隔（毫秒） */
+  averageEventInterval: number
+  /** 最后接收事件的时间戳 */
+  lastEventTime: number
+  /** 丢失的心跳次数 */
+  missedHeartbeats: number
 }
 
 /**
@@ -26,10 +97,20 @@ export interface SSEClientConfig {
   autoReconnect?: boolean
   /** 重连延迟（毫秒） */
   reconnectDelay?: number
+  /** 最大重连延迟（毫秒，用于指数退避） */
+  maxReconnectDelay?: number
   /** 最大重连次数 */
   maxReconnectAttempts?: number
+  /** 重连策略 */
+  reconnectStrategy?: ReconnectStrategy
   /** 心跳超时（毫秒） */
   heartbeatTimeout?: number
+  /** 事件过滤配置 */
+  eventFilter?: SSEEventFilterConfig
+  /** 消息缓冲区大小（断线期间缓存的事件数） */
+  bufferSize?: number
+  /** 是否启用消息缓冲 */
+  enableBuffer?: boolean
   /** 调试模式 */
   debug?: boolean
 }
@@ -88,6 +169,17 @@ export class SSEClient {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private heartbeatTimer: ReturnType<typeof setTimeout> | null = null
   private lastEventId: string | null = null
+  
+  // 统计信息
+  private connectedAt: number = 0
+  private eventsReceived: number = 0
+  private eventsFiltered: number = 0
+  private lastEventTime: number = 0
+  private eventIntervals: number[] = []
+  private missedHeartbeats: number = 0
+  
+  // 消息缓冲区
+  private eventBuffer: SSEEvent[] = []
 
   constructor(config: SSEClientConfig) {
     this.config = {
@@ -96,8 +188,13 @@ export class SSEClient {
       headers: config.headers || {},
       autoReconnect: config.autoReconnect ?? true,
       reconnectDelay: config.reconnectDelay ?? 3000,
+      maxReconnectDelay: config.maxReconnectDelay ?? 30000,
       maxReconnectAttempts: config.maxReconnectAttempts ?? 5,
+      reconnectStrategy: config.reconnectStrategy ?? ReconnectStrategy.EXPONENTIAL,
       heartbeatTimeout: config.heartbeatTimeout ?? 30000,
+      eventFilter: config.eventFilter,
+      bufferSize: config.bufferSize ?? 100,
+      enableBuffer: config.enableBuffer ?? true,
       debug: config.debug ?? false,
     }
   }
@@ -113,11 +210,11 @@ export class SSEClient {
 
     return new Promise((resolve, reject) => {
       this.status = SSEStatus.CONNECTING
-      this.log(`Connecting to ${this.config?.url}`)
+      this.log(`Connecting to ${this.config.url}`)
 
       try {
         // 构建 URL（添加 lastEventId 如果存在）
-        let url = this.config?.url
+        let url = this.config.url
         if (this.lastEventId) {
           const separator = url.includes('?') ? '&' : '?'
           url += `${separator}lastEventId=${encodeURIComponent(this.lastEventId)}`
@@ -125,20 +222,25 @@ export class SSEClient {
 
         // 创建 EventSource
         this.eventSource = new EventSource(url, {
-          withCredentials: this.config?.withCredentials,
+          withCredentials: this.config.withCredentials,
         })
 
         // 连接打开
         this.eventSource.onopen = () => {
           this.status = SSEStatus.CONNECTED
           this.reconnectAttempts = 0
+          this.connectedAt = Date.now()
+          this.missedHeartbeats = 0
           this.log('Connected')
 
           // 启动心跳检测
           this.startHeartbeat()
 
           // 触发 open 事件
-          this.emit('open')
+          this.emit('open', {
+            timestamp: this.connectedAt,
+            url: this.config.url,
+          })
           resolve()
         }
 
@@ -324,18 +426,38 @@ export class SSEClient {
   private handleMessage(event: MessageEvent): void {
     // 重置心跳定时器
     this.resetHeartbeat()
+    this.missedHeartbeats = 0
 
     // 保存最后的事件 ID
     if (event.lastEventId) {
       this.lastEventId = event.lastEventId
     }
 
-    this.log('Message received:', event.data)
-    this.emit('message', {
+    // 构建 SSE 事件对象
+    const sseEvent: SSEEvent = {
       type: event.type,
       data: event.data,
       id: event.lastEventId,
-    })
+      timestamp: Date.now(),
+    }
+
+    // 应用事件过滤
+    if (this.config.eventFilter && !this.shouldAcceptEvent(sseEvent)) {
+      this.eventsFiltered++
+      this.log('Event filtered:', sseEvent)
+      return
+    }
+
+    // 更新统计信息
+    this.updateStats(sseEvent)
+
+    // 如果启用了缓冲，添加到缓冲区
+    if (this.config.enableBuffer) {
+      this.addToBuffer(sseEvent)
+    }
+
+    this.log('Message received:', event.data)
+    this.emit('message', sseEvent)
   }
 
   /**
@@ -363,9 +485,13 @@ export class SSEClient {
    */
   private reconnect(): void {
     this.reconnectAttempts++
-    this.log(`Reconnecting... (attempt ${this.reconnectAttempts}/${this.config?.maxReconnectAttempts})`)
+    this.log(`Reconnecting... (attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`)
 
-    this.emit('reconnecting', { attempts: this.reconnectAttempts })
+    this.emit('reconnecting', {
+      attempts: this.reconnectAttempts,
+      maxAttempts: this.config.maxReconnectAttempts,
+      strategy: this.config.reconnectStrategy,
+    })
 
     // 关闭旧连接
     if (this.eventSource) {
@@ -373,32 +499,84 @@ export class SSEClient {
       this.eventSource = null
     }
 
+    // 计算重连延迟
+    const delay = this.calculateReconnectDelay()
+    
     this.reconnectTimer = setTimeout(async () => {
       try {
         await this.connect()
         this.log('Reconnected successfully')
-        this.emit('reconnect')
+        
+        // 重放缓冲区的事件
+        if (this.config.enableBuffer && this.eventBuffer.length > 0) {
+          this.log(`Replaying ${this.eventBuffer.length} buffered events`)
+          this.emit('buffer_replay', { count: this.eventBuffer.length })
+        }
+        
+        this.emit('reconnect', {
+          attempts: this.reconnectAttempts,
+          bufferedEvents: this.eventBuffer.length,
+        })
       }
       catch (error) {
         this.log('Reconnect failed:', error)
         this.handleDisconnection()
       }
-    }, this.config?.reconnectDelay * this.reconnectAttempts)
+    }, delay)
+  }
+  
+  /**
+   * 计算重连延迟
+   */
+  private calculateReconnectDelay(): number {
+    const { reconnectDelay, maxReconnectDelay, reconnectStrategy } = this.config
+    
+    switch (reconnectStrategy) {
+      case ReconnectStrategy.LINEAR:
+        // 线性增长：delay * attempts
+        return Math.min(reconnectDelay * this.reconnectAttempts, maxReconnectDelay)
+      
+      case ReconnectStrategy.EXPONENTIAL:
+        // 指数退避：delay * 2^(attempts - 1)
+        return Math.min(
+          reconnectDelay * Math.pow(2, this.reconnectAttempts - 1),
+          maxReconnectDelay
+        )
+      
+      case ReconnectStrategy.RANDOM:
+        // 随机延迟：delay * (1 + random(0, attempts))
+        const randomFactor = 1 + Math.random() * this.reconnectAttempts
+        return Math.min(reconnectDelay * randomFactor, maxReconnectDelay)
+      
+      default:
+        return reconnectDelay
+    }
   }
 
   /**
    * 启动心跳检测
    */
   private startHeartbeat(): void {
-    if (this.config?.heartbeatTimeout <= 0) {
+    if (this.config.heartbeatTimeout <= 0) {
       return
     }
 
     this.heartbeatTimer = setTimeout(() => {
-      this.log('Heartbeat timeout')
-      // 心跳超时，认为连接已断开
-      this.handleDisconnection()
-    }, this.config?.heartbeatTimeout)
+      this.missedHeartbeats++
+      this.log(`Heartbeat timeout (missed: ${this.missedHeartbeats})`)
+      
+      // 触发心跳超时事件
+      this.emit('heartbeat_timeout', { missedHeartbeats: this.missedHeartbeats })
+      
+      // 如果连续丢失多次心跳，认为连接已断开
+      if (this.missedHeartbeats >= 3) {
+        this.log('Too many missed heartbeats, disconnecting')
+        this.handleDisconnection()
+      } else {
+        // 继续心跳检测
+        this.startHeartbeat()
+      }
+    }, this.config.heartbeatTimeout)
   }
 
   /**
@@ -423,9 +601,157 @@ export class SSEClient {
    * 日志输出
    */
   private log(..._args: any[]): void {
-    if (this.config?.debug) {
+    if (this.config.debug) {
       // console.log('[SSE]', ...args)
     }
+  }
+  
+  /**
+   * 判断事件是否应该被接受
+   */
+  private shouldAcceptEvent(event: SSEEvent): boolean {
+    const filter = this.config.eventFilter
+    if (!filter) return true
+    
+    // 检查拒绝列表
+    if (filter.deniedTypes?.includes(event.type)) {
+      return false
+    }
+    
+    // 检查允许列表
+    if (filter.allowedTypes && !filter.allowedTypes.includes(event.type)) {
+      return false
+    }
+    
+    // 检查数据模式匹配
+    if (filter.dataPattern && !filter.dataPattern.test(event.data)) {
+      return false
+    }
+    
+    // 应用自定义过滤器
+    if (filter.customFilter && !filter.customFilter(event)) {
+      return false
+    }
+    
+    return true
+  }
+  
+  /**
+   * 更新统计信息
+   */
+  private updateStats(event: SSEEvent): void {
+    this.eventsReceived++
+    
+    // 计算事件间隔
+    if (this.lastEventTime > 0) {
+      const interval = event.timestamp! - this.lastEventTime
+      this.eventIntervals.push(interval)
+      
+      // 只保留最近 50 个间隔
+      if (this.eventIntervals.length > 50) {
+        this.eventIntervals.shift()
+      }
+    }
+    
+    this.lastEventTime = event.timestamp!
+  }
+  
+  /**
+   * 添加事件到缓冲区
+   */
+  private addToBuffer(event: SSEEvent): void {
+    this.eventBuffer.push(event)
+    
+    // 限制缓冲区大小
+    if (this.eventBuffer.length > this.config.bufferSize) {
+      this.eventBuffer.shift()
+    }
+  }
+  
+  /**
+   * 计算平均事件间隔
+   */
+  private calculateAverageEventInterval(): number {
+    if (this.eventIntervals.length === 0) return 0
+    
+    const sum = this.eventIntervals.reduce((a, b) => a + b, 0)
+    return sum / this.eventIntervals.length
+  }
+  
+  /**
+   * 评估连接质量
+   */
+  private assessConnectionQuality(): ConnectionQuality {
+    if (this.eventsReceived < 10) {
+      return ConnectionQuality.UNKNOWN
+    }
+    
+    // 计算事件接收率（基于心跳超时和实际接收间隔）
+    const avgInterval = this.calculateAverageEventInterval()
+    const expectedInterval = this.config.heartbeatTimeout * 0.8 // 80% 的心跳超时时间
+    
+    if (avgInterval === 0) return ConnectionQuality.UNKNOWN
+    
+    const receiveRate = expectedInterval / avgInterval
+    
+    if (receiveRate > 0.95) return ConnectionQuality.EXCELLENT
+    if (receiveRate > 0.80) return ConnectionQuality.GOOD
+    if (receiveRate > 0.60) return ConnectionQuality.FAIR
+    return ConnectionQuality.POOR
+  }
+  
+  /**
+   * 获取连接统计信息
+   */
+  getStats(): SSEConnectionStats {
+    const now = Date.now()
+    const connectedDuration = this.connectedAt > 0 ? now - this.connectedAt : 0
+    
+    return {
+      connectedDuration,
+      eventsReceived: this.eventsReceived,
+      eventsFiltered: this.eventsFiltered,
+      reconnectCount: this.reconnectAttempts,
+      quality: this.assessConnectionQuality(),
+      averageEventInterval: this.calculateAverageEventInterval(),
+      lastEventTime: this.lastEventTime,
+      missedHeartbeats: this.missedHeartbeats,
+    }
+  }
+  
+  /**
+   * 重置统计信息
+   */
+  resetStats(): void {
+    this.connectedAt = Date.now()
+    this.eventsReceived = 0
+    this.eventsFiltered = 0
+    this.lastEventTime = 0
+    this.eventIntervals = []
+    this.missedHeartbeats = 0
+    this.reconnectAttempts = 0
+  }
+  
+  /**
+   * 获取缓冲的事件
+   */
+  getBufferedEvents(): SSEEvent[] {
+    return [...this.eventBuffer]
+  }
+  
+  /**
+   * 清空事件缓冲区
+   */
+  clearBuffer(): void {
+    this.eventBuffer = []
+  }
+  
+  /**
+   * 更新事件过滤配置
+   */
+  updateEventFilter(filter: SSEEventFilterConfig | undefined): void {
+    this.config.eventFilter = filter
+    this.log('Event filter updated:', filter)
   }
 }
 

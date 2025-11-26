@@ -5,8 +5,8 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { buildQueryString, clearQueryStringCache, mergeConfig } from '../../src/utils'
-import type { RequestConfig } from '../../src/types'
+import { buildQueryString, clearQueryStringCache, mergeConfig } from '../../packages/core/src/utils'
+import type { RequestConfig } from '../../packages/core/src/types'
 
 describe('Performance Benchmarks', () => {
   describe('mergeConfig 性能', () => {

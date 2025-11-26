@@ -1,10 +1,12 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
+import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
+  plugins: [vue()],
   test: {
     globals: true,
-    environment: 'jsdom',
+    environment: 'happy-dom', // 从 jsdom 切换到 happy-dom 以解决 Vue 3.5.x slot 渲染问题
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
@@ -52,7 +54,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(__dirname, './packages/core/src'),
+      '@/vue': path.resolve(__dirname, './packages/vue/src'),
     },
   },
 })

@@ -4,7 +4,7 @@ import {
   DeduplicationKeyGenerator,
   createDeduplicationManager,
   createDeduplicationKeyGenerator,
-} from '../../../src/utils/concurrency'
+} from '../../../packages/core/src/utils/concurrency'
 
 describe('DeduplicationManager', () => {
   let manager: DeduplicationManager

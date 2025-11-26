@@ -21,6 +21,7 @@ export * from './circuit-breaker'
 
 // GraphQL 支持
 export * from './graphql'
+export * from './graphql-builder'
 
 // Mock 功能
 export * from './mock'

@@ -5,10 +5,10 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { buildQueryString, combineURLs, isAbsoluteURL } from '../../../src/utils'
-import { OptimizedLRUCache } from '../../../src/utils/cache-lru-optimized'
-import { BloomFilterCache } from '../../../src/utils/cache-bloom-filter'
-import { REGEX_CACHE, RegexUtils } from '../../../src/utils/regex-cache'
+import { buildQueryString, combineURLs, isAbsoluteURL } from '../../../packages/core/src/utils'
+import { OptimizedLRUCache } from '../../../packages/core/src/utils/cache-lru-optimized'
+import { BloomFilterCache } from '../../../packages/core/src/utils/cache-bloom-filter'
+import { REGEX_CACHE, RegexUtils } from '../../../packages/core/src/utils/regex-cache'
 
 describe('Performance Benchmarks', () => {
   describe('buildQueryString 性能测试', () => {

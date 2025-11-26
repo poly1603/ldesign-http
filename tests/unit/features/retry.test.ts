@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { withRetry } from '../../../src/features/retry'
-import type { RequestConfig, ResponseData, HttpError } from '../../../src/types'
+import { withRetry } from '../../../packages/core/src/features/retry'
+import type { RequestConfig, ResponseData, HttpError } from '../../../packages/core/src/types'
 
 describe('Retry Feature', () => {
   let mockNext: ReturnType<typeof vi.fn>

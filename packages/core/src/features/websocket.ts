@@ -33,16 +33,30 @@ export interface WebSocketClientConfig {
   reconnectDelay?: number
   /** 最大重连次数 */
   maxReconnectAttempts?: number
+  /** 重连策略 */
+  reconnectStrategy?: 'linear' | 'exponential' | 'random'
+  /** 最大重连延迟（毫秒），用于指数退避 */
+  maxReconnectDelay?: number
   /** 心跳间隔（毫秒） */
   heartbeatInterval?: number
   /** 心跳消息 */
   heartbeatMessage?: any
+  /** 心跳超时时间（毫秒） */
+  heartbeatTimeout?: number
+  /** 期望的心跳响应消息类型 */
+  heartbeatResponseType?: string
   /** 连接超时（毫秒） */
   connectionTimeout?: number
+  /** 消息确认超时（毫秒） */
+  messageAckTimeout?: number
+  /** 是否启用消息确认 */
+  enableMessageAck?: boolean
   /** 调试模式 */
   debug?: boolean
   /** 自定义请求头（仅 Node.js 环境） */
   headers?: Record<string, string>
+  /** 连接质量检查间隔（毫秒） */
+  qualityCheckInterval?: number
 }
 
 /**
@@ -56,11 +70,60 @@ export type WebSocketEventType =
   | 'reconnect'
   | 'reconnecting'
   | 'reconnect_failed'
+  | 'heartbeat_timeout'
+  | 'quality_change'
+  | 'message_ack'
+  | 'message_timeout'
 
 /**
  * WebSocket 事件监听器
  */
 export type WebSocketEventListener<T = any> = (data?: T) => void
+
+/**
+ * 连接质量等级
+ */
+export enum ConnectionQuality {
+  EXCELLENT = 'excellent',  // 延迟 < 100ms
+  GOOD = 'good',            // 延迟 100-300ms
+  FAIR = 'fair',            // 延迟 300-500ms
+  POOR = 'poor',            // 延迟 > 500ms
+  UNKNOWN = 'unknown'
+}
+
+/**
+ * 连接统计信息
+ */
+export interface ConnectionStats {
+  /** 连接时长（毫秒） */
+  connectedDuration: number
+  /** 发送消息数 */
+  messagesSent: number
+  /** 接收消息数 */
+  messagesReceived: number
+  /** 重连次数 */
+  reconnectCount: number
+  /** 平均延迟（毫秒） */
+  averageLatency: number
+  /** 当前延迟（毫秒） */
+  currentLatency: number
+  /** 连接质量 */
+  quality: ConnectionQuality
+  /** 丢失心跳数 */
+  missedHeartbeats: number
+}
+
+/**
+ * 待确认消息
+ */
+interface PendingMessage {
+  id: string
+  data: any
+  timestamp: number
+  resolve: (value: any) => void
+  reject: (error: Error) => void
+  timeout: ReturnType<typeof setTimeout>
+}
 
 /**
  * WebSocket 客户端
@@ -91,7 +154,10 @@ export type WebSocketEventListener<T = any> = (data?: T) => void
  * ```
  */
 export class WebSocketClient {
-  private config: Omit<Required<WebSocketClientConfig>, 'protocols'> & { protocols?: string | string[] }
+  private config: Omit<Required<WebSocketClientConfig>, 'protocols' | 'heartbeatResponseType'> & {
+    protocols?: string | string[]
+    heartbeatResponseType?: string
+  }
   private ws: WebSocket | null = null
   private status: WebSocketStatus = WebSocketStatus.DISCONNECTED
   private eventListeners: Map<WebSocketEventType, Set<WebSocketEventListener>> = new Map()
@@ -99,7 +165,23 @@ export class WebSocketClient {
   private reconnectAttempts = 0
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null
+  private heartbeatTimeoutTimer: ReturnType<typeof setTimeout> | null = null
   private connectionTimer: ReturnType<typeof setTimeout> | null = null
+  private qualityCheckTimer: ReturnType<typeof setInterval> | null = null
+  
+  // 连接统计
+  private connectedAt: number = 0
+  private messagesSent: number = 0
+  private messagesReceived: number = 0
+  private latencyHistory: number[] = []
+  private lastHeartbeatSent: number = 0
+  private lastHeartbeatReceived: number = 0
+  private missedHeartbeats: number = 0
+  private currentQuality: ConnectionQuality = ConnectionQuality.UNKNOWN
+  
+  // 消息确认
+  private pendingMessages: Map<string, PendingMessage> = new Map()
+  private messageIdCounter: number = 0
 
   constructor(config: WebSocketClientConfig) {
     this.config = {
@@ -108,11 +190,18 @@ export class WebSocketClient {
       autoReconnect: config.autoReconnect ?? true,
       reconnectDelay: config.reconnectDelay ?? 3000,
       maxReconnectAttempts: config.maxReconnectAttempts ?? 5,
+      reconnectStrategy: config.reconnectStrategy ?? 'exponential',
+      maxReconnectDelay: config.maxReconnectDelay ?? 30000,
       heartbeatInterval: config.heartbeatInterval ?? 30000,
       heartbeatMessage: config.heartbeatMessage ?? { type: 'ping' },
+      heartbeatTimeout: config.heartbeatTimeout ?? 5000,
+      heartbeatResponseType: config.heartbeatResponseType,
       connectionTimeout: config.connectionTimeout ?? 10000,
+      messageAckTimeout: config.messageAckTimeout ?? 5000,
+      enableMessageAck: config.enableMessageAck ?? false,
       debug: config.debug ?? false,
       headers: config.headers || {},
+      qualityCheckInterval: config.qualityCheckInterval ?? 10000,
     }
   }
 
@@ -148,10 +237,14 @@ export class WebSocketClient {
 
           this.status = WebSocketStatus.CONNECTED
           this.reconnectAttempts = 0
+          this.connectedAt = Date.now()
           this.log('Connected')
 
           // 启动心跳
           this.startHeartbeat()
+          
+          // 启动连接质量检查
+          this.startQualityCheck()
 
           // 发送队列中的消息
           this.flushMessageQueue()
@@ -192,6 +285,7 @@ export class WebSocketClient {
 
     // 清除定时器
     this.stopHeartbeat()
+    this.stopQualityCheck()
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
@@ -200,6 +294,17 @@ export class WebSocketClient {
       clearTimeout(this.connectionTimer)
       this.connectionTimer = null
     }
+    if (this.heartbeatTimeoutTimer) {
+      clearTimeout(this.heartbeatTimeoutTimer)
+      this.heartbeatTimeoutTimer = null
+    }
+
+    // 清除待确认消息
+    this.pendingMessages.forEach((msg) => {
+      clearTimeout(msg.timeout)
+      msg.reject(new Error('Connection closed'))
+    })
+    this.pendingMessages.clear()
 
     // 关闭连接
     if (this.ws) {
@@ -226,6 +331,7 @@ export class WebSocketClient {
     try {
       const message = typeof data === 'string' ? data : JSON.stringify(data)
       this.ws?.send(message)
+      this.messagesSent++
       this.log('Message sent:', data)
       return true
     }
@@ -233,6 +339,50 @@ export class WebSocketClient {
       this.log('Failed to send message:', error)
       return false
     }
+  }
+
+  /**
+   * 发送消息并等待确认
+   */
+  async sendWithAck(data: any, timeout?: number): Promise<any> {
+    if (!this.config.enableMessageAck) {
+      throw new Error('Message acknowledgment is not enabled')
+    }
+
+    if (this.status !== WebSocketStatus.CONNECTED) {
+      throw new Error('WebSocket is not connected')
+    }
+
+    return new Promise((resolve, reject) => {
+      const messageId = `msg_${++this.messageIdCounter}_${Date.now()}`
+      const messageWithId = {
+        ...data,
+        _id: messageId,
+      }
+
+      const timeoutMs = timeout || this.config.messageAckTimeout
+      const timeoutTimer = setTimeout(() => {
+        this.pendingMessages.delete(messageId)
+        this.emit('message_timeout', { id: messageId, data })
+        reject(new Error(`Message acknowledgment timeout: ${messageId}`))
+      }, timeoutMs)
+
+      this.pendingMessages.set(messageId, {
+        id: messageId,
+        data: messageWithId,
+        timestamp: Date.now(),
+        resolve,
+        reject,
+        timeout: timeoutTimer,
+      })
+
+      const sent = this.send(messageWithId)
+      if (!sent) {
+        clearTimeout(timeoutTimer)
+        this.pendingMessages.delete(messageId)
+        reject(new Error('Failed to send message'))
+      }
+    })
   }
 
   /**
@@ -305,6 +455,35 @@ export class WebSocketClient {
   }
 
   /**
+   * 获取连接统计信息
+   */
+  getStats(): ConnectionStats {
+    const now = Date.now()
+    const connectedDuration = this.isConnected() ? now - this.connectedAt : 0
+    
+    return {
+      connectedDuration,
+      messagesSent: this.messagesSent,
+      messagesReceived: this.messagesReceived,
+      reconnectCount: this.reconnectAttempts,
+      averageLatency: this.calculateAverageLatency(),
+      currentLatency: this.latencyHistory[this.latencyHistory.length - 1] || 0,
+      quality: this.currentQuality,
+      missedHeartbeats: this.missedHeartbeats,
+    }
+  }
+
+  /**
+   * 重置统计信息
+   */
+  resetStats(): void {
+    this.messagesSent = 0
+    this.messagesReceived = 0
+    this.latencyHistory = []
+    this.missedHeartbeats = 0
+  }
+
+  /**
    * 更新配置
    */
   updateConfig(config: Partial<WebSocketClientConfig>): void {
@@ -315,6 +494,12 @@ export class WebSocketClient {
       this.stopHeartbeat()
       this.startHeartbeat()
     }
+    
+    // 如果修改了质量检查配置，重新启动
+    if (this.isConnected() && config.qualityCheckInterval) {
+      this.stopQualityCheck()
+      this.startQualityCheck()
+    }
   }
 
   /**
@@ -322,6 +507,19 @@ export class WebSocketClient {
    */
   getWebSocket(): WebSocket | null {
     return this.ws
+  }
+  
+  /**
+   * 确认消息已接收
+   */
+  acknowledgeMessage(messageId: string, response?: any): void {
+    const pending = this.pendingMessages.get(messageId)
+    if (pending) {
+      clearTimeout(pending.timeout)
+      this.pendingMessages.delete(messageId)
+      pending.resolve(response)
+      this.emit('message_ack', { id: messageId, response })
+    }
   }
 
   /**
@@ -345,6 +543,8 @@ export class WebSocketClient {
    * 处理消息
    */
   private handleMessage(data: string | ArrayBuffer | Blob): void {
+    this.messagesReceived++
+    
     try {
       let message: any
       if (typeof data === 'string') {
@@ -356,6 +556,19 @@ export class WebSocketClient {
       }
 
       this.log('Message received:', message)
+      
+      // 处理心跳响应
+      if (this.config.heartbeatResponseType && message.type === this.config.heartbeatResponseType) {
+        this.handleHeartbeatResponse()
+        return
+      }
+      
+      // 处理消息确认
+      if (this.config.enableMessageAck && message._ack && message._id) {
+        this.acknowledgeMessage(message._id, message.data)
+        return
+      }
+      
       this.emit('message', message)
     }
     catch (error) {
@@ -393,6 +606,8 @@ export class WebSocketClient {
 
     this.emit('reconnecting', { attempts: this.reconnectAttempts })
 
+    const delay = this.calculateReconnectDelay()
+    
     this.reconnectTimer = setTimeout(async () => {
       try {
         await this.connect()
@@ -403,7 +618,31 @@ export class WebSocketClient {
         this.log('Reconnect failed:', error)
         // handleDisconnection 会处理下一次重连
       }
-    }, this.config?.reconnectDelay * this.reconnectAttempts)
+    }, delay)
+  }
+  
+  /**
+   * 计算重连延迟
+   */
+  private calculateReconnectDelay(): number {
+    const { reconnectDelay, reconnectStrategy, maxReconnectDelay } = this.config
+    
+    switch (reconnectStrategy) {
+      case 'linear':
+        return reconnectDelay * this.reconnectAttempts
+        
+      case 'exponential':
+        return Math.min(
+          reconnectDelay * Math.pow(2, this.reconnectAttempts - 1),
+          maxReconnectDelay
+        )
+        
+      case 'random':
+        return reconnectDelay + Math.random() * reconnectDelay * this.reconnectAttempts
+        
+      default:
+        return reconnectDelay
+    }
   }
 
   /**
@@ -416,10 +655,56 @@ export class WebSocketClient {
 
     this.heartbeatTimer = setInterval(() => {
       if (this.isConnected()) {
+        this.lastHeartbeatSent = Date.now()
         this.send(this.config?.heartbeatMessage)
         this.log('Heartbeat sent')
+        
+        // 设置心跳超时检测
+        if (this.config.heartbeatTimeout > 0) {
+          if (this.heartbeatTimeoutTimer) {
+            clearTimeout(this.heartbeatTimeoutTimer)
+          }
+          
+          this.heartbeatTimeoutTimer = setTimeout(() => {
+            this.missedHeartbeats++
+            this.log('Heartbeat timeout')
+            this.emit('heartbeat_timeout', { missed: this.missedHeartbeats })
+            
+            // 如果连续丢失多个心跳，断开连接并重连
+            if (this.missedHeartbeats >= 3) {
+              this.log('Too many missed heartbeats, reconnecting...')
+              this.ws?.close(1000, 'Heartbeat timeout')
+            }
+          }, this.config.heartbeatTimeout)
+        }
       }
     }, this.config?.heartbeatInterval)
+  }
+  
+  /**
+   * 处理心跳响应
+   */
+  private handleHeartbeatResponse(): void {
+    this.lastHeartbeatReceived = Date.now()
+    this.missedHeartbeats = 0
+    
+    if (this.heartbeatTimeoutTimer) {
+      clearTimeout(this.heartbeatTimeoutTimer)
+      this.heartbeatTimeoutTimer = null
+    }
+    
+    // 记录延迟
+    if (this.lastHeartbeatSent > 0) {
+      const latency = this.lastHeartbeatReceived - this.lastHeartbeatSent
+      this.latencyHistory.push(latency)
+      
+      // 只保留最近100次的延迟记录
+      if (this.latencyHistory.length > 100) {
+        this.latencyHistory.shift()
+      }
+    }
+    
+    this.log('Heartbeat received')
   }
 
   /**
@@ -430,6 +715,79 @@ export class WebSocketClient {
       clearInterval(this.heartbeatTimer)
       this.heartbeatTimer = null
     }
+    if (this.heartbeatTimeoutTimer) {
+      clearTimeout(this.heartbeatTimeoutTimer)
+      this.heartbeatTimeoutTimer = null
+    }
+  }
+  
+  /**
+   * 启动连接质量检查
+   */
+  private startQualityCheck(): void {
+    if (this.config.qualityCheckInterval <= 0) {
+      return
+    }
+    
+    this.qualityCheckTimer = setInterval(() => {
+      const newQuality = this.assessConnectionQuality()
+      if (newQuality !== this.currentQuality) {
+        const oldQuality = this.currentQuality
+        this.currentQuality = newQuality
+        this.emit('quality_change', { from: oldQuality, to: newQuality })
+        this.log(`Connection quality changed: ${oldQuality} -> ${newQuality}`)
+      }
+    }, this.config.qualityCheckInterval)
+  }
+  
+  /**
+   * 停止连接质量检查
+   */
+  private stopQualityCheck(): void {
+    if (this.qualityCheckTimer) {
+      clearInterval(this.qualityCheckTimer)
+      this.qualityCheckTimer = null
+    }
+  }
+  
+  /**
+   * 评估连接质量
+   */
+  private assessConnectionQuality(): ConnectionQuality {
+    if (!this.isConnected()) {
+      return ConnectionQuality.UNKNOWN
+    }
+    
+    const avgLatency = this.calculateAverageLatency()
+    
+    if (avgLatency === 0) {
+      return ConnectionQuality.UNKNOWN
+    }
+    
+    if (avgLatency < 100) {
+      return ConnectionQuality.EXCELLENT
+    }
+    else if (avgLatency < 300) {
+      return ConnectionQuality.GOOD
+    }
+    else if (avgLatency < 500) {
+      return ConnectionQuality.FAIR
+    }
+    else {
+      return ConnectionQuality.POOR
+    }
+  }
+  
+  /**
+   * 计算平均延迟
+   */
+  private calculateAverageLatency(): number {
+    if (this.latencyHistory.length === 0) {
+      return 0
+    }
+    
+    const sum = this.latencyHistory.reduce((a, b) => a + b, 0)
+    return Math.round(sum / this.latencyHistory.length)
   }
 
   /**

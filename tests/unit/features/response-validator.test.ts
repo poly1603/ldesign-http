@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { ResponseValidator, Validators } from '../../../src/features/response-validator'
+import { ResponseValidator, Validators } from '../../../packages/core/src/features/response-validator'
 
 describe('ResponseValidator 响应验证测试', () => {
   describe('基础验证测试', () => {

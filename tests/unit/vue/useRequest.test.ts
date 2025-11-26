@@ -1,7 +1,7 @@
-import type { HttpClient, RequestConfig } from '@/types'
+import type { HttpClient, RequestConfig } from '../../../packages/core/src/types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
-import { useRequest } from '@/vue/useRequest'
+import { useRequest } from '../../../packages/vue/src/composables/useRequest'
 import { createMockError, createMockResponse } from '../../setup'
 
 // 创建模拟 HTTP 客户端

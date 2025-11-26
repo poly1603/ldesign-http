@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   EnhancedCacheManager,
   createEnhancedCacheManager,
-} from '../../../src/utils/cache'
-import type { RequestConfig, ResponseData } from '../../../src/types'
+} from '../../../packages/core/src/utils/cache'
+import type { RequestConfig, ResponseData } from '../../../packages/core/src/types'
 
 describe('EnhancedCacheManager', () => {
   let cacheManager: EnhancedCacheManager

@@ -1,37 +1,82 @@
 /**
- * 请求录制和回放功能
- * 
+ * 请求录制、回放和 Mock 生成功能
+ *
  * 用于开发和测试场景，录制真实的 HTTP 请求和响应
  * 后续可以回放这些录制内容，实现离线开发和测试
- * 
+ * 支持智能 Mock 数据生成和场景管理
+ *
  * @example
  * ```typescript
  * import { createHttpClient, RequestRecorder } from '@ldesign/http'
- * 
+ *
  * const recorder = new RequestRecorder()
  * const client = await createHttpClient({
  *   baseURL: 'https://api.example.com'
  * })
- * 
+ *
  * // 添加录制拦截器
  * recorder.attachToClient(client)
- * 
+ *
  * // 开始录制
  * recorder.startRecording()
  * await client.get('/users')
  * await client.post('/users', { name: 'John' })
- * 
+ *
  * // 停止录制并保存
  * const recordings = recorder.stopRecording()
  * await recorder.saveToFile('./recordings.json')
- * 
+ *
  * // 回放录制
  * recorder.enableReplayMode()
  * const response = await client.get('/users') // 返回录制的响应
+ *
+ * // 生成 Mock 数据
+ * const mockData = recorder.generateMockData()
+ * await recorder.exportAsMockJS('./mocks.js')
  * ```
  */
 
 import type { HttpClient, RequestConfig, ResponseData } from '../types'
+
+/**
+ * 匹配策略
+ */
+export enum MatchStrategy {
+  /** 精确匹配 - URL、方法、参数、请求体都必须完全匹配 */
+  EXACT = 'exact',
+  /** URL 匹配 - 只匹配 URL 和方法 */
+  URL = 'url',
+  /** 模式匹配 - 支持 URL 模式（通配符） */
+  PATTERN = 'pattern',
+  /** 自定义匹配 - 使用自定义匹配函数 */
+  CUSTOM = 'custom',
+}
+
+/**
+ * Mock 数据类型
+ */
+export enum MockDataType {
+  /** 静态数据 - 使用录制的真实数据 */
+  STATIC = 'static',
+  /** 动态数据 - 使用模板生成随机数据 */
+  DYNAMIC = 'dynamic',
+  /** 函数 - 使用函数生成数据 */
+  FUNCTION = 'function',
+}
+
+/**
+ * 场景配置
+ */
+export interface ScenarioConfig {
+  /** 场景名称 */
+  name: string
+  /** 场景描述 */
+  description?: string
+  /** 场景包含的录制 ID 列表 */
+  recordingIds: string[]
+  /** 场景标签 */
+  tags?: string[]
+}
 
 /**
  * 录制项

@@ -1,38 +1,64 @@
+/**
+ * @ldesign/http-vue Builder Configuration
+ *
+ * 使用 TDesign 风格的构建配置
+ * 生成 es/、esm/、cjs/、dist/ 四种产物
+ */
+
 import { defineConfig } from '@ldesign/builder'
 
-/**
- * @ldesign/http-vue 构建配置
- *
- * 产物格式:
- * - esm/ - ESM 模块 (.js)
- * - cjs/ - CommonJS 模块 (.cjs)
- */
 export default defineConfig({
+  // 输入配置 - 使用主入口文件
   entry: 'src/index.ts',
 
+  // 输出配置 - TDesign 风格
   output: {
+    // ES 模块 - 使用 .mjs + 编译后的 CSS
+    es: {
+      dir: 'es',
+      sourcemap: true
+    },
+
+    // ESM 模块 - 使用 .js + 保留 less 源文件
     esm: {
       dir: 'esm',
-      sourcemap: true,
+      sourcemap: true
     },
+
+    // CJS 模块 - 忽略样式
     cjs: {
       dir: 'cjs',
-      sourcemap: true,
+      sourcemap: true
     },
+
+    // UMD 模块 - 单个 CSS
+    umd: {
+      dir: 'dist',
+      name: 'LDesignHttp',
+      globals: {
+        vue: 'Vue',
+        '@ldesign/http-core': 'LDesignHttpCore'
+      }
+    }
   },
 
-  external: [
-    'vue',
-    '@ldesign/http-core',
-    '@ldesign/engine',
-    '@ldesign/shared',
-    'tslib',
-  ],
+  // 外部依赖
+  external: ['vue', '@ldesign/http-core', '@ldesign/engine', '@ldesign/shared'],
 
+  // 全局变量映射 (UMD 使用)
+  globals: {
+    vue: 'Vue',
+    '@ldesign/http-core': 'LDesignHttpCore'
+  },
+
+  // 库类型
   libraryType: 'vue3',
+
+  // 打包器
   bundler: 'rollup',
 
+  // 类型声明
   dts: {
-    enabled: true,
-  },
+    enabled: true
+  }
 })

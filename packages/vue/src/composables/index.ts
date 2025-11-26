@@ -148,3 +148,9 @@ export {
 export type {
   ThrottleOptions,
 } from './useThrottledRequest'
+
+// WebSocket, SSE, 上传下载管理
+export * from './useWebSocket'
+export * from './useSSE'
+export * from './useUploadQueue'
+export * from './useDownloadManager'

@@ -3,8 +3,8 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { RequestReplayer } from '../../../src/features/request-replay'
-import type { HttpClient, HttpError } from '../../../src/types'
+import { RequestReplayer } from '../../../packages/core/src/features/request-replay'
+import type { HttpClient, HttpError } from '../../../packages/core/src/types'
 
 describe('RequestReplayer 请求重放测试', () => {
   let mockClient: HttpClient

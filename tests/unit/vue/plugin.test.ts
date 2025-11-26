@@ -1,7 +1,8 @@
-import type { HttpClient } from '@/types'
+import type { HttpClient } from '../../../packages/core/src/types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, getCurrentInstance } from 'vue'
-import { HttpPlugin, HttpProvider } from '@/vue/plugin'
+import { HttpPlugin } from '../../../packages/vue/src/plugin'
+import { HttpProvider } from '../../../packages/vue/src/components'
 
 // Mock getCurrentInstance
 vi.mock('vue', async () => {

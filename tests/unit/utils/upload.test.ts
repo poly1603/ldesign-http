@@ -11,7 +11,7 @@ import {
   isAudioFile,
   isDocumentFile,
   FileValidationError,
-} from '../../../src/utils/upload'
+} from '../../../packages/core/src/utils/upload'
 
 describe('Upload Utils', () => {
   describe('validateFile', () => {

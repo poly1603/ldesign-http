@@ -4,8 +4,8 @@ import {
   ErrorType,
   ErrorAnalyzer,
   builtinRecoveryStrategies,
-} from '../../../src/utils/error'
-import type { HttpError, ErrorRecoveryStrategy } from '../../../src/types'
+} from '../../../packages/core/src/utils/error'
+import type { HttpError, ErrorRecoveryStrategy } from '../../../packages/core/src/types'
 
 // Mock fetch
 global.fetch = vi.fn()
