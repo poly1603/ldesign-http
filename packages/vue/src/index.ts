@@ -92,6 +92,39 @@ export {
   useThrottledRequest,
 } from './composables/useThrottledRequest'
 
+export {
+  // WebSocket
+  useWebSocket,
+} from './composables/useWebSocket'
+
+export {
+  // WebSocket 管理器
+  useWebSocketManager,
+  getWebSocketManager,
+  WebSocketManager,
+} from './composables/useWebSocketManager'
+
+export type {
+  WebSocketManagerOptions,
+  MessageSubscriber,
+  ConnectionStats,
+} from './composables/useWebSocketManager'
+
+export {
+  // SSE
+  useSSE,
+} from './composables/useSSE'
+
+export {
+  // 上传队列
+  useUploadQueue,
+} from './composables/useUploadQueue'
+
+export {
+  // 下载管理器
+  useDownloadManager,
+} from './composables/useDownloadManager'
+
 // ==================== 插件系统 ====================
 
 // Vue Plugin - 用于标准 Vue 应用

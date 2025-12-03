@@ -506,6 +506,66 @@ const {
 </template>
 ```
 
+### useWebSocketManager
+
+全局 WebSocket 连接管理器，支持多连接管理、消息订阅/发布、自动重连等功能。
+
+```vue
+<script setup lang="ts">
+import { useWebSocketManager } from '@ldesign/http-vue'
+
+const { connect, subscribe, send, disconnect, getStats } = useWebSocketManager()
+
+// 连接 WebSocket
+const ws = connect('chat', 'ws://localhost:3000/chat', {
+  autoReconnect: true,
+  reconnectDelay: 3000,
+  maxReconnectAttempts: 5,
+  heartbeatInterval: 30000
+})
+
+// 订阅消息
+const unsubscribe = subscribe('chat', (data, event) => {
+  console.log('收到消息:', data)
+  // 处理消息...
+})
+
+// 发送消息
+function sendMessage(content: string) {
+  send('chat', {
+    type: 'message',
+    content,
+    timestamp: Date.now()
+  })
+}
+
+// 获取连接统计
+const stats = getStats()
+console.log('连接统计:', stats)
+
+// 断开连接
+function handleDisconnect() {
+  disconnect('chat')
+}
+</script>
+
+<template>
+  <div>
+    <div>连接状态: {{ ws.status.value }}</div>
+    <div>活跃连接数: {{ stats.activeConnections }}</div>
+    <button @click="sendMessage('Hello')">发送消息</button>
+    <button @click="handleDisconnect">断开连接</button>
+  </div>
+</template>
+```
+
+**特性：**
+- 连接池管理：支持同时管理多个 WebSocket 连接
+- 消息订阅/发布：多个订阅者可以订阅同一个连接的消息
+- 自动重连：支持断线自动重连
+- 引用计数：自动管理连接生命周期
+- 性能监控：提供连接统计信息
+
 ### useSSE
 
 Server-Sent Events。

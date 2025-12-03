@@ -151,6 +151,7 @@ export type {
 
 // WebSocket, SSE, 上传下载管理
 export * from './useWebSocket'
+export * from './useWebSocketManager'
 export * from './useSSE'
 export * from './useUploadQueue'
 export * from './useDownloadManager'
