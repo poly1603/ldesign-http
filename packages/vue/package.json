@@ -91,27 +91,17 @@
       "require": "./cjs/types/*.cjs",
       "default": "./esm/types/*.js"
     },
-    "./cjs/components/HttpError/index.css": "./cjs/components/HttpError/index.css",
-    "./cjs/components/HttpLoader/index.css": "./cjs/components/HttpLoader/index.css",
-    "./cjs/components/HttpProgress/index.css": "./cjs/components/HttpProgress/index.css",
-    "./cjs/components/HttpRetry/index.css": "./cjs/components/HttpRetry/index.css",
-    "./cjs/index.css": "./cjs/index.css",
-    "./dist/index.css": "./dist/index.css",
-    "./dist/index.min.css": "./dist/index.min.css",
     "./package.json": "./package.json"
   },
   "main": "./cjs/index.cjs",
   "module": "./esm/index.js",
   "types": "./esm/index.d.ts",
-  "unpkg": "./dist/index.min.js",
-  "jsdelivr": "./dist/index.min.js",
+  "unpkg": "./dist/index.js",
+  "jsdelivr": "./dist/index.js",
   "files": [
     "README.md",
     "LICENSE",
-    "CHANGELOG.md",
-    "esm",
-    "cjs",
-    "dist"
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "ldesign-builder build",

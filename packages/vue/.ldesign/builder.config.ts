@@ -9,7 +9,7 @@ import { defineConfig } from '@ldesign/builder'
 
 export default defineConfig({
   // 输入配置 - 使用主入口文件
-  entry: 'src/index.ts',
+  input: 'src/index.ts',
 
   // 输出配置 - TDesign 风格
   output: {
@@ -42,17 +42,22 @@ export default defineConfig({
     }
   },
 
-  // 外部依赖
-  external: ['vue', '@ldesign/http-core', '@ldesign/engine', '@ldesign/shared'],
+  // 外部依赖 - 包含所有子路径
+  external: [
+    'vue',
+    '@ldesign/http-core',
+    '@ldesign/http-core/adapters',
+    '@ldesign/http-core/types',
+    '@ldesign/engine',
+    '@ldesign/engine-core',
+    '@ldesign/shared',
+  ],
 
   // 全局变量映射 (UMD 使用)
   globals: {
     vue: 'Vue',
     '@ldesign/http-core': 'LDesignHttpCore'
   },
-
-  // 库类型
-  libraryType: 'vue3',
 
   // 打包器
   bundler: 'rollup',
