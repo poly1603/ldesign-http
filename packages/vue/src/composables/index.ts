@@ -155,3 +155,25 @@ export * from './useWebSocketManager'
 export * from './useSSE'
 export * from './useUploadQueue'
 export * from './useDownloadManager'
+
+/**
+ * ===================
+ * LEAP RPC 支持
+ * ===================
+ */
+
+// LEAP 组合式 API（兼容老系统）
+export {
+  useLeap,
+  useLeapQuery,
+  useLeapMutation,
+  useLeapPagination,
+  createLeapProvider,
+  LEAP_CLIENT_KEY,
+  LEAP_KEY,
+} from './useLeap'
+
+export type {
+  UseLeapOptions,
+  UseLeapReturn,
+} from './useLeap'

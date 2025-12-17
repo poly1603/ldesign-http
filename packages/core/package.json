@@ -130,6 +130,18 @@
       "require": "./lib/interceptors/*.cjs",
       "default": "./es/interceptors/*.js"
     },
+    "./leap": {
+      "types": "./es/leap/index.d.ts",
+      "import": "./es/leap/index.js",
+      "require": "./lib/leap/index.cjs",
+      "default": "./es/leap/index.js"
+    },
+    "./leap/*": {
+      "types": "./es/leap/*.d.ts",
+      "import": "./es/leap/*.js",
+      "require": "./lib/leap/*.cjs",
+      "default": "./es/leap/*.js"
+    },
     "./middleware": {
       "types": "./es/middleware/index.d.ts",
       "import": "./es/middleware/index.js",
