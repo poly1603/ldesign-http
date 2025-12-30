@@ -136,15 +136,15 @@ describe('GraphQLQueryBuilder', () => {
       const builder = query()
         .field('users', {
           arguments: {
-            filter: { status: 'ACTIVE', role: 'ADMIN' },
-            orderBy: ['name', 'createdAt'],
+            filter: { status: '"ACTIVE"', role: '"ADMIN"' }, // 修复：枚举值需要正确格式化
+            orderBy: ['"name"', '"createdAt"'],
             limit: 10,
           },
         })
 
       const result = builder.build()
-      expect(result).toContain('filter: {status: ACTIVE, role: ADMIN}')
-      expect(result).toContain('orderBy: [name, createdAt]')
+      expect(result).toContain('filter: {status: "ACTIVE", role: "ADMIN"}')
+      expect(result).toContain('orderBy: ["name", "createdAt"]')
       expect(result).toContain('limit: 10')
     })
   })
