@@ -92,6 +92,12 @@ export interface HttpLoaderProps<T = any> {
    * 空数据判断函数
    */
   isEmpty?: (data: T) => boolean
+
+  /**
+   * 是否使用深色主题
+   * @default false
+   */
+  dark?: boolean
 }
 
 /**

@@ -1,87 +1,34 @@
 # @ldesign/http
 
-🚀 功能强大的跨框架HTTP请求库 - 支持16个框架，内置拦截器、缓存、重试、进度跟踪等企业级功能
-
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
-[![pnpm](https://img.shields.io/badge/pnpm-9.15-orange)](https://pnpm.io/)
-[![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
-
-## ✨ 特性
-
-- 🎯 **16个框架支持** - Vue, React, Svelte, Solid, Angular, Preact, Lit, Qwik, Next.js, Nuxt, Remix, SvelteKit 等
-- 💻 **TypeScript First** - 完整的类型定义和泛型支持
-- 🚀 **企业级功能** - 拦截器、缓存、重试、取消请求、进度跟踪
-- 🎭 **性能优化** - 请求队列、去重、批量处理
-- 🔌 **多适配器** - Axios / Fetch API / 自定义适配器
-- 🧩 **模块化设计** - 核心包 + 框架适配层
-- 📦 **树摇支持** - ESM + CJS + TypeScript声明
-- ⚙️ **高度可配置** - 灵活的配置选项
-
-## 📚 文档
-
 <div align="center">
 
 ![ldesign HTTP](https://img.shields.io/badge/@ldesign-http-blue?style=for-the-badge)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
 ![Vue 3](https://img.shields.io/badge/Vue.js-35495E?style=for-the-badge&logo=vuedotjs&logoColor=4FC08D)
 ![MIT License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)
-![Test Coverage](https://img.shields.io/badge/Coverage-51.1%25-yellow?style=for-the-badge)
 
 **🚀 现代化、高性能、类型安全的 HTTP 客户端库**
 
-_功能强大 • 类型安全 • 开箱即用 • Tree-shakable • 372+ 测试用例_
+_功能强大 • 类型安全 • 开箱即用 • Tree-shakable_
 
-[快速开始](./QUICK_START.md) • [完整文档](./docs) • [API 参考](./docs/api/README.md) • [示例项目](./examples)
-
-**📖 文档导航**:
-- 🚀 [最佳实践指南](./docs/BEST_PRACTICES.md) - 推荐的使用模式和技巧
-- ⚡ [性能优化指南](./docs/PERFORMANCE.md) - 性能优化策略和基准测试
-- ❓ [常见问题 FAQ](./docs/FAQ.md) - 常见问题解答
-- 📘 [API 文档](./docs/api/README.md) - 完整的 API 参考
+[快速开始](#-快速开始) • [API 参考](#-api-参考) • [Vue 集成](#-vue-3-集成) • [高级功能](#-高级功能)
 
 </div>
 
 ---
 
-## 🎉 v0.2.0 架构重构版本
-
-本版本进行了全面的架构重构,提供更清晰、更模块化的包结构:
-
-### 🏗️ 架构改进
-- 📦 **统一核心包** - 所有核心功能合并到 `@ldesign/http-core`
-- 🎯 **框架适配器分离** - React、Vue、Solid、Svelte 独立包
-- 🧹 **消除重复** - 删除 8 个重复包,简化依赖关系
-- 📝 **清晰职责** - 核心包完全框架无关
-- 🌳 **更好的 Tree-shaking** - 子模块导出,按需加载
-
-### 📦 新包结构
-```
-@ldesign/http-core      # 核心包 (框架无关)
-@ldesign/http-react     # React 适配器
-@ldesign/http-vue       # Vue 适配器
-@ldesign/http-solid     # Solid 适配器
-@ldesign/http-svelte    # Svelte 适配器
-```
-
-### 📚 重要文档
-- [重构完成报告](./REFACTORING_COMPLETED.md) ⭐ **了解重构详情**
-- [迁移指南](./MIGRATION_GUIDE.md) ⭐ **从 v0.1.x 迁移**
-- [重构计划](./REFACTORING_PLAN.md) - 详细设计方案
-
----
-
 ## ✨ 特性亮点
 
-🎯 **多适配器架构** - 支持 Fetch、Axios、Alova，自动选择最佳适配器
-🔧 **强大拦截器** - 完整的请求/响应拦截器链，支持异步处理
-💾 **智能缓存** - 高级缓存系统，支持标签失效、依赖管理、LRU策略
-🔄 **自动重试** - 智能重试机制，支持指数退避和自定义策略
-🛡️ **错误恢复** - 内置错误恢复策略，自动处理网络异常
-⚡ **并发控制** - 内置并发限制、请求去重和队列管理
-🎯 **TypeScript 优先** - 完整类型支持，丰富的类型工具
-🌟 **Vue 3 深度集成** - 专为 Vue 3 设计的 Composition API
-📊 **性能监控** - 内置统计分析和性能监控
-🧪 **测试友好** - 372+ 测试用例，51.1% 代码覆盖率
+| 特性 | 描述 |
+|------|------|
+| 🎯 **多适配器架构** | 支持 Fetch、Axios、Alova，自动选择最佳适配器 |
+| 🔧 **强大拦截器** | 完整的请求/响应拦截器链，支持异步处理 |
+| 💾 **智能缓存** | 高级缓存系统，支持 LRU 策略、标签失效 |
+| 🔄 **自动重试** | 智能重试机制，支持指数退避 |
+| ⚡ **并发控制** | 内置并发限制、请求去重和队列管理 |
+| 🛡️ **类型安全** | 完整 TypeScript 支持，丰富的类型工具 |
+| 🌟 **Vue 3 深度集成** | 专为 Vue 3 设计的 Composition API |
+| 📊 **性能监控** | 内置统计分析和性能监控 |
 
 ## 🚀 快速开始
 

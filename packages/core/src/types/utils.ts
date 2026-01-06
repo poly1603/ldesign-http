@@ -332,3 +332,205 @@ export function wrapPromise<T>(promise: Promise<T>): {
     reject,
   }
 }
+
+// ==================== 额外的实用类型 ====================
+
+/**
+ * 可选的 Promise：允许值是 T 或 Promise<T>
+ */
+export type MaybePromise<T> = T | Promise<T>
+
+/**
+ * 提取数组类型的元素类型
+ */
+export type ElementOf<T> = T extends (infer E)[] ? E : never
+
+/**
+ * 构造函数类型
+ */
+export type Constructor<T = any> = new (...args: any[]) => T
+
+/**
+ * 获取函数参数类型（已定义在 TypeScript 内置，但这里提供别名）
+ */
+export type Params<T extends (...args: any[]) => any> = Parameters<T>
+
+/**
+ * 获取函数返回类型（已定义在 TypeScript 内置，但这里提供别名）
+ */
+export type Returns<T extends (...args: any[]) => any> = ReturnType<T>
+
+/**
+ * 排除 undefined
+ */
+export type NonUndefined<T> = T extends undefined ? never : T
+
+/**
+ * 排除 null 和 undefined
+ */
+export type NonNullable<T> = T extends null | undefined ? never : T
+
+/**
+ * 记录类型的简写
+ */
+export type Dict<T = any> = Record<string, T>
+
+/**
+ * 字符串字面量类型
+ */
+export type StringLiteral<T> = T extends string ? (string extends T ? never : T) : never
+
+/**
+ * 不可变的对象
+ */
+export type Immutable<T> = {
+  readonly [K in keyof T]: T[K] extends object ? Immutable<T[K]> : T[K]
+}
+
+/**
+ * 可变的对象（移除 readonly）
+ */
+export type Mutable<T> = {
+  -readonly [K in keyof T]: T[K]
+}
+
+/**
+ * 获取对象的必选属性键
+ */
+export type RequiredKeys<T> = {
+  [K in keyof T]-?: {} extends Pick<T, K> ? never : K
+}[keyof T]
+
+/**
+ * 获取对象的可选属性键
+ */
+export type OptionalKeys<T> = {
+  [K in keyof T]-?: {} extends Pick<T, K> ? K : never
+}[keyof T]
+
+/**
+ * 扩展类型（用于 IDE 提示优化）
+ */
+export type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never
+
+/**
+ * 深度扩展类型
+ */
+export type DeepExpand<T> = T extends object
+  ? T extends infer O ? { [K in keyof O]: DeepExpand<O[K]> } : never
+  : T
+
+/**
+ * 结果类型（用于表示可能成功或失败的操作）
+ */
+export type Result<T, E = Error> =
+  | { success: true; data: T; error?: never }
+  | { success: false; data?: never; error: E }
+
+/**
+ * 创建成功结果
+ */
+export function ok<T>(data: T): Result<T, never> {
+  return { success: true, data }
+}
+
+/**
+ * 创建失败结果
+ */
+export function err<E = Error>(error: E): Result<never, E> {
+  return { success: false, error }
+}
+
+/**
+ * 检查结果是否成功
+ */
+export function isOk<T, E>(result: Result<T, E>): result is { success: true; data: T } {
+  return result.success
+}
+
+/**
+ * 检查结果是否失败
+ */
+export function isErr<T, E>(result: Result<T, E>): result is { success: false; error: E } {
+  return !result.success
+}
+
+/**
+ * 安全执行可能抛出异常的函数
+ */
+export async function tryCatch<T, E = Error>(
+  fn: () => Promise<T> | T,
+): Promise<Result<T, E>> {
+  try {
+    const data = await fn()
+    return ok(data)
+  } catch (error) {
+    return err(error as E)
+  }
+}
+
+/**
+ * 延迟函数（类型安全）
+ */
+export function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/**
+ * 超时包装器
+ */
+export async function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  timeoutError?: Error,
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout>
+  
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(timeoutError ?? new Error(`Operation timed out after ${ms}ms`))
+    }, ms)
+  })
+
+  try {
+    return await Promise.race([promise, timeoutPromise])
+  } finally {
+    clearTimeout(timeoutId!)
+  }
+}
+
+/**
+ * 重试包装器
+ */
+export async function retry<T>(
+  fn: () => Promise<T>,
+  options: {
+    retries?: number
+    delay?: number
+    backoff?: number
+    shouldRetry?: (error: unknown, attempt: number) => boolean
+  } = {},
+): Promise<T> {
+  const { retries = 3, delay: delayMs = 1000, backoff = 2, shouldRetry } = options
+  let lastError: unknown
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn()
+    } catch (error) {
+      lastError = error
+      
+      if (attempt === retries) {
+        throw error
+      }
+
+      if (shouldRetry && !shouldRetry(error, attempt)) {
+        throw error
+      }
+
+      await delay(delayMs * Math.pow(backoff, attempt))
+    }
+  }
+
+  throw lastError
+}
