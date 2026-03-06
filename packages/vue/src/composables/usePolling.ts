@@ -96,7 +96,7 @@ export function usePolling<T = any>(
  requestConfig: RequestConfig,
  config: PollingConfig,
 ): UsePollingReturn<T> {
- const client = config.client || createHttpClient()
+ const clientOrPromise = config.client || createHttpClient()
 
  const data = ref<T | null>(null)
  const loading = ref(false)
@@ -138,6 +138,7 @@ export function usePolling<T = any>(
    loading.value = true
    error.value = null
 
+   const client = 'then' in clientOrPromise ? await clientOrPromise : clientOrPromise
    const response = await client.request<T>(requestConfig)
    data.value = response.data
    pollCount.value++

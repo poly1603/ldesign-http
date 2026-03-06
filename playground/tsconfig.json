@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "jsx": "preserve",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "noEmit": true,
+    "paths": {
+      "@ldesign/http-core": ["../packages/core/src"],
+      "@ldesign/http-core/*": ["../packages/core/src/*"],
+      "@ldesign/http-vue": ["../packages/vue/src"],
+      "@ldesign/http-vue/*": ["../packages/vue/src/*"],
+      "@ldesign/engine-vue3": ["../../engine/packages/vue3/src"],
+      "@ldesign/engine-vue3/*": ["../../engine/packages/vue3/src/*"],
+      "@ldesign/engine-core": ["../../engine/packages/core/src"],
+      "@ldesign/engine-core/*": ["../../engine/packages/core/src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.vue", "env.d.ts"]
+}

@@ -81,7 +81,7 @@ export function useResource<T = any>(
   baseUrl: MaybeRef<string>,
   options: ResourceOptions<T> = {},
 ): ResourceReturn<T> {
-  const client = createHttpClient(options.clientConfig)
+  const clientPromise = createHttpClient(options.clientConfig)
 
   // 响应式状态
   const items = ref<T[]>([])
@@ -141,6 +141,7 @@ export function useResource<T = any>(
         signal: abortController?.signal,
       }
 
+      const client = await clientPromise
       const response = await client.get<T[]>(unref(baseUrl), requestConfig)
       let data = response.data
 
@@ -166,6 +167,7 @@ export function useResource<T = any>(
         signal: abortController?.signal,
       }
 
+      const client = await clientPromise
       const response = await client.get<T>(url, requestConfig)
       let data = response.data
 
@@ -190,6 +192,7 @@ export function useResource<T = any>(
         signal: abortController?.signal,
       }
 
+      const client = await clientPromise
       const response = await client.post<T>(unref(baseUrl), data, requestConfig)
       let responseData = response.data
 
@@ -219,6 +222,7 @@ export function useResource<T = any>(
         signal: abortController?.signal,
       }
 
+      const client = await clientPromise
       const response = await client.put<T>(url, data, requestConfig)
       let responseData = response.data
 
@@ -251,6 +255,7 @@ export function useResource<T = any>(
         signal: abortController?.signal,
       }
 
+      const client = await clientPromise
       await client.delete(url, requestConfig)
 
       // 从列表中移除

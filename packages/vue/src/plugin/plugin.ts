@@ -2,8 +2,8 @@
  * @ldesign/http-vue 插件系统
  *
  * 提供两种插件：
- * 1. 标准 Vue 插件 - 用于普通 Vue 应用
- * 2. Engine 插件 - 用于 LDesign Engine 集成
+ * 1. createHttpPlugin - 标准 Vue 插件，用于普通 Vue 3 应用
+ * 2. createHttpEnginePlugin - Engine 适配器插件，用于 @ldesign/engine-vue3 集成
  */
 
 import type { App, Plugin } from 'vue'
@@ -14,7 +14,7 @@ import { HTTP_CLIENT_KEY } from '../lib/symbols'
 // ==================== 类型定义 ====================
 
 /**
- * HTTP 插件配置选项
+ * HTTP 插件配置选项（原生 Vue 插件）
  */
 export interface HttpPluginOptions {
   /**
@@ -87,10 +87,13 @@ export interface HttpEnginePluginOptions extends HttpPluginOptions {
   priority?: number
 }
 
-// ==================== Vue 插件 ====================
+// ==================== 原生 Vue 插件 ====================
 
 /**
- * 创建 HTTP Vue 插件
+ * 创建 HTTP Vue 插件（原生 Vue 应用）
+ *
+ * 适用于标准 Vue 3 应用，通过 `app.use()` 安装。
+ * 安装后可通过 `inject(HTTP_CLIENT_KEY)` 或 `$http` 全局属性访问客户端。
  *
  * @param options - 插件配置选项
  * @returns Vue 插件实例
@@ -105,6 +108,8 @@ export interface HttpEnginePluginOptions extends HttpPluginOptions {
  * app.use(createHttpPlugin({
  *   baseURL: 'https://api.example.com',
  *   timeout: 10000,
+ *   enableCache: true,
+ *   enableRetry: true,
  * }))
  * ```
  */
@@ -158,21 +163,37 @@ export function createHttpPlugin(options: HttpPluginOptions = {}): Plugin {
  */
 export const HttpPlugin: Plugin = createHttpPlugin()
 
-// ==================== Engine 插件 ====================
+// ==================== Engine 适配器插件 ====================
+
+/**
+ * 安装 HTTP 客户端到 Vue 应用实例
+ */
+function installToVueApp(
+  app: any,
+  client: HttpClient,
+  globalProperties: boolean,
+): void {
+  app.provide(HTTP_CLIENT_KEY, client)
+  if (globalProperties) {
+    app.config.globalProperties.$http = client
+  }
+}
 
 /**
  * 创建 HTTP Engine 插件
- * 用于与 @ldesign/engine 集成
+ *
+ * 适用于 @ldesign/engine-vue3 集成。遵循 Engine 插件接口，
+ * 会自动检测 Vue 应用状态并注入 HTTP 客户端。
  *
  * @param options - Engine 插件配置选项
  * @returns Engine 插件实例
  *
  * @example
  * ```ts
- * import { createEngine } from '@ldesign/engine'
+ * import { createVueEngine } from '@ldesign/engine-vue3'
  * import { createHttpEnginePlugin } from '@ldesign/http-vue'
  *
- * const engine = createEngine({
+ * const engine = createVueEngine({
  *   plugins: [
  *     createHttpEnginePlugin({
  *       baseURL: 'https://api.example.com',
@@ -180,6 +201,8 @@ export const HttpPlugin: Plugin = createHttpPlugin()
  *     }),
  *   ],
  * })
+ *
+ * await engine.mount('#app')
  * ```
  */
 export function createHttpEnginePlugin(options: HttpEnginePluginOptions = {}) {
@@ -201,18 +224,11 @@ export function createHttpEnginePlugin(options: HttpEnginePluginOptions = {}) {
     name,
     priority,
     async install(context: any) {
-      // 从 context 中提取 engine（兼容不同的插件系统）
       const engine: any = context?.engine || context
 
       if (!engine) {
         throw new Error('[HTTP Plugin] Engine instance not found in context')
       }
-
-      console.log('[HTTP Plugin] Installing with engine:', {
-        hasGetApp: typeof engine.getApp === 'function',
-        hasEvents: !!engine.events,
-        hasApi: !!engine.api,
-      })
 
       // 创建或使用提供的 HTTP 客户端
       const client = providedClient || await createHttpClient({
@@ -224,55 +240,33 @@ export function createHttpEnginePlugin(options: HttpEnginePluginOptions = {}) {
         retry: enableRetry ? { maxRetries: retryCount } : undefined,
       })
 
-      // 注册到 Engine API 注册表
+      // 注册到 Engine API（如果可用）
       if (engine.api && typeof engine.api.register === 'function') {
         engine.api.register({
           name: 'http',
           version: '1.0.0',
           client,
-          // 提供便捷方法
           get: client.get.bind(client),
           post: client.post.bind(client),
           put: client.put.bind(client),
           delete: client.delete.bind(client),
           request: client.request.bind(client),
         })
-        console.log('[HTTP Plugin] Registered to Engine API')
       }
 
-      // 等待 Vue 应用创建
-      const installToVueApp = (app: any) => {
-        // 提供 HTTP 客户端到 Vue 应用
-        app.provide(HTTP_CLIENT_KEY, client)
-
-        // 添加全局属性
-        if (globalProperties) {
-          app.config.globalProperties.$http = client
-        }
+      // 注册到 Engine 容器（如果可用）
+      if (context.container && typeof context.container.singleton === 'function') {
+        context.container.singleton('httpClient', client)
       }
 
-      // 如果 Vue 应用已经创建，立即安装
+      // 安装到 Vue 应用
       const vueApp = engine.getApp?.()
-      console.log('[HTTP Plugin] Checking Vue app:', {
-        hasApp: !!vueApp,
-        hasEvents: !!engine.events,
-        hasOnce: !!(engine.events && typeof engine.events.once === 'function'),
-      })
-
       if (vueApp) {
-        console.log('[HTTP Plugin] Vue app already exists, installing immediately')
-        installToVueApp(vueApp)
-      }
-      else if (engine.events && typeof engine.events.once === 'function') {
-        // 否则等待 app:created 事件
-        console.log('[HTTP Plugin] Waiting for app:created event')
+        installToVueApp(vueApp, client, globalProperties)
+      } else if (engine.events && typeof engine.events.once === 'function') {
         engine.events.once('app:created', ({ app }: any) => {
-          console.log('[HTTP Plugin] app:created event received, installing to Vue app')
-          installToVueApp(app)
+          installToVueApp(app, client, globalProperties)
         })
-      }
-      else {
-        console.warn('[HTTP Plugin] Engine does not have events API, cannot install to Vue app')
       }
     },
   }
@@ -280,8 +274,6 @@ export function createHttpEnginePlugin(options: HttpEnginePluginOptions = {}) {
 
 /**
  * 创建默认 HTTP Engine 插件
- *
- * @returns 默认配置的 Engine 插件实例
  */
 export function createDefaultHttpEnginePlugin() {
   return createHttpEnginePlugin({
@@ -300,10 +292,10 @@ export function createDefaultHttpEnginePlugin() {
  *
  * @example
  * ```ts
- * import { createEngine } from '@ldesign/engine'
+ * import { createVueEngine } from '@ldesign/engine-vue3'
  * import { httpPlugin } from '@ldesign/http-vue'
  *
- * const engine = createEngine({
+ * const engine = createVueEngine({
  *   plugins: [httpPlugin],
  * })
  * ```

@@ -64,7 +64,7 @@ function createHttpHook<T = unknown, D = unknown>(
   config?: MaybeRef<RequestConfig>,
   options: BasicHttpOptions<T> = {},
 ): BasicHttpReturn<T, D> {
-  const client = createBasicClient()
+  const clientPromise = createBasicClient()
   const responseData = ref<T | null>(null)
   const loading = ref(false)
   const error = ref<Error | null>(null)
@@ -91,6 +91,7 @@ function createHttpHook<T = unknown, D = unknown>(
         signal: abortController.signal,
       }
 
+      const client = await clientPromise
       let response
       switch (method) {
         case 'GET':

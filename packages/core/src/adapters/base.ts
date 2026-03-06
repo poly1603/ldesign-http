@@ -305,7 +305,9 @@ export abstract class BaseAdapter implements HttpAdapter {
     signals: (AbortSignal | undefined)[],
   ): AbortSignal {
     const validSignals = signals.filter(
-      (signal): signal is AbortSignal => signal !== undefined,
+      (signal): signal is AbortSignal =>
+        signal !== undefined
+        && signal instanceof AbortSignal,
     )
 
     if (validSignals.length === 0) {

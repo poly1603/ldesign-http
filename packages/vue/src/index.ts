@@ -36,6 +36,7 @@ export {
 export {
   // 基础请求 Hook
   useRequest,
+  useAsyncRequest,
 } from './composables/useRequest'
 
 export {
@@ -80,6 +81,7 @@ export {
 export {
   // 乐观更新
   useOptimisticUpdate,
+  useOptimisticList,
 } from './composables/useOptimisticUpdate'
 
 export {
@@ -90,6 +92,7 @@ export {
 export {
   // 节流请求
   useThrottledRequest,
+  useDebouncedRequest,
 } from './composables/useThrottledRequest'
 
 export {
@@ -124,6 +127,15 @@ export {
   // 下载管理器
   useDownloadManager,
 } from './composables/useDownloadManager'
+
+export {
+  // 状态监控
+  useStatusMonitor,
+} from './composables/useStatusMonitor'
+
+export type {
+  UseStatusMonitorReturn,
+} from './composables/useStatusMonitor'
 
 // ==================== 插件系统 ====================
 
